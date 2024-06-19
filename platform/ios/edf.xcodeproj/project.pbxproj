@@ -7,31 +7,28 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		6EE114C02C22285C0018B7E1 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 6EE114BF2C22285C0018B7E1 /* AppDelegate.m */; };
-		6EE114C32C22285C0018B7E1 /* SceneDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 6EE114C22C22285C0018B7E1 /* SceneDelegate.m */; };
-		6EE114C62C22285C0018B7E1 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 6EE114C52C22285C0018B7E1 /* ViewController.m */; };
+		6E0F64B62C232DC400FC0EC0 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6E0F64B52C232DC400FC0EC0 /* MetalKit.framework */; };
+		6E1420812C23192100C8BB04 /* ios_main.m in Sources */ = {isa = PBXBuildFile; fileRef = 6E1420802C23192100C8BB04 /* ios_main.m */; };
+		6E1420822C23196300C8BB04 /* edf.c in Sources */ = {isa = PBXBuildFile; fileRef = 6EE114D82C222A030018B7E1 /* edf.c */; };
 		6EE114C92C22285C0018B7E1 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6EE114C72C22285C0018B7E1 /* Main.storyboard */; };
 		6EE114CB2C2228600018B7E1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6EE114CA2C2228600018B7E1 /* Assets.xcassets */; };
 		6EE114CE2C2228600018B7E1 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6EE114CC2C2228600018B7E1 /* LaunchScreen.storyboard */; };
-		6EE114D12C2228600018B7E1 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 6EE114D02C2228600018B7E1 /* main.m */; };
-		6EE114DA2C222A2B0018B7E1 /* game.c in Sources */ = {isa = PBXBuildFile; fileRef = 6EE114D82C222A030018B7E1 /* game.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		6E0F64B32C23295D00FC0EC0 /* edf_platform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = edf_platform.h; sourceTree = "<group>"; };
+		6E0F64B52C232DC400FC0EC0 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		6E0F64B72C2359A000FC0EC0 /* edf_memory.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = edf_memory.h; sourceTree = "<group>"; };
+		6E0F64B82C235A0600FC0EC0 /* edf_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = edf_common.h; sourceTree = "<group>"; };
+		6E0F64B92C235A6500FC0EC0 /* edf_math.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = edf_math.h; sourceTree = "<group>"; };
+		6E1420802C23192100C8BB04 /* ios_main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ios_main.m; sourceTree = "<group>"; };
 		6EE114BB2C22285C0018B7E1 /* edf.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = edf.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		6EE114BE2C22285C0018B7E1 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
-		6EE114BF2C22285C0018B7E1 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
-		6EE114C12C22285C0018B7E1 /* SceneDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SceneDelegate.h; sourceTree = "<group>"; };
-		6EE114C22C22285C0018B7E1 /* SceneDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SceneDelegate.m; sourceTree = "<group>"; };
-		6EE114C42C22285C0018B7E1 /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
-		6EE114C52C22285C0018B7E1 /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		6EE114C82C22285C0018B7E1 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		6EE114CA2C2228600018B7E1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		6EE114CD2C2228600018B7E1 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		6EE114CF2C2228600018B7E1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		6EE114D02C2228600018B7E1 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
-		6EE114D82C222A030018B7E1 /* game.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = game.c; sourceTree = "<group>"; };
-		6EE114D92C222A030018B7E1 /* game.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = game.h; sourceTree = "<group>"; };
+		6EE114D82C222A030018B7E1 /* edf.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = edf.c; sourceTree = "<group>"; };
+		6EE114D92C222A030018B7E1 /* edf.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = edf.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -39,18 +36,28 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6E0F64B62C232DC400FC0EC0 /* MetalKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		6E0F64B42C232DC400FC0EC0 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				6E0F64B52C232DC400FC0EC0 /* MetalKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		6EE114B22C22285C0018B7E1 = {
 			isa = PBXGroup;
 			children = (
 				6EE114D72C222A030018B7E1 /* src */,
 				6EE114BD2C22285C0018B7E1 /* edf */,
 				6EE114BC2C22285C0018B7E1 /* Products */,
+				6E0F64B42C232DC400FC0EC0 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -65,17 +72,11 @@
 		6EE114BD2C22285C0018B7E1 /* edf */ = {
 			isa = PBXGroup;
 			children = (
-				6EE114BE2C22285C0018B7E1 /* AppDelegate.h */,
-				6EE114BF2C22285C0018B7E1 /* AppDelegate.m */,
-				6EE114C12C22285C0018B7E1 /* SceneDelegate.h */,
-				6EE114C22C22285C0018B7E1 /* SceneDelegate.m */,
-				6EE114C42C22285C0018B7E1 /* ViewController.h */,
-				6EE114C52C22285C0018B7E1 /* ViewController.m */,
+				6E1420802C23192100C8BB04 /* ios_main.m */,
 				6EE114C72C22285C0018B7E1 /* Main.storyboard */,
 				6EE114CA2C2228600018B7E1 /* Assets.xcassets */,
 				6EE114CC2C2228600018B7E1 /* LaunchScreen.storyboard */,
 				6EE114CF2C2228600018B7E1 /* Info.plist */,
-				6EE114D02C2228600018B7E1 /* main.m */,
 			);
 			path = edf;
 			sourceTree = "<group>";
@@ -83,8 +84,12 @@
 		6EE114D72C222A030018B7E1 /* src */ = {
 			isa = PBXGroup;
 			children = (
-				6EE114D82C222A030018B7E1 /* game.c */,
-				6EE114D92C222A030018B7E1 /* game.h */,
+				6E0F64B32C23295D00FC0EC0 /* edf_platform.h */,
+				6EE114D82C222A030018B7E1 /* edf.c */,
+				6EE114D92C222A030018B7E1 /* edf.h */,
+				6E0F64B72C2359A000FC0EC0 /* edf_memory.h */,
+				6E0F64B82C235A0600FC0EC0 /* edf_common.h */,
+				6E0F64B92C235A6500FC0EC0 /* edf_math.h */,
 			);
 			name = src;
 			path = ../../game/src;
@@ -160,11 +165,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				6EE114DA2C222A2B0018B7E1 /* game.c in Sources */,
-				6EE114C62C22285C0018B7E1 /* ViewController.m in Sources */,
-				6EE114C02C22285C0018B7E1 /* AppDelegate.m in Sources */,
-				6EE114D12C2228600018B7E1 /* main.m in Sources */,
-				6EE114C32C22285C0018B7E1 /* SceneDelegate.m in Sources */,
+				6E1420822C23196300C8BB04 /* edf.c in Sources */,
+				6E1420812C23192100C8BB04 /* ios_main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
