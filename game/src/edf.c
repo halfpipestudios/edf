@@ -20,6 +20,7 @@ void game_render(Memory *memory) {
     GameState *gs = game_state(memory);
     
     gpu_frame_begin(gs->gpu);
+    
 
 
     gpu_frame_end(gs->gpu);

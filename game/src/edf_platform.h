@@ -35,9 +35,10 @@ typedef struct Wave {
     int unused;
 } Wave;
 
-typedef struct FileResult {
-
-} FileResult;
+typedef struct File {
+    void *data;
+    sz size;
+} File;
 
 typedef void * Texture;
 typedef void * Sound;
@@ -47,18 +48,16 @@ typedef void * Spu;
 Bitmap bitmap_load(struct Arena *arena, char *path);
 Wave   wave_load(struct Arena *Arena, char *path);
 
-FileResult os_file_read(struct Arena *arena, char *path);
+File os_file_read(struct Arena *arena, char *path);
 bool os_file_write(u8 *data, sz size);
 
 Gpu gpu_load(struct Arena *arena);
 void gpu_unload(Gpu gpu);
 void gpu_frame_begin(Gpu gpu);
 void gpu_frame_end(Gpu gpu);
-
 Texture gpu_texture_load(Bitmap *bitmap);
 void gpu_texture_unload(Texture texture);
 void gpu_shader_set(void);
-
 void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Texture texture);
 void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V3 color);
 void gpu_camera_set(V3 pos, f32 angle);
