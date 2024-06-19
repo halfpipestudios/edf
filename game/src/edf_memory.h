@@ -8,6 +8,9 @@
 #ifndef EDF_MEMORY_H
 #define EDF_MEMORY_H
 
+#include "edf_common.h"
+#include <memory.h>
+
 typedef struct Memory {
     void *data;
     sz used;
@@ -20,5 +23,9 @@ typedef struct Arena {
     sz size;
 } Arena;
 
+
+Arena arena_create(Memory *memory, sz size);
+void *arena_push(Arena *arena, sz size, sz align);
+void arena_clear(Arena *arena);
 
 #endif // EDF_MEMORY_H

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		6E0F64B62C232DC400FC0EC0 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6E0F64B52C232DC400FC0EC0 /* MetalKit.framework */; };
+		6E0F64BB2C23687100FC0EC0 /* edf_memory.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E0F64BA2C23687100FC0EC0 /* edf_memory.c */; };
 		6E1420812C23192100C8BB04 /* ios_main.m in Sources */ = {isa = PBXBuildFile; fileRef = 6E1420802C23192100C8BB04 /* ios_main.m */; };
 		6E1420822C23196300C8BB04 /* edf.c in Sources */ = {isa = PBXBuildFile; fileRef = 6EE114D82C222A030018B7E1 /* edf.c */; };
 		6EE114C92C22285C0018B7E1 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6EE114C72C22285C0018B7E1 /* Main.storyboard */; };
@@ -21,6 +22,7 @@
 		6E0F64B72C2359A000FC0EC0 /* edf_memory.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = edf_memory.h; sourceTree = "<group>"; };
 		6E0F64B82C235A0600FC0EC0 /* edf_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = edf_common.h; sourceTree = "<group>"; };
 		6E0F64B92C235A6500FC0EC0 /* edf_math.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = edf_math.h; sourceTree = "<group>"; };
+		6E0F64BA2C23687100FC0EC0 /* edf_memory.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = edf_memory.c; sourceTree = "<group>"; };
 		6E1420802C23192100C8BB04 /* ios_main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ios_main.m; sourceTree = "<group>"; };
 		6EE114BB2C22285C0018B7E1 /* edf.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = edf.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6EE114C82C22285C0018B7E1 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
@@ -90,6 +92,7 @@
 				6E0F64B72C2359A000FC0EC0 /* edf_memory.h */,
 				6E0F64B82C235A0600FC0EC0 /* edf_common.h */,
 				6E0F64B92C235A6500FC0EC0 /* edf_math.h */,
+				6E0F64BA2C23687100FC0EC0 /* edf_memory.c */,
 			);
 			name = src;
 			path = ../../game/src;
@@ -165,6 +168,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6E0F64BB2C23687100FC0EC0 /* edf_memory.c in Sources */,
 				6E1420822C23196300C8BB04 /* edf.c in Sources */,
 				6E1420812C23192100C8BB04 /* ios_main.m in Sources */,
 			);

@@ -57,7 +57,7 @@ void gpu_frame_end(Gpu gpu);
 
 Texture gpu_texture_load(Bitmap *bitmap);
 void gpu_texture_unload(Texture texture);
-void gpu_shader_set(void); // TODO: ....
+void gpu_shader_set(void);
 
 void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Texture texture);
 void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V3 color);

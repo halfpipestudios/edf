@@ -3,22 +3,30 @@
 
 
 void game_init(Memory *memory) {
-    //gpu_init();
+    game_state_init(memory);
+    GameState *gs = game_state(memory);
+    
+    gs->platform_arena = arena_create(memory, mb(20));
 
+    gs->gpu = gpu_load(&gs->platform_arena);
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {
+    GameState *gs = game_state(memory);
 
 }
 
 void game_render(Memory *memory) {
-    //gpu_frame_begin();
+    GameState *gs = game_state(memory);
+    
+    gpu_frame_begin(gs->gpu);
 
-    // TODO: render THE GAME 
 
-    //gpu_frame_end();
+    gpu_frame_end(gs->gpu);
 }
 
 void game_shutdown(Memory *memory) {
-    //gpu_shutdown();
+    GameState *gs = game_state(memory);
+
+    gpu_unload(gs->gpu);
 }

@@ -7,9 +7,10 @@
 
 
 #include "edf_platform.h"
+#include "edf_memory.h"
 #include "edf.h"
-#include <simd/simd.h>
 
+#include <simd/simd.h>
 #import <UIKit/UIKit.h>
 #import <Metal/Metal.h>
 #import<MetalKit/MetalKit.h>
@@ -19,51 +20,51 @@
 #define MAX_QUAD_COUNT 10000
 
 typedef struct IosRenderer {
-    // synchronisation
-    //dispatch_semaphore_t in_flight_semaphore;
-    //u32 current_buffer;
-    // metal
-    id<MTLDevice> device;
-    id<MTLCommandQueue> command_queue;
-    MTKView *view;
     id<MTLCommandBuffer> command_buffer;
     id<MTLRenderCommandEncoder> command_encoder;
-
-    //id<MTLRenderPipelineState> pipeline_state;
-    //MTLRenderPassDescriptor *render_pass_descriptor;
-
-    // instance renderer
-    id<MTLBuffer> vbuffer;
-    id<MTLBuffer> ubuffer[MAX_UBUFFER_COUNT][MAX_QUAD_COUNT];
 } IosRenderer;
 
-static IosRenderer renderer;
 
-/*
-void gpu_init(void) {
+static MTKView *g_view;
+static id<MTLDevice> g_device;
+static id<MTLCommandQueue> g_command_queue;
+static Memory g_memory;
+
+
+//=====================	================================================
+// Platform ios implementation
+//=====================================================================
+Gpu gpu_load(struct Arena *arena) {
+    IosRenderer *renderer = (IosRenderer *)arena_push(arena, sizeof(*renderer), 8);
+    return (Gpu)renderer;
+}
+
+void gpu_unload(Gpu gpu) {
+    IosRenderer *renderer = (IosRenderer *)gpu;
 
 }
 
-void gpu_shutdown(void) {
-
-}
-
-void gpu_frame_begin(void) {
-    MTLRenderPassDescriptor *render_pass_descriptor = renderer.view.currentRenderPassDescriptor;
+void gpu_frame_begin(Gpu gpu) {
+    IosRenderer *renderer = (IosRenderer *)gpu;
+    MTLRenderPassDescriptor *render_pass_descriptor = g_view.currentRenderPassDescriptor;
     if (render_pass_descriptor == nil) {
         return;
     }
-    renderer.command_buffer = [renderer.command_queue commandBuffer];
-    renderer.command_encoder = [renderer.command_buffer renderCommandEncoderWithDescriptor:render_pass_descriptor];
+    renderer->command_buffer = [g_command_queue commandBuffer];
+    renderer->command_encoder = [renderer->command_buffer renderCommandEncoderWithDescriptor:render_pass_descriptor];
 }
 
-void gpu_frame_end(void) {
-    [renderer.command_encoder endEncoding];
-    id<MTLDrawable> drawable = renderer.view.currentDrawable;
-    [renderer.command_buffer presentDrawable:drawable]; 
-    [renderer.command_buffer commit];
+void gpu_frame_end(Gpu gpu) {
+    IosRenderer *renderer = (IosRenderer *)gpu;
+    [renderer->command_encoder endEncoding];
+    id<MTLDrawable> drawable = g_view.currentDrawable;
+    [renderer->command_buffer presentDrawable:drawable]; 
+    [renderer->command_buffer commit];
 }
-*/
+
+//=====================================================================
+//=====================================================================
+
 
 //=====================================================================
 // AppDelegate
@@ -78,7 +79,7 @@ void gpu_frame_end(void) {
 }
 
 - (void)applicationWillTerminate:(UIApplication *)application {
-    game_shutdown(0);
+    game_shutdown(&g_memory);
 }
 @end
 //=====================================================================
@@ -97,17 +98,16 @@ void gpu_frame_end(void) {
     self = [super init];
     if(self)
     {
-        renderer.device = view.device;
-        renderer.command_queue = [renderer.device newCommandQueue];
-        renderer.view = view;
+        g_device = view.device;
+        g_command_queue = [g_device newCommandQueue];
     }
 
     return self;   
 }
 
 - (void)drawInMTKView:(nonnull MTKView *)view {
-    game_update(0, 0, 0);
-    game_render(0);
+    game_update(&g_memory, 0, 0);
+    game_render(&g_memory);
 }
 
 - (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size {
@@ -125,26 +125,29 @@ void gpu_frame_end(void) {
 @end
 
 @implementation ViewController {
-    MTKView *_view;
     MetalViewDelegate *_metal_view_delegate;
 }
 
 - (void)viewDidLoad {
     [super viewDidLoad];
 
-    _view = (MTKView *)self.view;
-    _view.device = MTLCreateSystemDefaultDevice();
-    _view.clearColor = MTLClearColorMake(0.0, 0.5, 1.0, 1.0);
+    g_view = (MTKView *)self.view;
+    g_view.device = MTLCreateSystemDefaultDevice();
+    g_view.clearColor = MTLClearColorMake(0.0, 0.5, 1.0, 1.0);
     
-    _metal_view_delegate = [[MetalViewDelegate alloc] initWithMetalKitView:_view];
+    _metal_view_delegate = [[MetalViewDelegate alloc] initWithMetalKitView:g_view];
     if(!_metal_view_delegate) {
         NSLog(@"Renderer initialization failed");
         return;
     }
-    [_metal_view_delegate mtkView:_view drawableSizeWillChange:_view.drawableSize];
-    _view.delegate = _metal_view_delegate;    
+    [_metal_view_delegate mtkView:g_view drawableSizeWillChange:g_view.drawableSize];
+    g_view.delegate = _metal_view_delegate;    
 
-    game_init(0); 
+    g_memory.size = mb(256);
+    g_memory.used = 0;
+    g_memory.data = malloc(g_memory.size);
+    game_init(&g_memory);
+
 }
 
 @end
