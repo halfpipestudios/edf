@@ -26,8 +26,8 @@ typedef struct Input {
 } Input;
 
 typedef struct Bitmap {
-    u8 *data;
-    u32 widht;
+    u32 *data;
+    u32 width;
     u32 height;
 } Bitmap;
 
@@ -55,12 +55,13 @@ Gpu gpu_load(struct Arena *arena);
 void gpu_unload(Gpu gpu);
 void gpu_frame_begin(Gpu gpu);
 void gpu_frame_end(Gpu gpu);
-Texture gpu_texture_load(Bitmap *bitmap);
-void gpu_texture_unload(Texture texture);
+Texture gpu_texture_load(Gpu gpu, Bitmap *bitmap);
+void gpu_texture_unload(Gpu gpu, Texture texture);
 void gpu_shader_set(void);
 void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Texture texture);
 void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V3 color);
 void gpu_camera_set(V3 pos, f32 angle);
+void gpu_resize(Gpu gpu, u32 w, u32 h);
 
 Spu spu_load(struct Arena *arena);
 void spu_unload(Spu spu);

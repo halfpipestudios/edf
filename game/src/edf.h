@@ -10,6 +10,7 @@ struct Memory;
 typedef struct GameState {
     Gpu gpu;
     Arena platform_arena;
+    f32 angle;
 } GameState;
 
 #define game_state(memory) ((GameState *)(memory)->data);
@@ -19,5 +20,6 @@ void game_init(struct Memory *memory);
 void game_update(struct Memory *memory, Input *input, f32 dt);
 void game_render(struct Memory *memory);
 void game_shutdown(struct Memory *memory);
+void game_resize(struct Memory *memory, u32 w, u32 h);
 
 #endif // EDF_H
