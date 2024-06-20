@@ -28,14 +28,28 @@ typedef u32 b32;
 
 typedef size_t sz;
 
+#define unused(v) ((void)(v))
+#define offset_of(type, value) (&(((type *)0)->value))
 #define array_len(v) (sizeof((v)) / sizeof((v)[0]))
 #define is_power_of_two(expr) (((expr) & (expr - 1)) == 0)
-#define unused(v) ((void)(v))
+#define next_power_of_two(value)                                                                   \
+    do {                                                                                           \
+        value--;                                                                                   \
+        value |= value >> 1;                                                                       \
+        value |= value >> 2;                                                                       \
+        value |= value >> 4;                                                                       \
+        value |= value >> 8;                                                                       \
+        value |= value >> 16;                                                                      \
+        value++;                                                                                   \
+    } while(0)
+
 
 #define kb(x) ((x) * 1024ll)
 #define mb(x) (kb(x) * 1024ll)
 #define gb(x) (mb(x) * 1024ll)
 
+#define max(a, b) (((a) > (b)) ? (a) : (b))
+#define min(a, b) (((a) < (b)) ? (a) : (b))
 #define clamp(a, b, c) max(min(a, c), b)
 
 #endif // EDF_COMMON_H
