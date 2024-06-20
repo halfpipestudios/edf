@@ -1,36 +1,102 @@
 package com.halfpipe.edf;
 
-import androidx.appcompat.app.AppCompatActivity;
-
+import android.content.res.AssetManager;
+import android.os.Build;
 import android.os.Bundle;
-import android.widget.TextView;
+import android.view.View;
+import android.view.WindowManager;
+import android.app.Activity;
 
-import com.halfpipe.edf.databinding.ActivityMainBinding;
+import android.content.Context;
+import android.opengl.GLSurfaceView;
 
-public class MainActivity extends AppCompatActivity {
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
 
-    // Used to load the 'edf' library on application startup.
+public class MainActivity extends Activity {
+
     static {
         System.loadLibrary("edf");
     }
 
-    private ActivityMainBinding binding;
+    private GameView gameView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        binding = ActivityMainBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-        // Example of a call to a native method
-        TextView tv = binding.sampleText;
-        tv.setText(stringFromJNI());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            getWindow()
+                    .getAttributes().layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+        }
+
+        gameView = new GameView(this);
+        setContentView(gameView);
+
+        gameView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
     }
 
-    /**
-     * A native method that is implemented by the 'edf' native library,
-     * which is packaged with this application.
-     */
-    public native String stringFromJNI();
+}
+
+class GameView extends GLSurfaceView {
+
+    private final GameRenderer renderer;
+
+    public GameView(Context context) {
+        super(context);
+
+        setEGLContextClientVersion(3);
+        setEGLConfigChooser(8, 8, 8, 8, 24, 8);
+
+        renderer = new GameRenderer(context.getAssets());
+        setRenderer(renderer);
+
+        setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
+    }
+}
+
+class GameRenderer implements GLSurfaceView.Renderer {
+
+    public native void gameInit(AssetManager assetManager);
+
+    public native void gameUpdate(float dt);
+
+    public native void gameRender();
+
+    public native void gpuSetViewport(int x, int y, int w, int h);
+
+    private static final double NANOS_PER_SECOND = 1000000000.0;
+    private double lastTime;
+    AssetManager assetManager;
+
+    public GameRenderer(AssetManager assetManager) {
+        this.assetManager = assetManager;
+    }
+
+    @Override
+    public void onSurfaceCreated(GL10 gl, EGLConfig config) {
+        gameInit(assetManager);
+    }
+
+    @Override
+    public void onSurfaceChanged(GL10 gl, int width, int height) {
+        gpuSetViewport(0, 0, width, height);
+    }
+
+    @Override
+    public void onDrawFrame(GL10 gl) {
+        long currentTime = System.nanoTime();
+        double dt = (currentTime - lastTime) / NANOS_PER_SECOND;
+        lastTime = currentTime;
+        gameUpdate((float) dt);
+        gameRender();
+    }
+
 }

@@ -4,6 +4,7 @@
 #include "edf_platform.h"
 #include "edf_memory.h"
 
+#define GAME_MEMORY_SIZE mb(256)
 struct Memory;
 
 typedef struct GameState {
