@@ -42,9 +42,4 @@ typedef union V3 {
     f32 m[3];
 } V3;
 
-inline V3 v3(f32 x, f32 y, f32 z) {
-    return (V3){ x, y, z };
-}
-
-
 #endif /* EDF_MATH_H */
