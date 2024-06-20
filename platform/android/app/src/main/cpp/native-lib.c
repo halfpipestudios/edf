@@ -17,6 +17,10 @@ static jobject *asset_manager_ref   = 0;
 static AAssetManager *asset_manager = 0;
 static Memory global_memory;
 
+File os_file_read(struct Arena *arena, char *path) {
+    return (File){0};
+}
+
 typedef struct OpenglGPU {
     unsigned int program;
     unsigned int vao, vbo;
@@ -117,10 +121,9 @@ void gpu_frame_end(Gpu gpu) {
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
-void gpu_viewport(int x, int y, int w, int h) {
-    glViewport(x, y, w, h);
-}
+void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V3 color) {
 
+}
 
 JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameInit(JNIEnv *env, jobject thiz, jobject manager) {
     (void)thiz;
@@ -150,5 +153,5 @@ JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameRender(JNIEnv *env
 JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gpuSetViewport(JNIEnv *env, jobject thiz, jint x, jint y, jint w, jint h) {
     (void)env;
     (void)thiz;
-    gpu_viewport(x, y, w, h);
+    glViewport(x, y, w, h);
 }
