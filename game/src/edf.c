@@ -1,6 +1,6 @@
 #include "edf.h"
 #include "edf_memory.h"
-
+#include "edf_platform.h"
 
 void game_init(Memory *memory) {
     game_state_init(memory);
