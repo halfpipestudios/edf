@@ -58,12 +58,98 @@ static Memory g_memory;
 // temporal globals (after the gpu_load this variables are set to nil)
 static MTKView *tmp_view;
 
+
+
+//=====================================================================
+// IOS utility functions
+//=====================================================================
+matrix_float4x4 matrix4x4_scale(float sx, float sy, float sz) {
+    return (matrix_float4x4) {{
+        { sx,  0,  0,  0 },
+        {  0, sy,  0,  0 },
+        {  0,  0, sz,  0 },
+        {  0,  0,  0,  1 }
+    }};
+}
+
+matrix_float4x4 matrix4x4_translation(float tx, float ty, float tz) {
+    return (matrix_float4x4) {{
+        { 1,   0,  0,  0 },
+        { 0,   1,  0,  0 },
+        { 0,   0,  1,  0 },
+        { tx, ty, tz,  1 }
+    }};
+}
+
+static matrix_float4x4 matrix4x4_rotation_z(float radians) {
+    return (matrix_float4x4) {{
+        {  cosf(radians),  sinf(radians),  0,  0 },
+        { -sinf(radians),  cosf(radians),  0,  0 },
+        {              0,              0,  1,  0 },
+        {              0,              0,  0,  1 }
+    }};
+
+}
+
+matrix_float4x4 matrix_perspective_right_hand(float fovyRadians, float aspect, float nearZ, float farZ) {
+    float ys = 1 / tanf(fovyRadians * 0.5);
+    float xs = ys / aspect;
+    float zs = farZ / (nearZ - farZ);
+
+    return (matrix_float4x4) {{
+        { xs,   0,          0,  0 },
+        {  0,  ys,          0,  0 },
+        {  0,   0,         zs, -1 },
+        {  0,   0, nearZ * zs,  0 }
+    }};
+}
+
+matrix_float4x4 matrix_ortho(float l, float r, float b, float t, float n, float f) {
+    return (matrix_float4x4) {{
+        {2.0f / (r - l), 0, 0, 0},
+        {0, 2.0f / (t - b), 0, 0},
+        {0, 0, 1.0f / (f - n), 0},
+        {(l + r) / (l - r), (t + b) / (b - t), n / (n - f), 1}
+    }};
+}
+//=====================================================================
+//=====================================================================
+
+
+
+
+
+
 //=====================================================================
 // Platform ios implementation
 //=====================================================================
 
 File os_file_read(struct Arena *arena, char *path) {
-    File file;
+    File file = {0};
+
+    char file_name[1024];
+    char file_ext[1024];
+    
+    
+    i32 path_legth = (i32)strlen(path);
+    
+    char *letter = path;
+    i32 point_offset = 0;
+    for(; *letter != '.'; letter++, point_offset++);
+    
+
+    memcpy(file_name, path, point_offset);
+    point_offset++;
+    memcpy(file_ext, path + point_offset, path_legth - point_offset);
+
+    file_name[point_offset] = 0;
+    file_ext[path_legth - point_offset] = 0;
+    
+    NSString *file_path = [[NSBundle mainBundle] pathForResource: [NSString stringWithUTF8String:file_name] 
+                                                          ofType: [NSString stringWithUTF8String:file_ext]];
+    if(file_path != nil) {
+    }
+
 
     return file;
 }
@@ -110,7 +196,7 @@ Gpu gpu_load(struct Arena *arena) {
     alpha_blend_state_desc.label = @"MyPipeline";
     alpha_blend_state_desc.vertexFunction = vertexProgram;
     alpha_blend_state_desc.fragmentFunction = fragmentProgram;
-    alpha_blend_state_desc.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
+    alpha_blend_state_desc.colorAttachments[0].pixelFormat = renderer->view.colorPixelFormat;
     alpha_blend_state_desc.colorAttachments[0].blendingEnabled = true;
     alpha_blend_state_desc.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
     alpha_blend_state_desc.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
@@ -129,7 +215,7 @@ Gpu gpu_load(struct Arena *arena) {
     additive_blend_state_desc.label = @"MyPipeline";
     additive_blend_state_desc.vertexFunction = vertexProgram;
     additive_blend_state_desc.fragmentFunction = fragmentProgram;
-    additive_blend_state_desc.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
+    additive_blend_state_desc.colorAttachments[0].pixelFormat = renderer->view.colorPixelFormat;
     additive_blend_state_desc.colorAttachments[0].blendingEnabled = true;
     additive_blend_state_desc.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
     additive_blend_state_desc.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
@@ -158,6 +244,11 @@ Gpu gpu_load(struct Arena *arena) {
         }
     }
 
+    f32 hw = (f32)renderer->view.bounds.size.width * 0.5f;
+    f32 hh = (f32)renderer->view.bounds.size.height * 0.5f;
+    renderer->proj_m4 = matrix_ortho(-hw, hw, -hh, hh, 0, -100.0f);
+    renderer->view_m4 = matrix4x4_translation(0, 0, 0);
+
     return (Gpu)renderer;
 }
 
@@ -168,19 +259,46 @@ void gpu_unload(Gpu gpu) {
 
 void gpu_frame_begin(Gpu gpu) {
     IosRenderer *renderer = (IosRenderer *)gpu;
+
+    dispatch_semaphore_wait(renderer->in_flight_semaphore, DISPATCH_TIME_FOREVER);
+    renderer->current_buffer = (renderer->current_buffer + 1) % MAX_FRAMES_IN_FLIGHT;
+    renderer->buffer_index = 0;
+    renderer->quad_count = 0;
+
     MTLRenderPassDescriptor *render_pass_descriptor = renderer->view.currentRenderPassDescriptor;
     if (render_pass_descriptor == nil) {
         return;
     }
     renderer->command_buffer = [renderer->command_queue commandBuffer];
     renderer->command_encoder = [renderer->command_buffer renderCommandEncoderWithDescriptor:render_pass_descriptor];
+
+    [renderer->command_encoder setRenderPipelineState: renderer->alpha_blend_state];
+    [renderer->command_encoder setVertexBuffer: renderer->vbuffer offset:0 atIndex:VertexInputIndexVertices];
+    [renderer->command_encoder setVertexBytes:&renderer->view_m4 length:sizeof(matrix_float4x4) atIndex:VertexInputIndexView];
+    [renderer->command_encoder setVertexBytes:&renderer->proj_m4 length:sizeof(matrix_float4x4) atIndex:VertexInputIndexProj];
+
+
 }
 
 void gpu_frame_end(Gpu gpu) {
     IosRenderer *renderer = (IosRenderer *)gpu;
+    if(renderer->quad_count > 0) {
+        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[renderer->current_buffer][renderer->buffer_index]
+                                            offset:0
+                                           atIndex:VertexInputIndexWorld];
+        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count];
+        renderer->quad_count = 0;
+    }
+
     [renderer->command_encoder endEncoding];
     id<MTLDrawable> drawable = renderer->view.currentDrawable;
     [renderer->command_buffer presentDrawable:drawable]; 
+
+    __block dispatch_semaphore_t block_semaphore = renderer->in_flight_semaphore;
+    [renderer->command_buffer addCompletedHandler:^(id<MTLCommandBuffer> buffer) {
+        dispatch_semaphore_signal(block_semaphore);
+    }];
+
     [renderer->command_buffer commit];
 }
 
@@ -197,17 +315,60 @@ void gpu_shader_set(void) {
 }
 
 void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Texture texture) {
+    IosRenderer *renderer = (IosRenderer *)gpu;
+    matrix_float4x4 trans = matrix4x4_translation(x, y, -20);
+    matrix_float4x4 rot = matrix4x4_rotation_z(angle);
+    matrix_float4x4 scale = matrix4x4_scale(w, h, 1);
+    matrix_float4x4 world = matrix_multiply(trans, matrix_multiply(rot, scale));
 
+    if(renderer->buffer_index == MAX_UBUFFER_COUNT) {
+        return;
+    }
+
+    Uniform *dst = renderer->ubuffer[renderer->current_buffer][renderer->buffer_index].contents + (sizeof(Uniform) * renderer->quad_count);
+    memcpy(&dst->world, &world, sizeof(matrix_float4x4));
+    dst->texture_id = 1;
+    renderer->quad_count++;
+
+    if(renderer->quad_count == MAX_QUAD_COUNT) {
+        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[renderer->current_buffer][renderer->buffer_index]
+                                            offset:0
+                                           atIndex:VertexInputIndexWorld];
+        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count];
+        renderer->quad_count = 0;
+        renderer->buffer_index++;
+    }
 }
 
 void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V3 color) {
+    IosRenderer *renderer = (IosRenderer *)gpu;
+    matrix_float4x4 trans = matrix4x4_translation(x, y, -20);
+    matrix_float4x4 rot = matrix4x4_rotation_z(angle);
+    matrix_float4x4 scale = matrix4x4_scale(w, h, 1);
+    matrix_float4x4 world = matrix_multiply(trans, matrix_multiply(rot, scale));
 
+    if(renderer->buffer_index == MAX_UBUFFER_COUNT) {
+        return;
+    }
+
+    Uniform *dst = renderer->ubuffer[renderer->current_buffer][renderer->buffer_index].contents + (sizeof(Uniform) * renderer->quad_count);
+    memcpy(&dst->world, &world, sizeof(matrix_float4x4));
+    dst->texture_id = 0;
+    renderer->quad_count++;
+
+    if(renderer->quad_count == MAX_QUAD_COUNT) {
+        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[renderer->current_buffer][renderer->buffer_index]
+                                            offset:0
+                                           atIndex:VertexInputIndexWorld];
+        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count];
+        renderer->quad_count = 0;
+        renderer->buffer_index++;
+    }
 }
 
 void gpu_camera_set(V3 pos, f32 angle) {
 
 }
-
 //=====================================================================
 //=====================================================================
 
