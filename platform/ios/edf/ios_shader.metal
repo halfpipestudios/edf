@@ -27,9 +27,9 @@ vertexShader(uint vertexID [[vertex_id]],
     RasterizerData out;
     float4 position = float4(vertexArray[vertexID].pos.xy, 0.0, 1.0f);
     out.position = proj * view * uniforms[instanceID].world * position;
-    out.color = vertexArray[vertexID].color;
     out.uvs = vertexArray[vertexID].uvs;
     out.textureId = uniforms[instanceID].texture_id;
+    out.color = uniforms[instanceID].color;
     return out;
     
 }
@@ -38,6 +38,8 @@ fragment float4
 fragmentShader(RasterizerData in [[stage_in]],
                texture2d_array<float ,  access::sample> textures [[ texture(0) ]]) {
     constexpr sampler defaultSampler;
-    float4 color = textures.sample(defaultSampler, in.uvs, in.textureId);
-    return color;
+    float4 texture_color = textures.sample(defaultSampler, in.uvs, in.textureId);
+    float3 tint_color = texture_color.rgb * in.color;
+    
+    return float4(tint_color, texture_color.a);
 }

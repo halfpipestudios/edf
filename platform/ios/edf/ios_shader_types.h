@@ -19,12 +19,12 @@ typedef enum VertexInputIndex {
 
 typedef struct {
     vector_float2 pos;
-    vector_float3 color;
     vector_float2 uvs;
 } Vertex;
 
 typedef struct Uniform {
     matrix_float4x4 world;
+    vector_float3 color;
     uint32_t texture_id;
 } Uniform;
 

@@ -21,13 +21,13 @@
 #define MAX_TEXTURE_COUNT 10
 
 static const Vertex quad_vertices[] = {
-    { {  0.5,  -0.5 },  { 1.f, 0.f, 0.f }, {1, 1} },
-    { { -0.5,  -0.5 },  { 0.f, 1.f, 0.f }, {0, 1} },
-    { { -0.5,   0.5 },  { 0.f, 0.f, 1.f }, {0, 0} },
+    { {  0.5,  -0.5 }, {1, 1} },
+    { { -0.5,  -0.5 }, {0, 1} },
+    { { -0.5,   0.5 }, {0, 0} },
 
-    { {  0.5,  -0.5 },  { 1.f, 0.f, 0.f }, {1, 1} },
-    { { -0.5,   0.5 },  { 0.f, 0.f, 1.f }, {0, 0} },
-    { {  0.5,   0.5 },  { 1.f, 0.f, 1.f }, {1, 0} }
+    { {  0.5,  -0.5 }, {1, 1} },
+    { { -0.5,   0.5 }, {0, 0} },
+    { {  0.5,   0.5 }, {1, 0} }
 };
 
 typedef struct IosRenderer {
@@ -195,7 +195,6 @@ Gpu gpu_load(struct Arena *arena) {
     renderer->view = tmp_view;
     renderer->device = tmp_view.device;
     renderer->command_queue = [renderer->device newCommandQueue];
-    tmp_view = nil;
     
     renderer->in_flight_semaphore = dispatch_semaphore_create(MAX_FRAMES_IN_FLIGHT);
     renderer->current_buffer = 0;
@@ -303,10 +302,6 @@ Gpu gpu_load(struct Arena *arena) {
     white_bitmap.height = 32;
     gpu_texture_load((void *)renderer, &white_bitmap);
 
-
-    f32 hw = (f32)renderer->view.bounds.size.width * 0.5f;
-    f32 hh = (f32)renderer->view.bounds.size.height * 0.5f;
-    renderer->proj_m4 = matrix_ortho(-hw, hw, -hh, hh, 0, -100.0f);
     renderer->view_m4 = matrix4x4_translation(0, 0, 0);
     
     return (Gpu)renderer;
@@ -417,6 +412,9 @@ void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Textu
     Uniform *dst = renderer->ubuffer[renderer->current_buffer][renderer->buffer_index].contents + (sizeof(Uniform) * renderer->quad_count);
     memcpy(&dst->world, &world, sizeof(matrix_float4x4));
     dst->texture_id = (i32)texture;
+    dst->color.x = 1.0;
+    dst->color.y = 1.0;
+    dst->color.z = 1.0;
     renderer->quad_count++;
 
     if(renderer->quad_count == MAX_QUAD_COUNT) {
@@ -443,6 +441,9 @@ void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V3 colo
     Uniform *dst = renderer->ubuffer[renderer->current_buffer][renderer->buffer_index].contents + (sizeof(Uniform) * renderer->quad_count);
     memcpy(&dst->world, &world, sizeof(matrix_float4x4));
     dst->texture_id = 0;
+    dst->color.x = color.x;
+    dst->color.y = color.y;
+    dst->color.z = color.z;
     renderer->quad_count++;
 
     if(renderer->quad_count == MAX_QUAD_COUNT) {
@@ -457,6 +458,16 @@ void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V3 colo
 
 void gpu_camera_set(V3 pos, f32 angle) {
 
+}
+
+
+void gpu_resize(Gpu gpu, u32 w, u32 h) {
+    
+    IosRenderer *renderer = (IosRenderer *)gpu;
+    f32 hw = (f32)w * 0.5f;
+    f32 hh = (f32)h * 0.5f;
+    renderer->proj_m4 = matrix_ortho(-hw, hw, -hh, hh, 0, -100.0f);
+    
 }
 //=====================================================================
 //=====================================================================
@@ -502,12 +513,12 @@ void gpu_camera_set(V3 pos, f32 angle) {
 }
 
 - (void)drawInMTKView:(nonnull MTKView *)view {
-    game_update(&g_memory, 0, 0);
+    game_update(&g_memory, 0, 0.016);
     game_render(&g_memory);
 }
 
 - (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size {
-
+    game_resize(&g_memory, size.width, size.height);
 }
 @end
 //=====================================================================
@@ -541,14 +552,16 @@ void gpu_camera_set(V3 pos, f32 angle) {
         NSLog(@"Renderer initialization failed");
         return;
     }
-    [_metal_view_delegate mtkView:tmp_view drawableSizeWillChange:tmp_view.drawableSize];
-    tmp_view.delegate = _metal_view_delegate;    
 
     g_memory.size = mb(256);
     g_memory.used = 0;
     g_memory.data = malloc(g_memory.size);
+    
+    tmp_view.delegate = _metal_view_delegate;
+    
     game_init(&g_memory);
 
+    [_metal_view_delegate mtkView:tmp_view drawableSizeWillChange:tmp_view.drawableSize];
 }
 
 @end
