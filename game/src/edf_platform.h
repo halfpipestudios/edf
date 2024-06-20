@@ -26,7 +26,7 @@ typedef struct Input {
 } Input;
 
 typedef struct Bitmap {
-    u8 *data;
+    u32 *data;
     u32 width;
     u32 height;
 } Bitmap;

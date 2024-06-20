@@ -292,9 +292,9 @@ Gpu gpu_load(struct Arena *arena) {
     }
     renderer->texture_index_array[MAX_TEXTURE_COUNT - 1] = -1;
 
-    u32 *white[32*32];
+    u32 white[32*32];
     for(u32 i = 0; i < 32*32; i++) {
-        white[i] = 0xFFFF0000;
+        white[i] = 0xFFFFFFFF;
     }
 
     Bitmap white_bitmap;
