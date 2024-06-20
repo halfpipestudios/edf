@@ -26,7 +26,8 @@ project("edf")
 # used in the AndroidManifest.xml file.
 add_library(${CMAKE_PROJECT_NAME} SHARED
         # List C/C++ source files with relative paths to this CMakeLists.txt.
-        native-lib.c ../../../../../../game/src/edf.c ../../../../../../game/src/edf_memory.c)
+        native-lib.c
+        ../../../../../../game/src/edf.c ../../../../../../game/src/edf_memory.c)
 
 # Specifies libraries CMake should link to your target library. You
 # can link libraries from various origins, such as libraries defined in this
@@ -35,4 +36,4 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
         # List libraries link to the target library
         android log m EGL GLESv3)
 
-include_directories(../../../../../../game/src)
+include_directories(../../../../../../game/src ../../../../../../thirdparty)

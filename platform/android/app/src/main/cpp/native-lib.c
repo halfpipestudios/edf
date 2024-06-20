@@ -141,6 +141,12 @@ void texture_atlas_calculate_size_and_alloc(Arena *arena, OpenglTextureAtlas *at
     }
 
     atlas->bitmap.data = arena_push(arena, atlas->bitmap.width*atlas->bitmap.height*sizeof(u32), 8);
+    atlas->current_x = 0;
+    atlas->current_y = 0;
+    atlas->last_row_added_height = 0;
+
+    atlas->bitmap.data[0] = 0xffffffff;
+    atlas->current_x = 1 + TEXTURE_ATLAS_DEFAULT_PADDING;
 }
 
 void texture_atlas_insert(OpenglTextureAtlas *atlas, OpenglTexture *texture) {
@@ -162,11 +168,11 @@ void texture_atlas_insert(OpenglTextureAtlas *atlas, OpenglTexture *texture) {
 
     texture->dim = r2_from_wh((i32)atlas->current_x, (i32)atlas->current_y, (i32)bitmap->width, (i32)bitmap->height);
     texture->min = (V2){(f32)texture->dim.min.x / (f32)atlas->bitmap.width, (f32)texture->dim.min.y / (f32)atlas->bitmap.height};
-    texture->max = (V2){(f32)texture->dim.max.x / (f32)atlas->bitmap.width, (f32)texture->dim.max.y / (f32)atlas->bitmap.height};
+    texture->max = (V2){(f32)(texture->dim.max.x + 1) / (f32)atlas->bitmap.width, ((f32)texture->dim.max.y + 1) / (f32)atlas->bitmap.height};
 
-    for(i32 y = 0; y <= bitmap->height; ++y) {
+    for(i32 y = 0; y < bitmap->height; ++y) {
         i32 yy = y + (i32)atlas->current_y;
-        for(i32 x = 0; y <= bitmap->width; ++x) {
+        for(i32 x = 0; x < bitmap->width; ++x) {
             i32 xx = x + (i32)atlas->current_x;
             atlas->bitmap.data[yy*atlas->bitmap.width+xx] = texture->bitmap->data[y*bitmap->width+x];
         }
@@ -177,9 +183,6 @@ void texture_atlas_insert(OpenglTextureAtlas *atlas, OpenglTexture *texture) {
 
 void texture_atlas_generate(Arena *arena, OpenglTextureAtlas *atlas) {
     texture_atlas_sort_textures_per_height(atlas);
-    atlas->current_x = 0;
-    atlas->current_y = 0;
-    atlas->last_row_added_height = 0;
     texture_atlas_calculate_size_and_alloc(arena, atlas);
     for(u32 i = 0; i < atlas->texture_count; ++i) {
         OpenglTexture *texture = atlas->textures + i;
@@ -267,6 +270,9 @@ Gpu gpu_load(struct Arena *arena) {
     const char *version = (const char *)glGetString(GL_VERSION);
     logd("Game", "OpenGL initialized: %s", version);
 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     OpenglGPU *renderer = arena_push(arena, sizeof(*renderer), 8);
     renderer->arena = arena;
     renderer->first_frame = true;
@@ -317,7 +323,7 @@ void gpu_frame_begin(Gpu gpu) {
     }
 
     glClear(GL_COLOR_BUFFER_BIT);
-    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+    glClearColor(0, 0.5f, 1, 1.0f);
 
     glUseProgram(renderer->program);
     glBindVertexArray(renderer->vao);
@@ -368,12 +374,12 @@ void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Textu
     OpenglTexture *tex = (OpenglTexture *)texture;
     OpenglQuad quad;
     V2 uvs[array_len(quad.vertex)] = {
-        {tex->max.x, tex->min.y}, // bottom right
-        {tex->min.x, tex->min.y}, // bottom left
-        {tex->min.x, tex->max.y}, // top left
-        {tex->max.x, tex->min.y}, // bottom right
-        {tex->min.x, tex->max.y}, // bottom right
-        {tex->max.x, tex->max.y}  // top right
+        {tex->max.x, tex->max.y}, // bottom right
+        {tex->min.x, tex->max.y}, // bottom left
+        {tex->min.x, tex->min.y}, // top left
+        {tex->max.x, tex->max.y}, // bottom right
+        {tex->min.x, tex->min.y}, // bottom right
+        {tex->max.x, tex->min.y}  // top right
     };
 
     for(u32 i = 0; i < array_len(quad.vertex); ++i) {
