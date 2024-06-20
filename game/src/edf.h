@@ -9,6 +9,10 @@ struct Memory;
 typedef struct GameState {
     Gpu gpu;
     Arena platform_arena;
+
+    Bitmap bitmap;
+    Texture texture;
+    
 } GameState;
 
 #define game_state(memory) ((GameState *)(memory)->data);

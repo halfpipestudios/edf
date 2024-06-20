@@ -36,9 +36,8 @@ vertexShader(uint vertexID [[vertex_id]],
 
 fragment float4
 fragmentShader(RasterizerData in [[stage_in]],
-               array<texture2d<float>, 3> textures [[texture(0)]]) {
-    
+               texture2d_array<float ,  access::sample> textures [[ texture(0) ]]) {
     constexpr sampler defaultSampler;
-    //float4 color = textures[in.textureId].sample(defaultSampler, in.uvs);
-    return float4(0, 1, 0, 1);
+    float4 color = textures.sample(defaultSampler, in.uvs, in.textureId);
+    return color;
 }

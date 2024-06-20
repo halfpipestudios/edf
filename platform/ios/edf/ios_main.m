@@ -18,6 +18,7 @@
 #define MAX_FRAMES_IN_FLIGHT 3
 #define MAX_UBUFFER_COUNT 3
 #define MAX_QUAD_COUNT 10000
+#define MAX_TEXTURE_COUNT 10
 
 static const Vertex quad_vertices[] = {
     { {  0.5,  -0.5 },  { 1.f, 0.f, 0.f }, {1, 1} },
@@ -49,6 +50,13 @@ typedef struct IosRenderer {
 
     matrix_float4x4 proj_m4;
     matrix_float4x4 view_m4;
+    
+    id<MTLTexture> texture_array;
+    i32 texture_index_array[MAX_TEXTURE_COUNT];
+    i32 texture_free_list;
+    
+    u32 texture_count;
+    
 } IosRenderer;
 
 
@@ -126,30 +134,53 @@ matrix_float4x4 matrix_ortho(float l, float r, float b, float t, float n, float 
 
 File os_file_read(struct Arena *arena, char *path) {
     File file = {0};
-
+    
+    char file_header[7] = "assets/";
     char file_name[1024];
     char file_ext[1024];
-    
-    
+     
     i32 path_legth = (i32)strlen(path);
     
     char *letter = path;
     i32 point_offset = 0;
     for(; *letter != '.'; letter++, point_offset++);
     
-
-    memcpy(file_name, path, point_offset);
+    memcpy(file_name, file_header, 7);
+    memcpy(file_name + 7, path, point_offset);
+    file_name[point_offset + 7] = 0;
+    
     point_offset++;
+    
     memcpy(file_ext, path + point_offset, path_legth - point_offset);
-
-    file_name[point_offset] = 0;
     file_ext[path_legth - point_offset] = 0;
     
-    NSString *file_path = [[NSBundle mainBundle] pathForResource: [NSString stringWithUTF8String:file_name] 
+    NSString *file_path = [[NSBundle mainBundle] pathForResource: [NSString stringWithUTF8String:file_name]
                                                           ofType: [NSString stringWithUTF8String:file_ext]];
     if(file_path != nil) {
+        
+        NSLog(@"file found!!\n");
+        
     }
+    
+    
+    FILE *file_handle = fopen([file_path cStringUsingEncoding:NSUTF8StringEncoding], "rb");
+    if(!file_handle) {
+        return file;
+    }
+    // go to the end of the file
+    fseek(file_handle, 0, SEEK_END);
+    // get the size of the file to alloc the memory we need
+    long int file_size = ftell(file_handle);
+    // go back to the start of the file
+    fseek(file_handle, 0, SEEK_SET);
+    // alloc the memory
+    file.data = arena_push(arena, file_size + 1, 8);
+    memset(file.data, 0, file_size + 1);
+    // store the content of the file
+    fread(file.data, file_size, 1, file_handle);
+    fclose(file_handle);
 
+    file.size = file_size;
 
     return file;
 }
@@ -236,19 +267,48 @@ Gpu gpu_load(struct Arena *arena) {
     renderer->vbuffer = [renderer->device newBufferWithBytes:&quad_vertices
                                                       length:(sizeof(Vertex) * 6)
                                                      options:MTLResourceStorageModeShared];
-
+    
     for(int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         for(int j = 0; j < MAX_UBUFFER_COUNT; j++) {
             renderer->ubuffer[i][j] = [renderer->device newBufferWithLength:MAX_QUAD_COUNT * sizeof(Uniform)
                                                                     options:MTLResourceCPUCacheModeDefaultCache];
         }
     }
+    
+    // create a texture block array and initialize the free list
+    MTLTextureDescriptor *texture_descriptor;
+    texture_descriptor = [[MTLTextureDescriptor alloc] init];
+    texture_descriptor.pixelFormat = MTLPixelFormatRGBA8Unorm;
+    texture_descriptor.width = 32;
+    texture_descriptor.height = 32;
+    texture_descriptor.arrayLength = MAX_TEXTURE_COUNT;
+    texture_descriptor.textureType = MTLTextureType2DArray;
+    renderer->texture_array = [renderer->device newTextureWithDescriptor: texture_descriptor];
+    renderer->texture_count = 0;
+
+    renderer->texture_free_list = 0;
+    for(i32 i = 0; i < MAX_TEXTURE_COUNT - 1; i++) {
+        renderer->texture_index_array[i] = i + 1;
+    }
+    renderer->texture_index_array[MAX_TEXTURE_COUNT - 1] = -1;
+
+    u32 *white[32*32];
+    for(u32 i = 0; i < 32*32; i++) {
+        white[i] = 0xFFFF0000;
+    }
+
+    Bitmap white_bitmap;
+    white_bitmap.data = white;
+    white_bitmap.width = 32;
+    white_bitmap.height = 32;
+    gpu_texture_load((void *)renderer, &white_bitmap);
+
 
     f32 hw = (f32)renderer->view.bounds.size.width * 0.5f;
     f32 hh = (f32)renderer->view.bounds.size.height * 0.5f;
     renderer->proj_m4 = matrix_ortho(-hw, hw, -hh, hh, 0, -100.0f);
     renderer->view_m4 = matrix4x4_translation(0, 0, 0);
-
+    
     return (Gpu)renderer;
 }
 
@@ -276,8 +336,7 @@ void gpu_frame_begin(Gpu gpu) {
     [renderer->command_encoder setVertexBuffer: renderer->vbuffer offset:0 atIndex:VertexInputIndexVertices];
     [renderer->command_encoder setVertexBytes:&renderer->view_m4 length:sizeof(matrix_float4x4) atIndex:VertexInputIndexView];
     [renderer->command_encoder setVertexBytes:&renderer->proj_m4 length:sizeof(matrix_float4x4) atIndex:VertexInputIndexProj];
-
-
+    [renderer->command_encoder setFragmentTexture:renderer->texture_array atIndex:0];
 }
 
 void gpu_frame_end(Gpu gpu) {
@@ -302,12 +361,42 @@ void gpu_frame_end(Gpu gpu) {
     [renderer->command_buffer commit];
 }
 
-Texture gpu_texture_load(Bitmap *bitmap) {
-    return 0;
+Texture gpu_texture_load(Gpu gpu, Bitmap *bitmap) {
+    IosRenderer *renderer = (IosRenderer *)gpu;
+
+    if(renderer->texture_count + 1 >= MAX_TEXTURE_COUNT) {
+        return (void *)-1;
+    }
+
+    // find the next free texture index
+    i32 free_index = renderer->texture_free_list;
+    renderer->texture_free_list = renderer->texture_index_array[free_index];
+    renderer->texture_index_array[free_index] = -1;
+
+    NSUInteger bytes_per_row = 4 * bitmap->width;
+    MTLRegion region = {
+        { 0, 0, 0 },
+        {bitmap->width, bitmap->height, 1}
+    };
+    // Copy the bytes from the data object into the texture
+    [renderer->texture_array replaceRegion:region
+                               mipmapLevel:0
+                                     slice:free_index
+                                 withBytes:bitmap->data
+                               bytesPerRow:bytes_per_row
+                             bytesPerImage:0];
+    
+    renderer->texture_count++;
+    
+    return (Texture)free_index;
 }
 
-void gpu_texture_unload(Texture texture) {
-
+void gpu_texture_unload(Gpu gpu, Texture texture) {
+    IosRenderer *renderer = (IosRenderer *)gpu;
+    i32 index_to_free = (i32)texture;
+    renderer->texture_index_array[index_to_free] = renderer->texture_free_list;
+    renderer->texture_free_list = index_to_free;
+    renderer->texture_count--;
 }
 
 void gpu_shader_set(void) {
@@ -327,7 +416,7 @@ void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Textu
 
     Uniform *dst = renderer->ubuffer[renderer->current_buffer][renderer->buffer_index].contents + (sizeof(Uniform) * renderer->quad_count);
     memcpy(&dst->world, &world, sizeof(matrix_float4x4));
-    dst->texture_id = 1;
+    dst->texture_id = (i32)texture;
     renderer->quad_count++;
 
     if(renderer->quad_count == MAX_QUAD_COUNT) {
