@@ -16,7 +16,7 @@
 #include "ios_shader_types.h"
 
 #define MAX_FRAMES_IN_FLIGHT 3
-#define MAX_UBUFFER_COUNT 3
+#define MAX_UBUFFER_COUNT 1
 #define MAX_QUAD_COUNT 10000
 #define MAX_TEXTURE_COUNT 10
 
@@ -44,9 +44,11 @@ typedef struct IosRenderer {
     id<MTLRenderPipelineState> alpha_blend_state;    
     id<MTLRenderPipelineState> additive_blend_state;    
     id<MTLBuffer> vbuffer;
-    id<MTLBuffer> ubuffer[MAX_FRAMES_IN_FLIGHT][MAX_UBUFFER_COUNT];
-    u32 quad_count;
-    u32 buffer_index;
+    
+    GpuBlendState blend_state;
+    id<MTLBuffer> ubuffer[2][MAX_FRAMES_IN_FLIGHT][MAX_UBUFFER_COUNT];
+    u32 quad_count[2];
+    u32 buffer_index[2];
 
     matrix_float4x4 proj_m4;
     matrix_float4x4 view_m4;
@@ -250,9 +252,9 @@ Gpu gpu_load(struct Arena *arena) {
     additive_blend_state_desc.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
     additive_blend_state_desc.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
     additive_blend_state_desc.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
-    additive_blend_state_desc.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
-    additive_blend_state_desc.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-    additive_blend_state_desc.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+    additive_blend_state_desc.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorOne;
+    additive_blend_state_desc.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOne;
+    additive_blend_state_desc.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
 
     renderer->additive_blend_state = [renderer->device newRenderPipelineStateWithDescriptor:additive_blend_state_desc error:&error];
     if(!renderer->additive_blend_state) {
@@ -260,17 +262,21 @@ Gpu gpu_load(struct Arena *arena) {
         return nil;
     }
 
-    
-    renderer->buffer_index = 0;
-    renderer->quad_count = 0;
+    renderer->blend_state = GPU_BLEND_STATE_ALPHA;
+    renderer->buffer_index[0] = 0;
+    renderer->buffer_index[1] = 0;
+    renderer->quad_count[0] = 0;
+    renderer->quad_count[1] = 0;
     renderer->vbuffer = [renderer->device newBufferWithBytes:&quad_vertices
                                                       length:(sizeof(Vertex) * 6)
                                                      options:MTLResourceStorageModeShared];
     
     for(int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         for(int j = 0; j < MAX_UBUFFER_COUNT; j++) {
-            renderer->ubuffer[i][j] = [renderer->device newBufferWithLength:MAX_QUAD_COUNT * sizeof(Uniform)
-                                                                    options:MTLResourceCPUCacheModeDefaultCache];
+            renderer->ubuffer[0][i][j] = [renderer->device newBufferWithLength:MAX_QUAD_COUNT * sizeof(Uniform)
+                                                                       options:MTLResourceCPUCacheModeDefaultCache];
+            renderer->ubuffer[1][i][j] = [renderer->device newBufferWithLength:MAX_QUAD_COUNT * sizeof(Uniform)
+                                                                       options:MTLResourceCPUCacheModeDefaultCache];
         }
     }
     
@@ -314,11 +320,16 @@ void gpu_unload(Gpu gpu) {
 
 void gpu_frame_begin(Gpu gpu) {
     IosRenderer *renderer = (IosRenderer *)gpu;
-
+    
+    renderer->blend_state = GPU_BLEND_STATE_ALPHA;
+    
     dispatch_semaphore_wait(renderer->in_flight_semaphore, DISPATCH_TIME_FOREVER);
     renderer->current_buffer = (renderer->current_buffer + 1) % MAX_FRAMES_IN_FLIGHT;
-    renderer->buffer_index = 0;
-    renderer->quad_count = 0;
+    renderer->buffer_index[0] = 0;
+    renderer->buffer_index[1] = 0;
+    renderer->quad_count[0] = 0;
+    renderer->quad_count[1] = 0;
+
 
     MTLRenderPassDescriptor *render_pass_descriptor = renderer->view.currentRenderPassDescriptor;
     if (render_pass_descriptor == nil) {
@@ -336,12 +347,22 @@ void gpu_frame_begin(Gpu gpu) {
 
 void gpu_frame_end(Gpu gpu) {
     IosRenderer *renderer = (IosRenderer *)gpu;
-    if(renderer->quad_count > 0) {
-        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[renderer->current_buffer][renderer->buffer_index]
+    if(renderer->quad_count[0] > 0) {
+        [renderer->command_encoder setRenderPipelineState: renderer->alpha_blend_state];
+        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[0][renderer->current_buffer][renderer->buffer_index[0]]
                                             offset:0
                                            atIndex:VertexInputIndexWorld];
-        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count];
-        renderer->quad_count = 0;
+        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count[0]];
+        renderer->quad_count[0] = 0;
+    }
+    
+    if(renderer->quad_count[1] > 0) {
+        [renderer->command_encoder setRenderPipelineState: renderer->additive_blend_state];
+        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[1][renderer->current_buffer][renderer->buffer_index[1]]
+                                            offset:0
+                                           atIndex:VertexInputIndexWorld];
+        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count[1]];
+        renderer->quad_count[1] = 0;
     }
 
     [renderer->command_encoder endEncoding];
@@ -394,8 +415,10 @@ void gpu_texture_unload(Gpu gpu, Texture texture) {
     renderer->texture_count--;
 }
 
-void gpu_shader_set(void) {
 
+void gpu_blend_state_set(Gpu gpu, GpuBlendState blend_state) {
+    IosRenderer *renderer = (IosRenderer *)gpu;
+    renderer->blend_state = blend_state;
 }
 
 void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Texture texture) {
@@ -404,26 +427,32 @@ void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Textu
     matrix_float4x4 rot = matrix4x4_rotation_z(angle);
     matrix_float4x4 scale = matrix4x4_scale(w, h, 1);
     matrix_float4x4 world = matrix_multiply(trans, matrix_multiply(rot, scale));
-
-    if(renderer->buffer_index == MAX_UBUFFER_COUNT) {
+    
+    u32 i = renderer->blend_state;
+    if(renderer->buffer_index[i] == MAX_UBUFFER_COUNT) {
         return;
     }
-
-    Uniform *dst = renderer->ubuffer[renderer->current_buffer][renderer->buffer_index].contents + (sizeof(Uniform) * renderer->quad_count);
+    Uniform *dst = renderer->ubuffer[i][renderer->current_buffer][renderer->buffer_index[i]].contents + (sizeof(Uniform) * renderer->quad_count[i]);
     memcpy(&dst->world, &world, sizeof(matrix_float4x4));
     dst->texture_id = (i32)texture;
     dst->color.x = 1.0;
     dst->color.y = 1.0;
     dst->color.z = 1.0;
-    renderer->quad_count++;
+    renderer->quad_count[i]++;
 
-    if(renderer->quad_count == MAX_QUAD_COUNT) {
-        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[renderer->current_buffer][renderer->buffer_index]
+    if(renderer->quad_count[i] == MAX_QUAD_COUNT) {
+        if(i == GPU_BLEND_STATE_ALPHA) {
+            [renderer->command_encoder setRenderPipelineState: renderer->alpha_blend_state];
+        }
+        else {
+            [renderer->command_encoder setRenderPipelineState: renderer->additive_blend_state];
+        }
+        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[i][renderer->current_buffer][renderer->buffer_index[i]]
                                             offset:0
                                            atIndex:VertexInputIndexWorld];
-        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count];
-        renderer->quad_count = 0;
-        renderer->buffer_index++;
+        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count[i]];
+        renderer->quad_count[i] = 0;
+        renderer->buffer_index[i]++;
     }
 }
 
@@ -434,25 +463,31 @@ void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V3 colo
     matrix_float4x4 scale = matrix4x4_scale(w, h, 1);
     matrix_float4x4 world = matrix_multiply(trans, matrix_multiply(rot, scale));
 
-    if(renderer->buffer_index == MAX_UBUFFER_COUNT) {
+    u32 i = renderer->blend_state;
+    if(renderer->buffer_index[i] == MAX_UBUFFER_COUNT) {
         return;
     }
-
-    Uniform *dst = renderer->ubuffer[renderer->current_buffer][renderer->buffer_index].contents + (sizeof(Uniform) * renderer->quad_count);
+    Uniform *dst = renderer->ubuffer[i][renderer->current_buffer][renderer->buffer_index[i]].contents + (sizeof(Uniform) * renderer->quad_count[i]);
     memcpy(&dst->world, &world, sizeof(matrix_float4x4));
     dst->texture_id = 0;
     dst->color.x = color.x;
     dst->color.y = color.y;
     dst->color.z = color.z;
-    renderer->quad_count++;
+    renderer->quad_count[i]++;
 
-    if(renderer->quad_count == MAX_QUAD_COUNT) {
-        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[renderer->current_buffer][renderer->buffer_index]
+    if(renderer->quad_count[i] == MAX_QUAD_COUNT) {
+        if(i == GPU_BLEND_STATE_ALPHA) {
+            [renderer->command_encoder setRenderPipelineState: renderer->alpha_blend_state];
+        }
+        else {
+            [renderer->command_encoder setRenderPipelineState: renderer->additive_blend_state];
+        }
+        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[i][renderer->current_buffer][renderer->buffer_index[i]]
                                             offset:0
                                            atIndex:VertexInputIndexWorld];
-        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count];
-        renderer->quad_count = 0;
-        renderer->buffer_index++;
+        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count[i]];
+        renderer->quad_count[i] = 0;
+        renderer->buffer_index[i]++;
     }
 }
 
@@ -545,7 +580,7 @@ void gpu_resize(Gpu gpu, u32 w, u32 h) {
 
     tmp_view = (MTKView *)self.view;
     tmp_view.device = MTLCreateSystemDefaultDevice();
-    tmp_view.clearColor = MTLClearColorMake(0.0, 0.5, 1.0, 1.0);
+    tmp_view.clearColor = MTLClearColorMake(0.2, 0.5, 0.7, 1.0);
     
     _metal_view_delegate = [[MetalViewDelegate alloc] initWithMetalKitView:tmp_view];
     if(!_metal_view_delegate) {

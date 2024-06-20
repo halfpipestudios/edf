@@ -31,6 +31,9 @@ void game_init(Memory *memory) {
   gs->angle = 0;
   gs->bitmap = bitmap_load(&gs->platform_arena, "Player.png");
   gs->texture = gpu_texture_load(gs->gpu, &gs->bitmap);
+
+  gs->orbe_bitmap = bitmap_load(&gs->platform_arena, "orbe.png");
+  gs->orbe_texture = gpu_texture_load(gs->gpu, &gs->orbe_bitmap);
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {
@@ -46,6 +49,13 @@ void game_render(Memory *memory) {
     f32 scale = 10;
     gpu_draw_quad_texture(gs->gpu, 0, 0, gs->bitmap.width * scale,
                         gs->bitmap.height * scale, 0, gs->texture);
+
+    gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ADDITIVE);
+    gpu_draw_quad_texture(gs->gpu, -100, 500, gs->orbe_bitmap.width * scale, gs->orbe_bitmap.height * scale, 0, gs->orbe_texture);
+    gpu_draw_quad_texture(gs->gpu, 0, 600, gs->orbe_bitmap.width * scale, gs->orbe_bitmap.height * scale, 0, gs->orbe_texture);
+    gpu_draw_quad_texture(gs->gpu, 0, 450, gs->orbe_bitmap.width * scale, gs->orbe_bitmap.height * scale, 0, gs->orbe_texture);
+    gpu_draw_quad_texture(gs->gpu,  100, 500, gs->orbe_bitmap.width * scale, gs->orbe_bitmap.height * scale, 0, gs->orbe_texture);
+    gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ALPHA);
 
     gpu_draw_quad_color(gs->gpu, 200, 400, 100, 200, gs->angle, v3(1, 0, 0));
 
