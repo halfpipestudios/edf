@@ -33,6 +33,9 @@ void game_init(Memory *memory) {
   gs->bitmap1 = bitmap_load(&gs->platform_arena, "button_in.png");
   gs->texture = gpu_texture_load(gs->gpu, &gs->bitmap);
   gs->texture1 = gpu_texture_load(gs->gpu, &gs->bitmap1);
+
+  gs->orbe_bitmap = bitmap_load(&gs->platform_arena, "orbe.png");
+  gs->orbe_texture = gpu_texture_load(gs->gpu, &gs->orbe_bitmap);
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {
@@ -42,27 +45,38 @@ void game_update(Memory *memory, Input *input, f32 dt) {
 }
 
 void game_render(Memory *memory) {
-    GameState *gs = game_state(memory);
-    gpu_frame_begin(gs->gpu);
+  GameState *gs = game_state(memory);
+  gpu_frame_begin(gs->gpu);
 
-    f32 scale = 10;
-    gpu_draw_quad_texture(gs->gpu, 0, 0, gs->bitmap.width * scale,
+  f32 scale = 10;
+  gpu_draw_quad_texture(gs->gpu, 0, 0, gs->bitmap.width * scale,
                         gs->bitmap.height * scale, gs->angle, gs->texture);
 
-    gpu_draw_quad_texture(gs->gpu, 0, -600, gs->bitmap1.width * scale,
-                          gs->bitmap1.height * scale, gs->angle, gs->texture1);
+  gpu_draw_quad_texture(gs->gpu, 0, -600, gs->bitmap1.width * scale,
+                        gs->bitmap1.height * scale, gs->angle, gs->texture1);
 
-    gpu_draw_quad_color(gs->gpu, 200, 400, 100, 200, gs->angle, v3(1, 0, 0));
+  gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ADDITIVE);
+  gpu_draw_quad_texture(gs->gpu, -100, 500, gs->orbe_bitmap.width * scale,
+                        gs->orbe_bitmap.height * scale, 0, gs->orbe_texture);
+  gpu_draw_quad_texture(gs->gpu, 0, 600, gs->orbe_bitmap.width * scale,
+                        gs->orbe_bitmap.height * scale, 0, gs->orbe_texture);
+  gpu_draw_quad_texture(gs->gpu, 0, 450, gs->orbe_bitmap.width * scale,
+                        gs->orbe_bitmap.height * scale, 0, gs->orbe_texture);
+  gpu_draw_quad_texture(gs->gpu, 100, 500, gs->orbe_bitmap.width * scale,
+                        gs->orbe_bitmap.height * scale, 0, gs->orbe_texture);
+  gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ALPHA);
 
-    gpu_frame_end(gs->gpu);
+  gpu_draw_quad_color(gs->gpu, 200, 400, 100, 200, gs->angle, v3(1, 0, 0));
+
+  gpu_frame_end(gs->gpu);
 }
 
 void game_shutdown(Memory *memory) {
-    GameState *gs = game_state(memory);
-    gpu_unload(gs->gpu);
+  GameState *gs = game_state(memory);
+  gpu_unload(gs->gpu);
 }
 
 void game_resize(struct Memory *memory, u32 w, u32 h) {
-    GameState *gs = game_state(memory);
-    gpu_resize(gs->gpu, w, h);
+  GameState *gs = game_state(memory);
+  gpu_resize(gs->gpu, w, h);
 }

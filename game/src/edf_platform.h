@@ -40,6 +40,11 @@ typedef struct File {
     sz size;
 } File;
 
+typedef enum GpuBlendState {
+    GPU_BLEND_STATE_ALPHA,
+    GPU_BLEND_STATE_ADDITIVE
+} GpuBlendState;
+
 typedef void *Texture;
 typedef void *Sound;
 typedef void *Gpu;
@@ -57,7 +62,7 @@ void gpu_frame_begin(Gpu gpu);
 void gpu_frame_end(Gpu gpu);
 Texture gpu_texture_load(Gpu gpu, Bitmap *bitmap);
 void gpu_texture_unload(Gpu gpu, Texture texture);
-void gpu_shader_set(void);
+void gpu_blend_state_set(Gpu gpu, GpuBlendState blend_state);
 void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle,
                            Texture texture);
 void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle,

@@ -163,6 +163,11 @@ void gpu_resize(Gpu gpu, u32 w, u32 h) {
     glUniformMatrix4fv(location, 1, true, projection.m);
 }
 
+void gpu_blend_state_set(Gpu gpu, GpuBlendState blend_state) {
+    (void)gpu; (void)blend_state;
+}
+
+
 JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameInit(JNIEnv *env, jobject thiz, jobject manager) {
     (void)thiz;
     asset_manager_ref = (*env)->NewLocalRef(env, manager);
