@@ -14,6 +14,16 @@
 static jobject *asset_manager_ref   = 0;
 static AAssetManager *asset_manager = 0;
 static Memory global_memory;
+static u32 global_display_width;
+static u32 global_display_height;
+
+u32 os_display_width() {
+    return global_display_width;
+}
+
+u32 os_display_height() {
+    return global_display_height;
+}
 
 File os_file_read(struct Arena *arena, char *path) {
     AAsset *asset = AAssetManager_open(asset_manager, path, AASSET_MODE_BUFFER);
@@ -197,4 +207,6 @@ JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gpuSetViewport(JNIEnv 
     (void) env;
     (void) thiz;
     game_resize(&global_memory, w, h);
+    global_display_width  = w;
+    global_display_height = h;
 }

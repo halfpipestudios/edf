@@ -8,18 +8,18 @@
 struct Memory;
 
 typedef struct GameState {
-  Gpu gpu;
-  Arena platform_arena;
-  f32 angle;
+      Gpu gpu;
+      Arena platform_arena;
+      f32 angle;
 
-  Bitmap bitmap;
-  Texture texture;
+      Bitmap bitmap;
+      Texture texture;
 
-  Bitmap bitmap1;
-  Texture texture1;
+      Bitmap bitmap1;
+      Texture texture1;
 
-  Bitmap orbe_bitmap;
-  Texture orbe_texture;
+      Bitmap orbe_bitmap;
+      Texture orbe_texture;
 
 } GameState;
 
