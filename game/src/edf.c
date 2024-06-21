@@ -30,7 +30,7 @@ void game_init(Memory *memory) {
     gs->gpu = gpu_load(&gs->platform_arena);
     gs->angle = 0;
     gs->bitmap = bitmap_load(&gs->platform_arena, "Player.png");
-    gs->bitmap1 = bitmap_load(&gs->platform_arena, "button_in.png");
+    gs->bitmap1 = bitmap_load(&gs->platform_arena, "button_out.png");
     gs->texture = gpu_texture_load(gs->gpu, &gs->bitmap);
     gs->texture1 = gpu_texture_load(gs->gpu, &gs->bitmap1);
 
@@ -51,7 +51,7 @@ void game_render(Memory *memory) {
 
     gpu_frame_begin(gs->gpu);
 
-    gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v3(0.3f, 0.3f, 0.3f));
+    gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v3(0.1f, 0.1f, 0.15f));
 
     f32 scale = 10;
     gpu_draw_quad_texture(gs->gpu, 0, 0, gs->bitmap.width * scale,

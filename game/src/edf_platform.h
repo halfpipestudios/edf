@@ -55,8 +55,8 @@ Wave wave_load(struct Arena *Arena, char *path);
 
 File os_file_read(struct Arena *arena, char *path);
 bool os_file_write(u8 *data, sz size);
-u32 os_display_width();
-u32 os_display_height();
+u32 os_display_width(void);
+u32 os_display_height(void);
 
 Gpu gpu_load(struct Arena *arena);
 void gpu_unload(Gpu gpu);

@@ -64,7 +64,8 @@ typedef struct IosRenderer {
 
 // globals variables
 static Memory g_memory;
-
+static u32 g_view_width;
+static u32 g_view_height;
 // temporal globals (after the gpu_load this variables are set to nil)
 static MTKView *tmp_view;
 
@@ -189,6 +190,14 @@ File os_file_read(struct Arena *arena, char *path) {
 
 bool os_file_write(u8 *data, sz size) {
     return false;
+}
+
+u32 os_display_width(void) {
+    return g_view_width;
+}
+
+u32 os_display_height(void) {
+    return g_view_height;
 }
 
 Gpu gpu_load(struct Arena *arena) {
@@ -497,7 +506,6 @@ void gpu_camera_set(V3 pos, f32 angle) {
 
 
 void gpu_resize(Gpu gpu, u32 w, u32 h) {
-    
     IosRenderer *renderer = (IosRenderer *)gpu;
     f32 hw = (f32)w * 0.5f;
     f32 hh = (f32)h * 0.5f;
@@ -553,6 +561,8 @@ void gpu_resize(Gpu gpu, u32 w, u32 h) {
 }
 
 - (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size {
+    g_view_width = size.width;
+    g_view_height = size.height;
     game_resize(&g_memory, size.width, size.height);
 }
 @end
@@ -597,6 +607,8 @@ void gpu_resize(Gpu gpu, u32 w, u32 h) {
     game_init(&g_memory);
 
     [_metal_view_delegate mtkView:tmp_view drawableSizeWillChange:tmp_view.drawableSize];
+    
+    tmp_view = nil;
 }
 
 @end
