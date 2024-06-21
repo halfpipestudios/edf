@@ -32,6 +32,7 @@ File os_file_read(struct Arena *arena, char *path) {
     file.data = arena_push(arena, file.size+1, 8);
     memcpy(file.data, AAsset_getBuffer(asset), file.size);
     ((u8 *)file.data)[file.size] = 0;
+    AAsset_close(asset);
     return file;
 }
 
@@ -211,7 +212,6 @@ JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameUpdate(JNIEnv *env
 JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameRender(JNIEnv *env, jobject thiz) {
     (void)env;
     (void)thiz;
-
     game_render(&global_memory);
 }
 
