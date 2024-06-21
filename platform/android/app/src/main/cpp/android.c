@@ -36,6 +36,12 @@ File os_file_read(struct Arena *arena, char *path) {
     return file;
 }
 
+bool os_file_write(u8 *data, sz size) {
+    unused(data);
+    unused(size);
+    return false;
+}
+
 Gpu gpu_load(struct Arena *arena) {
 
     const char *version = (const char *)glGetString(GL_VERSION);
@@ -105,6 +111,49 @@ void gpu_frame_begin(Gpu gpu) {
 
 void gpu_frame_end(Gpu gpu) {
     OpenglGPU *renderer = (OpenglGPU *)gpu;
+
+    // draw texture atlas test
+
+    float angle = 0;
+
+    float window_w = (f32)os_display_width();
+    float window_h = (f32)os_display_height();
+
+    float ratio = (f32)renderer->atlas.bitmap.height / (f32)renderer->atlas.bitmap.width;
+    float render_scale = 4;
+    float w = (f32)renderer->atlas.bitmap.width  * render_scale;
+    float h = w * ratio;
+
+    float padding = 64;
+
+    float x = (-window_w/2) + (w/2) + padding;
+    float y = (window_h/2) - (h/2) - padding;
+
+    M4 translate = m4_translate(v3(x, y, 0));
+    M4 rotate = m4_rotate_z(angle);
+    M4 scale = m4_scale(v3(w, h, 1));
+    M4 world = m4_mul(translate, m4_mul(rotate, scale));
+
+    OpenglQuad quad;
+    V2 uvs[array_len(quad.vertex)] = {
+        {1, 1}, // bottom right
+        {0, 1}, // bottom left
+        {0, 0}, // top left
+        {1, 1}, // bottom right
+        {0, 0}, // bottom right
+        {1, 0}  // top right
+    };
+
+    for(u32 i = 0; i < array_len(quad.vertex); ++i) {
+        V3 vertex = m4_mul_v3(world, vertices[i]);
+        quad.vertex[i].pos = v2(vertex.x, vertex.y);
+        quad.vertex[i].color = v3(1, 1, 1);
+        quad.vertex[i].uvs = uvs[i];
+    }
+    quad_batch_push(renderer, quad);
+
+    // -----------------------------------------------
+
     quad_batch_flush(renderer);
 }
 
