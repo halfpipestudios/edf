@@ -49,3 +49,12 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 }
+
+tasks.register<Copy>("copyContent") {
+    from("../../../game/assets")
+    into("src/main/assets")
+}
+
+tasks.named("preBuild") {
+    dependsOn("copyContent")
+}

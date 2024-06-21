@@ -16,6 +16,9 @@ typedef struct GameState {
   Bitmap bitmap;
   Texture texture;
 
+  Bitmap bitmap1;
+  Texture texture1;
+
 } GameState;
 
 #define game_state(memory) ((GameState *)(memory)->data);
