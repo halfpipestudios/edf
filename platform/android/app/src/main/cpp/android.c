@@ -93,6 +93,8 @@ void gpu_frame_begin(Gpu gpu) {
         logd("Game", "Total platform memory used: %zuKB\n", renderer->arena->used/1024);
     }
 
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     glClear(GL_COLOR_BUFFER_BIT);
     glClearColor(0, 0.5f, 1, 1.0f);
 
@@ -174,9 +176,19 @@ void gpu_resize(Gpu gpu, u32 w, u32 h) {
 }
 
 void gpu_blend_state_set(Gpu gpu, GpuBlendState blend_state) {
-    (void)gpu; (void)blend_state;
-}
+    OpenglGPU *renderer = (OpenglGPU *)gpu;
 
+    quad_batch_flush(renderer);
+
+    if(blend_state == GPU_BLEND_STATE_ALPHA) {
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    } else if(blend_state == GPU_BLEND_STATE_ADDITIVE) {
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    } else {
+        assert(!"Invalid code path");
+    }
+
+}
 
 JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameInit(JNIEnv *env, jobject thiz, jobject manager) {
     (void)thiz;
