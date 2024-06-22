@@ -9,6 +9,7 @@
 #define IOS_SOUND_H
 
 #include "edf_common.h"
+#include "edf_platform.h"
 
 #include <AudioUnit/AudioUnit.h>
 #include <AudioToolbox/AudioToolbox.h>
@@ -17,13 +18,8 @@ struct Arena;
 
 typedef i32 IosSoundHandle;
 
-typedef struct IosSoundStream {
-    void *data;
-    sz size;
-} IosSoundStream;
-
 typedef struct IosSoundChannel {
-    IosSoundStream stream;
+    Wave stream;
     i32 sample_count;
     i32 current_sample;
     i32 next;
@@ -42,10 +38,14 @@ typedef struct IosSoundSystem {
 } IosSoundSystem;
 
 void IosSoundSysInit(struct Arena *arena, IosSoundSystem *sound_sys, i32 max_channels);
-IosSoundHandle IosSoundSysAdd(IosSoundSystem *sound_sys, IosSoundStream stream, bool playing, bool looping);
+IosSoundHandle IosSoundSysAdd(IosSoundSystem *sound_sys, Wave stream, bool playing, bool looping);
 void IosSoundSysRemove(IosSoundSystem *sound_sys, IosSoundHandle *out_handle);
 void IosSoundSysPlay(IosSoundSystem *sound_sys, IosSoundHandle handle);
 void IosSoundSysPause(IosSoundSystem *sound_sys, IosSoundHandle handle);
 void IosSoundSysRestart(IosSoundSystem *sound_sys, IosSoundHandle handle);
+
+OSStatus CoreAudioCallback(void *in_ref_con, AudioUnitRenderActionFlags *io_action_flags,
+                           const AudioTimeStamp *in_time_stamp, UInt32 in_bus_number,
+                           UInt32 in_number_frames, AudioBufferList *io_data);
 
 #endif /* IOS_SOUND_H */

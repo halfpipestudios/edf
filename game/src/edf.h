@@ -10,6 +10,7 @@ struct Memory;
 
 typedef struct GameState {
     Gpu gpu;
+    Spu spu;
     Arena platform_arena;
 
     Font *arial;
@@ -28,6 +29,9 @@ typedef struct GameState {
 
     Bitmap laser_bitmap;
     Texture laser_texture;
+
+    Wave test_wave;
+    Sound test_sound;
 
 } GameState;
 

@@ -40,7 +40,7 @@ void IosSoundSysInit(struct Arena *arena, IosSoundSystem *sound_sys, i32 max_cha
     }
 }
 
-IosSoundHandle IosSoundSysAdd(IosSoundSystem *sound_sys, IosSoundStream stream,
+IosSoundHandle IosSoundSysAdd(IosSoundSystem *sound_sys, Wave stream,
                               bool playing, bool looping) {
 
     if((sound_sys->channel_used + 1) > sound_sys->channel_count) {

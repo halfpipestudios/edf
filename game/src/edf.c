@@ -5,6 +5,43 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+typedef struct WaveFileHeader {
+	//the main chunk
+	u8 szChunkID[4];
+	u32 nChunkSize;
+	u8 szFormat[4];
+
+	//sub chunk 1 "fmt "
+	u8 szSubChunk1ID[4];
+	u32 nSubChunk1Size;
+	u16 nAudioFormat;
+	u16 nNumChannels;
+	u32 nSampleRate;
+	u32 nByteRate;
+	u16 nBlockAlign;
+	u16 nBitsPerSample;
+
+	//sub chunk 2 "data"
+	u8 szSubChunk2ID[4];
+	u32 nSubChunk2Size;
+
+	//then comes the data!
+} WaveFileHeader;
+
+Wave wave_load(Arena *arena, char *path) {
+    File file = os_file_read(arena, path);
+    Wave wave = {0};
+    WaveFileHeader *header = (WaveFileHeader *)file.data;
+    void *data = ((u8 *)file.data + sizeof(WaveFileHeader)); 
+    if(!data) {
+        return wave;
+    }
+    wave.data = data;
+    wave.size = header->nSubChunk2Size;
+    return wave;
+}
+
+
 Bitmap bitmap_load(Arena *arena, char *path) {
     File file = os_file_read(arena, path);
     Bitmap bitmap = {0};
@@ -47,8 +84,9 @@ void game_init(Memory *memory) {
     game_state_init(memory);
     GameState *gs = game_state(memory);
 
-    gs->platform_arena = arena_create(memory, mb(20));
+    gs->platform_arena = arena_create(memory, mb(100));
     gs->gpu = gpu_load(&gs->platform_arena);
+    gs->spu = spu_load(&gs->platform_arena);
 
     gs->arial = font_load(gs->gpu, &gs->platform_arena, "arial.ttf", 128);
     gs->times = font_load(gs->gpu, &gs->platform_arena, "times.ttf", 64);
@@ -65,6 +103,13 @@ void game_init(Memory *memory) {
 
     gs->laser_bitmap = bitmap_load(&gs->platform_arena, "laser.png");
     gs->laser_texture = gpu_texture_load(gs->gpu, &gs->laser_bitmap);
+
+    gs->test_wave = wave_load(&gs->platform_arena, "test.wav");
+    gs->test_sound = spu_sound_add(gs->spu, gs->test_wave, true, true);
+
+    // File write test
+    u32 numbres[5] = { 10, 11, 12, 13, 14};
+    os_file_write(numbres, sizeof(u32) * 5, "save.bin");
 
 }
 
@@ -116,8 +161,6 @@ void game_render(Memory *memory) {
                         gs->bitmap1.h * scale, gs->angle, gs->texture1);
 
     gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ADDITIVE);
-
-
     gpu_draw_quad_texture(gs->gpu, -100, 500, gs->orbe_bitmap.w * scale,
                         gs->orbe_bitmap.h * scale, 0, gs->orbe_texture);
     gpu_draw_quad_texture(gs->gpu, 0, 600, gs->orbe_bitmap.w * scale,
@@ -147,12 +190,14 @@ void game_resize(Memory *memory, u32 w, u32 h) {
     gpu_resize(gs->gpu, w, h);
 }
 
-void game_touches_down(Memory *memory, Input *input) {
-    os_print("down\n");
+void game_touches_down(struct Memory *memory, struct Input *input) {
+
 }
 
-void game_touches_up(Memory *memory, Input *input) {
+void game_touches_up(struct Memory *memory, struct Input *input) {
+
 }
 
-void game_touches_move(Memory *memory, Input *input) {
+void game_touches_move(struct Memory *memory, struct Input *input) {
+
 }

@@ -30,7 +30,8 @@ typedef struct Bitmap {
 } Bitmap;
 
 typedef struct Wave {
-    int unused;
+    void *data;
+    sz size;
 } Wave;
 
 typedef struct File {
@@ -56,7 +57,7 @@ void bitmap_copy_u8_u32(struct Arena *arena, Bitmap *bitmap8, Bitmap *bitmap32);
 Wave wave_load(struct Arena *Arena, char *path);
 
 File os_file_read(struct Arena *arena, char *path);
-bool os_file_write(u8 *data, sz size);
+bool os_file_write(u8 *data, sz size, char *path);
 u32 os_display_width(void);
 u32 os_display_height(void);
 void os_print(char *message, ...);
@@ -77,10 +78,12 @@ void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle,
 void gpu_camera_set(Gpu gpu, V3 pos, f32 angle);
 void gpu_resize(Gpu gpu, u32 w, u32 h);
 
+
 Spu spu_load(struct Arena *arena);
 void spu_unload(Spu spu);
 void spu_clear(Spu spu);
-Sound spu_add(Spu spu, Wave wave);
+Sound spu_sound_add(Spu spu, Wave wave, bool playing, bool looping);
+void spu_sound_remove(Spu spu, Sound sound);
 void spu_sound_play(Spu spu, Sound sound);
 void spu_sound_pause(Spu spu, Sound sound);
 void spu_sound_restart(Spu spu, Sound sound);
