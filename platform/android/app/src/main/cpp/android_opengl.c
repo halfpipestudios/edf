@@ -15,7 +15,7 @@ OpenglTexture *texture_atlas_add_bitmap(Arena *arena, OpenglTextureAtlas *atlas,
 
     OpenglTexture *texture = atlas->textures + (*bucket);
 
-    texture->bitmap = bitmap_copy(arena, bitmap, sizeof(u32));
+    texture->bitmap = bitmap;
     texture->dim = r2_set_invalid();
 
     return texture;
@@ -31,11 +31,11 @@ void texture_atlas_sort_textures_per_height(OpenglTextureAtlas *atlas) {
 
             u32 *bucket = atlas->buckets + i;
             OpenglTexture *texture = atlas->textures + (*bucket);
-            u32 h = texture->bitmap.height;
+            u32 h = texture->bitmap->height;
 
             u32 *other_bucket = atlas->buckets + j;
             OpenglTexture *other_texture = atlas->textures + (*other_bucket);
-            u32 other_h = other_texture->bitmap.height;
+            u32 other_h = other_texture->bitmap->height;
 
             if(h < other_h) {
                 u32 temp = *bucket;
@@ -59,7 +59,7 @@ void texture_atlas_calculate_size_and_alloc(Arena *arena, OpenglTextureAtlas *at
 
         u32 *bucket = atlas->buckets + i;
         OpenglTexture *texture = atlas->textures + (*bucket);
-        Bitmap *bitmap = &texture->bitmap;
+        Bitmap *bitmap = texture->bitmap;
         assert(bitmap);
 
         if(i == 0) {
@@ -95,7 +95,7 @@ void texture_atlas_insert_textures(OpenglTextureAtlas *atlas) {
 
         u32 *bucket = atlas->buckets + i;
         OpenglTexture *texture = atlas->textures + (*bucket);
-        Bitmap *bitmap = &texture->bitmap;
+        Bitmap *bitmap = texture->bitmap;
         assert(bitmap);
 
         if(i == 0) {
@@ -118,7 +118,7 @@ void texture_atlas_insert_textures(OpenglTextureAtlas *atlas) {
             i32 yy = y + (i32)atlas->current_y;
             for(i32 x = 0; x < bitmap->width; ++x) {
                 i32 xx = x + (i32)atlas->current_x;
-                ((u32 *)atlas->bitmap.data)[yy*atlas->bitmap.width+xx] = ((u32 *)texture->bitmap.data)[y*bitmap->width+x];
+                ((u32 *)atlas->bitmap.data)[yy*atlas->bitmap.width+xx] = ((u32 *)texture->bitmap->data)[y*bitmap->width+x];
             }
         }
 

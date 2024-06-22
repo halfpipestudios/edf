@@ -30,7 +30,7 @@ typedef struct OpenglQuad {
 typedef struct OpenglTexture {
     V2 min, max;
     R2 dim;
-    Bitmap bitmap;
+    Bitmap *bitmap;
 } OpenglTexture;
 
 #define TEXTURE_ATLAS_START_WIDTH 512

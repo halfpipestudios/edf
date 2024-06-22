@@ -7,8 +7,14 @@
 
 #include <edf_platform.h>
 
+typedef struct Glyph {
+    Texture texture;
+    Bitmap bitmap;
+    i32 codepoint;
+} Glyph;
+
 typedef struct Font {
-    Texture *glyphs;
+    Glyph *glyphs;
     u32 glyphs_count;
 } Font;
 

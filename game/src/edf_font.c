@@ -9,6 +9,10 @@
 #include <stb_truetype.h>
 
 Font *font_load(Gpu gpu, Arena *arena, char *path) {
+    Font *result = arena_push(arena, sizeof(*result), 8);
+    result->glyphs_count =  ((i32)'~') - ((i32)' ');
+    result->glyphs = arena_push(arena, sizeof(*result->glyphs)*result->glyphs_count, 8);
+
     File file = os_file_read(arena, path);
 
     stbtt_fontinfo font;
@@ -17,6 +21,9 @@ Font *font_load(Gpu gpu, Arena *arena, char *path) {
     float scale = stbtt_ScaleForPixelHeight(&font, 64);
 
     for(i32 codepoint = (i32)' '; codepoint <= (i32)'~'; ++codepoint) {
+
+        Glyph *glyph = result->glyphs + (codepoint - (i32)' ');
+
         i32 x0, y0, x1, y1;
         stbtt_GetCodepointBitmapBox(&font, codepoint, scale, scale, &x0, &y0, &x1, &y1);
 
@@ -24,13 +31,12 @@ Font *font_load(Gpu gpu, Arena *arena, char *path) {
         stbtt_MakeCodepointBitmap(&font, (unsigned char *)bitmap8.data,
                                   (i32)bitmap8.width, (i32)bitmap8.height, (i32)bitmap8.width, scale, scale, codepoint);
 
-        Bitmap bitmap32 = bitmap_copy_u8_u32(arena, &bitmap8);
-        if(bitmap32.width != 0 && bitmap32.height != 0) {
-            Texture font_texture = gpu_texture_load(gpu, &bitmap32);
-        }
+        glyph->bitmap = bitmap_copy_u8_u32(arena, &bitmap8);
+
+        glyph->texture = gpu_texture_load(gpu, &glyph->bitmap);
     }
 
-    return 0;
+    return result;
 }
 
 void font_unload(Gpu gpu, Font *font) {
