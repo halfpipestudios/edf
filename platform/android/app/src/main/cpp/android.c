@@ -91,9 +91,7 @@ void gpu_unload(Gpu gpu) {
 }
 
 void gpu_frame_begin(Gpu gpu) {
-
     OpenglGPU *renderer = (OpenglGPU *)gpu;
-
     if(renderer->load_textures) {
         texture_atlas_generate(renderer->arena, &renderer->atlas);
         renderer->load_textures = false;
@@ -101,7 +99,6 @@ void gpu_frame_begin(Gpu gpu) {
     }
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     glClear(GL_COLOR_BUFFER_BIT);
     glClearColor(0, 0.5f, 1, 1.0f);
 
@@ -114,13 +111,15 @@ void gpu_frame_end(Gpu gpu) {
 
     // draw texture atlas test
 
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     float angle = 0;
 
     float window_w = (f32)os_display_width();
     float window_h = (f32)os_display_height();
 
     float ratio = (f32)renderer->atlas.bitmap.height / (f32)renderer->atlas.bitmap.width;
-    float render_scale = 4;
+    float render_scale = 1;
     float w = (f32)renderer->atlas.bitmap.width  * render_scale;
     float h = w * ratio;
 
@@ -159,7 +158,7 @@ void gpu_frame_end(Gpu gpu) {
 
 Texture gpu_texture_load(Gpu gpu, Bitmap *bitmap) {
     OpenglGPU *renderer = (OpenglGPU *)gpu;
-    OpenglTexture *texture = texture_atlas_add_bitmap(&renderer->atlas, bitmap);
+    OpenglTexture *texture = texture_atlas_add_bitmap(renderer->arena, &renderer->atlas, bitmap);
     return (Texture)texture;
 }
 

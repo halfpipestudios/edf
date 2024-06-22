@@ -7,7 +7,7 @@
 
 V3 v3(f32 x, f32 y, f32 z) { return (V3){x, y, z}; }
 
-Bitmap bitmap_load(struct Arena *arena, char *path) {
+Bitmap bitmap_load(Arena *arena, char *path) {
     File file = os_file_read(arena, path);
     Bitmap bitmap = {0};
     i32 width, height, channels;
@@ -22,13 +22,42 @@ Bitmap bitmap_load(struct Arena *arena, char *path) {
     return bitmap;
 }
 
+Bitmap bitmap_empty(Arena *arena, i32 w, i32 h, sz pixel_size) {
+    Bitmap result;
+    result.width = w;
+    result.height = h;
+    result.data = arena_push(arena, w*h*pixel_size, 8);
+    return result;
+}
+
+Bitmap bitmap_copy_u8_u32(Arena *arena, Bitmap *bitmap) {
+    Bitmap result = bitmap_empty(arena, (i32)bitmap->width, (i32)bitmap->height, sizeof(u32));
+    for(u32 y = 0; y < bitmap->height; ++y) {
+        for(u32 x = 0; x < bitmap->width; ++x) {
+            u8 src = ((u8 *)bitmap->data)[y*bitmap->width+x];
+            ((u32 *)result.data)[y*result.width+x] = (src << 24) | (src << 16) | (src << 8) | src;
+        }
+    }
+    return result;
+}
+
+Bitmap bitmap_copy(struct Arena *arena, Bitmap *bitmap, sz pixel_size) {
+    Bitmap result = bitmap_empty(arena, (i32)bitmap->width, (i32)bitmap->height, pixel_size);
+    memcpy(result.data, bitmap->data, bitmap->width*bitmap->height*pixel_size);
+    return result;
+}
+
 void game_init(Memory *memory) {
     game_state_init(memory);
     GameState *gs = game_state(memory);
 
     gs->platform_arena = arena_create(memory, mb(20));
     gs->gpu = gpu_load(&gs->platform_arena);
+
+    gs->font = font_load(gs->gpu, &gs->platform_arena, "arial.ttf");
+
     gs->angle = 0;
+
     gs->bitmap = bitmap_load(&gs->platform_arena, "Player.png");
     gs->bitmap1 = bitmap_load(&gs->platform_arena, "button_out.png");
     gs->texture = gpu_texture_load(gs->gpu, &gs->bitmap);
@@ -36,11 +65,15 @@ void game_init(Memory *memory) {
 
     gs->orbe_bitmap = bitmap_load(&gs->platform_arena, "orbe.png");
     gs->orbe_texture = gpu_texture_load(gs->gpu, &gs->orbe_bitmap);
+
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {
     GameState *gs = game_state(memory);
     gs->angle += dt;
+    if(gs->angle == 2*3.14) {
+        gs->angle = 0;
+    }
 }
 
 void game_render(Memory *memory) {

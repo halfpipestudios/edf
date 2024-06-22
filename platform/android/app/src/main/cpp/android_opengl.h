@@ -30,7 +30,7 @@ typedef struct OpenglQuad {
 typedef struct OpenglTexture {
     V2 min, max;
     R2 dim;
-    Bitmap *bitmap;
+    Bitmap bitmap;
 } OpenglTexture;
 
 #define TEXTURE_ATLAS_START_WIDTH 512
@@ -48,7 +48,7 @@ typedef struct OpenglTextureAtlas {
     u32 texture_count;
 } OpenglTextureAtlas;
 
-OpenglTexture *texture_atlas_add_bitmap(OpenglTextureAtlas *atlas, Bitmap *bitmap);
+OpenglTexture *texture_atlas_add_bitmap(struct Arena *area, OpenglTextureAtlas *atlas, Bitmap *bitmap);
 void texture_atlas_sort_textures_per_height(OpenglTextureAtlas *atlas);
 void texture_atlas_calculate_size_and_alloc(Arena *arena, OpenglTextureAtlas *atlas);
 void texture_atlas_insert(OpenglTextureAtlas *atlas, OpenglTexture *texture);
