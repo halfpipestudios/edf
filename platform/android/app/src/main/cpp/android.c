@@ -118,9 +118,9 @@ void gpu_frame_end(Gpu gpu) {
     float window_w = (f32)os_display_width();
     float window_h = (f32)os_display_height();
 
-    float ratio = (f32)renderer->atlas.bitmap.height / (f32)renderer->atlas.bitmap.width;
+    float ratio = (f32)renderer->atlas.bitmap.h / (f32)renderer->atlas.bitmap.w;
     float render_scale = 1;
-    float w = (f32)renderer->atlas.bitmap.width  * render_scale;
+    float w = (f32)renderer->atlas.bitmap.w  * render_scale;
     float h = w * ratio;
 
     float padding = 64;
@@ -185,7 +185,7 @@ void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V3 colo
     quad_batch_push(renderer, quad);
 }
 
-void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Texture texture) {
+void gpu_draw_quad_texture_tinted(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Texture texture, V3 color) {
     OpenglGPU *renderer = (OpenglGPU *)gpu;
 
     M4 translate = m4_translate(v3(x, y, 0));
@@ -207,10 +207,14 @@ void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Textu
     for(u32 i = 0; i < array_len(quad.vertex); ++i) {
         V3 vertex = m4_mul_v3(world, vertices[i]);
         quad.vertex[i].pos = v2(vertex.x, vertex.y);
-        quad.vertex[i].color = v3(1, 1, 1);
+        quad.vertex[i].color = color;
         quad.vertex[i].uvs = uvs[i];
     }
     quad_batch_push(renderer, quad);
+}
+
+void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Texture texture) {
+    gpu_draw_quad_texture_tinted(gpu, x, y, w, h, angle, texture, v3(1, 1, 1));
 }
 
 void gpu_resize(Gpu gpu, u32 w, u32 h) {

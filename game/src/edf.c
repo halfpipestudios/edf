@@ -5,43 +5,42 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-
 Bitmap bitmap_load(Arena *arena, char *path) {
     File file = os_file_read(arena, path);
     Bitmap bitmap = {0};
     i32 width, height, channels;
-    u8 *data = stbi_load_from_memory(file.data, file.size, &width, &height,
+    u8 *data = stbi_load_from_memory(file.data, (i32)file.size, &width, &height,
                                    &channels, 4);
     if (!data) {
         return bitmap;
     }
     bitmap.data = (u32 *)data;
-    bitmap.width = width;
-    bitmap.height = height;
+    bitmap.w = width;
+    bitmap.h = height;
     return bitmap;
 }
 
 Bitmap bitmap_empty(Arena *arena, i32 w, i32 h, sz pixel_size) {
     Bitmap result;
-    result.width = w;
-    result.height = h;
+    result.w = w;
+    result.h = h;
     result.data = arena_push(arena, w*h*pixel_size, 8);
     return result;
 }
 
 void bitmap_copy_u8_u32(struct Arena *arena, Bitmap *bitmap8, Bitmap *bitmap32) {
 
-    for(u32 y = 0; y < bitmap8->height; ++y) {
-        for(u32 x = 0; x < bitmap8->width; ++x) {
-            u8 src = ((u8 *)bitmap8->data)[y*bitmap8->width+x];
-            ((u32 *)bitmap32->data)[y*bitmap32->width+x] = (src << 24) | (src << 16) | (src << 8) | src;
+    for(u32 y = 0; y < bitmap8->h; ++y) {
+        for(u32 x = 0; x < bitmap8->w; ++x) {
+            u8 src = ((u8 *)bitmap8->data)[y*bitmap8->w+x];
+            ((u32 *)bitmap32->data)[y*bitmap32->w+x] = (src << 24) | (src << 16) | (src << 8) | src;
         }
     }
 }
 
 Bitmap bitmap_copy(struct Arena *arena, Bitmap *bitmap, sz pixel_size) {
-    Bitmap result = bitmap_empty(arena, (i32)bitmap->width, (i32)bitmap->height, pixel_size);
-    memcpy(result.data, bitmap->data, bitmap->width*bitmap->height*pixel_size);
+    Bitmap result = bitmap_empty(arena, (i32)bitmap->w, (i32)bitmap->h, pixel_size);
+    memcpy(result.data, bitmap->data, bitmap->w*bitmap->h*pixel_size);
     return result;
 }
 
@@ -52,7 +51,8 @@ void game_init(Memory *memory) {
     gs->platform_arena = arena_create(memory, mb(20));
     gs->gpu = gpu_load(&gs->platform_arena);
 
-    gs->font = font_load(gs->gpu, &gs->platform_arena, "arial.ttf");
+    gs->arial = font_load(gs->gpu, &gs->platform_arena, "arial.ttf", 128);
+    gs->times = font_load(gs->gpu, &gs->platform_arena, "times.ttf", 64);
 
     gs->angle = 0;
 
@@ -87,31 +87,49 @@ void game_render(Memory *memory) {
 
     gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v3(0.1f, 0.1f, 0.15f));
 
-    font_draw_text(gs->gpu, gs->font, "Hello, Sailor!", -200, -400, v3(1, 1, 1));
-    font_draw_text(gs->gpu, gs->font, "gonzalo", -200, -1000, v3(1, 1, 1));
+    {
+        char *text = "Tomas Cabrerizo";
+        R2 text_size = font_size_text(gs->arial, text, -400, 200);
+        f32 pos_x = (f32) text_size.min.x + (f32) r2_width(text_size) * 0.5f;
+        f32 pos_y = (f32) text_size.min.y + (f32) r2_height(text_size) * 0.5f;
+        gpu_draw_quad_color(gs->gpu, pos_x, pos_y, (f32) r2_width(text_size),
+                            (f32) r2_height(text_size), 0, v3(0, 1, 0));
+        font_draw_text(gs->gpu, gs->arial, text, -400, 200, v3(0, 0, 1));
+    }
 
+    {
+        char *text = "Hello, Sailor!";
+        R2 text_size = font_size_text(gs->times, text, -200, -400);
+        f32 pos_x = (f32) text_size.min.x + (f32) r2_width(text_size) * 0.5f;
+        f32 pos_y = (f32) text_size.min.y + (f32) r2_height(text_size) * 0.5f;
+        gpu_draw_quad_color(gs->gpu, pos_x, pos_y, (f32) r2_width(text_size),
+                            (f32) r2_height(text_size), 0, v3(0, 0, 1));
+        font_draw_text(gs->gpu, gs->times, text, -200, -400, v3(1, 0, 1));
+    }
+
+    font_draw_text(gs->gpu, gs->arial, "Jose Lagos", -200, -1000, v3(1, 0.7f, 0.2f));
 
     f32 scale = 10;
-    gpu_draw_quad_texture(gs->gpu, 0, 0, gs->bitmap.width * scale,
-                        gs->bitmap.height * scale, gs->angle, gs->texture);
+    gpu_draw_quad_texture(gs->gpu, 0, 0, gs->bitmap.w * scale,
+                        gs->bitmap.h * scale, gs->angle, gs->texture);
 
-    gpu_draw_quad_texture(gs->gpu, 0, -600, gs->bitmap1.width * scale,
-                        gs->bitmap1.height * scale, gs->angle, gs->texture1);
+    gpu_draw_quad_texture(gs->gpu, 0, -600, gs->bitmap1.w * scale,
+                        gs->bitmap1.h * scale, gs->angle, gs->texture1);
 
     gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ADDITIVE);
 
 
-    gpu_draw_quad_texture(gs->gpu, -100, 500, gs->orbe_bitmap.width * scale,
-                        gs->orbe_bitmap.height * scale, 0, gs->orbe_texture);
-    gpu_draw_quad_texture(gs->gpu, 0, 600, gs->orbe_bitmap.width * scale,
-                        gs->orbe_bitmap.height * scale, 0, gs->orbe_texture);
-    gpu_draw_quad_texture(gs->gpu, 0, 450, gs->orbe_bitmap.width * scale,
-                        gs->orbe_bitmap.height * scale, 0, gs->orbe_texture);
-    gpu_draw_quad_texture(gs->gpu, 100, 500, gs->orbe_bitmap.width * scale,
-                        gs->orbe_bitmap.height * scale, 0, gs->orbe_texture);
+    gpu_draw_quad_texture(gs->gpu, -100, 500, gs->orbe_bitmap.w * scale,
+                        gs->orbe_bitmap.h * scale, 0, gs->orbe_texture);
+    gpu_draw_quad_texture(gs->gpu, 0, 600, gs->orbe_bitmap.w * scale,
+                        gs->orbe_bitmap.h * scale, 0, gs->orbe_texture);
+    gpu_draw_quad_texture(gs->gpu, 0, 450, gs->orbe_bitmap.w * scale,
+                        gs->orbe_bitmap.h * scale, 0, gs->orbe_texture);
+    gpu_draw_quad_texture(gs->gpu, 100, 500, gs->orbe_bitmap.w * scale,
+                        gs->orbe_bitmap.h * scale, 0, gs->orbe_texture);
 
-    gpu_draw_quad_texture(gs->gpu, 0, 700, gs->laser_bitmap.width * scale,
-                        gs->laser_bitmap.height * scale, 3.14/2.0, gs->laser_texture);
+    gpu_draw_quad_texture(gs->gpu, 0, 700, gs->laser_bitmap.w * scale,
+                        gs->laser_bitmap.h * scale, 3.14f/2.0f, gs->laser_texture);
 
 
     gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ALPHA);

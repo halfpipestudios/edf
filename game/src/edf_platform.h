@@ -25,8 +25,8 @@ typedef struct Input {
 
 typedef struct Bitmap {
     void *data;
-    u32 width;
-    u32 height;
+    i32 w;
+    i32 h;
 } Bitmap;
 
 typedef struct Wave {
