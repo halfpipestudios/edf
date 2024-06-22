@@ -88,6 +88,8 @@ void game_render(Memory *memory) {
     gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v3(0.1f, 0.1f, 0.15f));
 
     font_draw_text(gs->gpu, gs->font, "Hello, Sailor!", -200, -400, v3(1, 1, 1));
+    font_draw_text(gs->gpu, gs->font, "gonzalo", -200, -1000, v3(1, 1, 1));
+
 
     f32 scale = 10;
     gpu_draw_quad_texture(gs->gpu, 0, 0, gs->bitmap.width * scale,
