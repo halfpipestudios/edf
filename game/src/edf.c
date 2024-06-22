@@ -30,15 +30,14 @@ Bitmap bitmap_empty(Arena *arena, i32 w, i32 h, sz pixel_size) {
     return result;
 }
 
-Bitmap bitmap_copy_u8_u32(Arena *arena, Bitmap *bitmap) {
-    Bitmap result = bitmap_empty(arena, (i32)bitmap->width, (i32)bitmap->height, sizeof(u32));
-    for(u32 y = 0; y < bitmap->height; ++y) {
-        for(u32 x = 0; x < bitmap->width; ++x) {
-            u8 src = ((u8 *)bitmap->data)[y*bitmap->width+x];
-            ((u32 *)result.data)[y*result.width+x] = (src << 24) | (src << 16) | (src << 8) | src;
+void bitmap_copy_u8_u32(struct Arena *arena, Bitmap *bitmap8, Bitmap *bitmap32) {
+
+    for(u32 y = 0; y < bitmap8->height; ++y) {
+        for(u32 x = 0; x < bitmap8->width; ++x) {
+            u8 src = ((u8 *)bitmap8->data)[y*bitmap8->width+x];
+            ((u32 *)bitmap32->data)[y*bitmap32->width+x] = (src << 24) | (src << 16) | (src << 8) | src;
         }
     }
-    return result;
 }
 
 Bitmap bitmap_copy(struct Arena *arena, Bitmap *bitmap, sz pixel_size) {
@@ -85,6 +84,8 @@ void game_render(Memory *memory) {
     gpu_frame_begin(gs->gpu);
 
     gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v3(0.1f, 0.1f, 0.15f));
+
+    font_draw_text(gs->gpu, gs->font, "Hello, Sailor!", -200, -400, v3(1, 1, 1));
 
     f32 scale = 10;
     gpu_draw_quad_texture(gs->gpu, 0, 0, gs->bitmap.width * scale,
