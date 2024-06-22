@@ -106,11 +106,6 @@ void game_init(Memory *memory) {
 
     gs->test_wave = wave_load(&gs->platform_arena, "test.wav");
     gs->test_sound = spu_sound_add(gs->spu, gs->test_wave, true, true);
-
-    // File write test
-    u32 numbres[5] = { 10, 11, 12, 13, 14};
-    os_file_write(numbres, sizeof(u32) * 5, "save.bin");
-
 }
 
 void game_update(Memory *memory, f32 dt) {
