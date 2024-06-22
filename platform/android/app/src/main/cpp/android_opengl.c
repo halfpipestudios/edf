@@ -31,11 +31,11 @@ void texture_atlas_sort_textures_per_height(OpenglTextureAtlas *atlas) {
 
             u32 *bucket = atlas->buckets + i;
             OpenglTexture *texture = atlas->textures + (*bucket);
-            u32 h = texture->bitmap->height;
+            u32 h = texture->bitmap->h;
 
             u32 *other_bucket = atlas->buckets + j;
             OpenglTexture *other_texture = atlas->textures + (*other_bucket);
-            u32 other_h = other_texture->bitmap->height;
+            u32 other_h = other_texture->bitmap->h;
 
             if(h < other_h) {
                 u32 temp = *bucket;
@@ -51,8 +51,8 @@ void texture_atlas_sort_textures_per_height(OpenglTextureAtlas *atlas) {
 }
 
 void texture_atlas_calculate_size_and_alloc(Arena *arena, OpenglTextureAtlas *atlas) {
-    atlas->bitmap.width = TEXTURE_ATLAS_START_WIDTH;
-    atlas->bitmap.height = 1;
+    atlas->bitmap.w = TEXTURE_ATLAS_START_WIDTH;
+    atlas->bitmap.h = 1;
     atlas->current_x = 1 + TEXTURE_ATLAS_DEFAULT_PADDING;
 
 
@@ -64,13 +64,13 @@ void texture_atlas_calculate_size_and_alloc(Arena *arena, OpenglTextureAtlas *at
         assert(bitmap);
 
         if(i == 0) {
-            atlas->bitmap.height = bitmap->height + TEXTURE_ATLAS_DEFAULT_PADDING;
-            atlas->last_row_added_height = atlas->bitmap.height;
+            atlas->bitmap.h = bitmap->h + TEXTURE_ATLAS_DEFAULT_PADDING;
+            atlas->last_row_added_height = atlas->bitmap.h;
         } else {
-            i32 width_left = (i32)atlas->bitmap.width - (i32)atlas->current_x;
-            if(width_left < (i32)bitmap->width) {
-                u32 new_row_height = bitmap->height + TEXTURE_ATLAS_DEFAULT_PADDING;
-                atlas->bitmap.height += new_row_height;
+            i32 width_left = (i32)atlas->bitmap.w - (i32)atlas->current_x;
+            if(width_left < (i32)bitmap->w) {
+                i32 new_row_height = bitmap->h + TEXTURE_ATLAS_DEFAULT_PADDING;
+                atlas->bitmap.h += new_row_height;
                 atlas->current_x = 0;
                 atlas->current_y += atlas->last_row_added_height;
                 atlas->last_row_added_height = new_row_height;
@@ -78,10 +78,10 @@ void texture_atlas_calculate_size_and_alloc(Arena *arena, OpenglTextureAtlas *at
             }
         }
 
-        atlas->current_x += bitmap->width + TEXTURE_ATLAS_DEFAULT_PADDING;
+        atlas->current_x += bitmap->w + TEXTURE_ATLAS_DEFAULT_PADDING;
     }
 
-    atlas->bitmap.data = arena_push(arena, atlas->bitmap.width*atlas->bitmap.height*sizeof(u32), 8);
+    atlas->bitmap.data = arena_push(arena, atlas->bitmap.w*atlas->bitmap.h*sizeof(u32), 8);
     atlas->current_x = 0;
     atlas->current_y = 0;
     atlas->last_row_added_height = 0;
@@ -100,30 +100,30 @@ void texture_atlas_insert_textures(OpenglTextureAtlas *atlas) {
         assert(bitmap);
 
         if(i == 0) {
-            atlas->last_row_added_height = bitmap->height + TEXTURE_ATLAS_DEFAULT_PADDING;
+            atlas->last_row_added_height = bitmap->h + TEXTURE_ATLAS_DEFAULT_PADDING;
         } else {
-            i32 width_left = (i32)atlas->bitmap.width - (i32)atlas->current_x;
-            if(width_left < (i32)bitmap->width) {
-                u32 new_row_height = bitmap->height + TEXTURE_ATLAS_DEFAULT_PADDING;
+            i32 width_left = (i32)atlas->bitmap.w - (i32)atlas->current_x;
+            if(width_left < (i32)bitmap->w) {
+                i32 new_row_height = bitmap->h + TEXTURE_ATLAS_DEFAULT_PADDING;
                 atlas->current_x = 0;
                 atlas->current_y += atlas->last_row_added_height;
                 atlas->last_row_added_height = new_row_height;
             }
         }
 
-        texture->dim = r2_from_wh((i32)atlas->current_x, (i32)atlas->current_y, (i32)bitmap->width, (i32)bitmap->height);
-        texture->min = (V2){(f32)texture->dim.min.x / (f32)atlas->bitmap.width, (f32)texture->dim.min.y / (f32)atlas->bitmap.height};
-        texture->max = (V2){(f32)(texture->dim.max.x + 1) / (f32)atlas->bitmap.width, ((f32)texture->dim.max.y + 1) / (f32)atlas->bitmap.height};
+        texture->dim = r2_from_wh((i32)atlas->current_x, (i32)atlas->current_y, (i32)bitmap->w, (i32)bitmap->h);
+        texture->min = (V2){(f32)texture->dim.min.x / (f32)atlas->bitmap.w, (f32)texture->dim.min.y / (f32)atlas->bitmap.h};
+        texture->max = (V2){(f32)(texture->dim.max.x + 1) / (f32)atlas->bitmap.w, ((f32)texture->dim.max.y + 1) / (f32)atlas->bitmap.h};
 
-        for(i32 y = 0; y < bitmap->height; ++y) {
+        for(i32 y = 0; y < bitmap->h; ++y) {
             i32 yy = y + (i32)atlas->current_y;
-            for(i32 x = 0; x < bitmap->width; ++x) {
+            for(i32 x = 0; x < bitmap->w; ++x) {
                 i32 xx = x + (i32)atlas->current_x;
-                ((u32 *)atlas->bitmap.data)[yy*atlas->bitmap.width+xx] = ((u32 *)texture->bitmap->data)[y*bitmap->width+x];
+                ((u32 *)atlas->bitmap.data)[yy*atlas->bitmap.w+xx] = ((u32 *)texture->bitmap->data)[y*bitmap->w+x];
             }
         }
 
-        atlas->current_x += bitmap->width + TEXTURE_ATLAS_DEFAULT_PADDING;
+        atlas->current_x += bitmap->w + TEXTURE_ATLAS_DEFAULT_PADDING;
     }
 }
 
@@ -143,7 +143,7 @@ void texture_atlas_generate(Arena *arena, OpenglTextureAtlas *atlas) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (i32)atlas->bitmap.width, (i32)atlas->bitmap.height, 0, GL_RGBA,
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, atlas->bitmap.w, atlas->bitmap.h, 0, GL_RGBA,
                  GL_UNSIGNED_BYTE, atlas->bitmap.data);
 }
 

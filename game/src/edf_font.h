@@ -7,15 +7,19 @@
 
 #include "edf_platform.h"
 
+#include "stb_truetype.h"
+
 #define FONT_CODEPOINT_RANGE_START ((i32)' ')
 #define FONT_CODEPOINT_RANGE_END ((i32)'~')
 
 typedef struct Glyph {
     Texture texture;
     Bitmap bitmap;
+    R2 bounds;
 
     f32 advance_w;
     f32 left_bearing;
+
 
 } Glyph;
 
@@ -27,11 +31,15 @@ typedef struct Font {
     f32 decent;
     f32 line_gap;
 
+    f32 scale;
+    stbtt_fontinfo stbfont;
+
 } Font;
 
-Font *font_load(Gpu gpu, struct Arena *arena, char *path);
+Font *font_load(Gpu gpu, struct Arena *arena, char *path, float size);
 void font_unload(Gpu gpu, Font *font);
 
-void font_draw_text(Gpu gpu, Font *font, const char *text, i32 x, i32 y, V3 color);
+R2 font_size_text(Font *font, const char *text, f32 x, f32 y);
+void font_draw_text(Gpu gpu, Font *font, const char *text, f32 x, f32 y, V3 color);
 
 #endif //EDF_EDF_FONT_H

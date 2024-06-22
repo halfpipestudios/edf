@@ -11,7 +11,9 @@ struct Memory;
 typedef struct GameState {
     Gpu gpu;
     Arena platform_arena;
-    Font *font;
+
+    Font *arial;
+    Font *times;
 
     f32 angle;
 

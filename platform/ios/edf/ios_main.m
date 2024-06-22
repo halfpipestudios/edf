@@ -346,8 +346,8 @@ Gpu gpu_load(struct Arena *arena) {
 
     Bitmap white_bitmap;
     white_bitmap.data = white;
-    white_bitmap.width = 8;
-    white_bitmap.height = 8;
+    white_bitmap.w = 8;
+    white_bitmap.h = 8;
     gpu_texture_load((void *)renderer, &white_bitmap);
 
     renderer->view_m4 = matrix4x4_translation(0, 0, 0);
@@ -430,7 +430,7 @@ Texture gpu_texture_load(Gpu gpu, Bitmap *bitmap) {
         8, 16, 32, 64, 128
     };
 
-    i32 bitmap_size = max(bitmap->width, bitmap->height);
+    i32 bitmap_size = max(bitmap->w, bitmap->h);
     i32 array_index = TEXTURE_SIZE_8x8;
     if(bitmap_size > 8) {
         array_index = TEXTURE_SIZE_16x16;
@@ -459,10 +459,10 @@ Texture gpu_texture_load(Gpu gpu, Bitmap *bitmap) {
     IosTexture *texture = &array->textures[free_index];
     array->index_array[free_index] = -1;
 
-    NSUInteger bytes_per_row = 4 * bitmap->width;
+    NSUInteger bytes_per_row = 4 * bitmap->w;
     MTLRegion region = {
         { 0, 0, 0 },
-        {bitmap->width, bitmap->height, 1}
+        {bitmap->w, bitmap->h, 1}
     };
     // Copy the bytes from the data object into the texture
     [array->array replaceRegion:region
@@ -473,8 +473,8 @@ Texture gpu_texture_load(Gpu gpu, Bitmap *bitmap) {
                   bytesPerImage:0];
 
     
-    texture->u_ratio = (f32)bitmap->width / (f32)gpu_texture_sizes[array_index];
-    texture->v_ratio = (f32)bitmap->height / (f32)gpu_texture_sizes[array_index];
+    texture->u_ratio = (f32)bitmap->w / (f32)gpu_texture_sizes[array_index];
+    texture->v_ratio = (f32)bitmap->h / (f32)gpu_texture_sizes[array_index];
     texture->array_index = array_index;
     texture->texture_index = free_index;
     
