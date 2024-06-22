@@ -6,9 +6,6 @@
 #define EDF_ANDROID_OPENGL_H
 
 #include <GLES3/gl3.h>
-
-#define MAX_QUADS_PER_BATCH 1024
-
 #include <edf.h>
 
 typedef struct OpenglVertex {
@@ -36,7 +33,7 @@ typedef struct OpenglTexture {
     Bitmap *bitmap;
 } OpenglTexture;
 
-#define TEXTURE_ATLAS_START_WIDTH 1024
+#define TEXTURE_ATLAS_START_WIDTH 512
 #define TEXTURE_ATLAS_DEFAULT_PADDING 4
 #define MAX_ATLAS_TEXTURES 512
 
@@ -51,11 +48,13 @@ typedef struct OpenglTextureAtlas {
     u32 texture_count;
 } OpenglTextureAtlas;
 
-OpenglTexture *texture_atlas_add_bitmap(OpenglTextureAtlas *atlas, Bitmap *bitmap);
+OpenglTexture *texture_atlas_add_bitmap(struct Arena *area, OpenglTextureAtlas *atlas, Bitmap *bitmap);
 void texture_atlas_sort_textures_per_height(OpenglTextureAtlas *atlas);
 void texture_atlas_calculate_size_and_alloc(Arena *arena, OpenglTextureAtlas *atlas);
 void texture_atlas_insert(OpenglTextureAtlas *atlas, OpenglTexture *texture);
 void texture_atlas_generate(Arena *arena, OpenglTextureAtlas *atlas);
+
+#define MAX_QUADS_PER_BATCH 1024
 
 typedef struct OpenglGPU {
     Arena *arena;

@@ -6,7 +6,7 @@
 #include "stb_image.h"
 
 
-Bitmap bitmap_load(struct Arena *arena, char *path) {
+Bitmap bitmap_load(Arena *arena, char *path) {
     File file = os_file_read(arena, path);
     Bitmap bitmap = {0};
     i32 width, height, channels;
@@ -21,13 +21,41 @@ Bitmap bitmap_load(struct Arena *arena, char *path) {
     return bitmap;
 }
 
+Bitmap bitmap_empty(Arena *arena, i32 w, i32 h, sz pixel_size) {
+    Bitmap result;
+    result.width = w;
+    result.height = h;
+    result.data = arena_push(arena, w*h*pixel_size, 8);
+    return result;
+}
+
+void bitmap_copy_u8_u32(struct Arena *arena, Bitmap *bitmap8, Bitmap *bitmap32) {
+
+    for(u32 y = 0; y < bitmap8->height; ++y) {
+        for(u32 x = 0; x < bitmap8->width; ++x) {
+            u8 src = ((u8 *)bitmap8->data)[y*bitmap8->width+x];
+            ((u32 *)bitmap32->data)[y*bitmap32->width+x] = (src << 24) | (src << 16) | (src << 8) | src;
+        }
+    }
+}
+
+Bitmap bitmap_copy(struct Arena *arena, Bitmap *bitmap, sz pixel_size) {
+    Bitmap result = bitmap_empty(arena, (i32)bitmap->width, (i32)bitmap->height, pixel_size);
+    memcpy(result.data, bitmap->data, bitmap->width*bitmap->height*pixel_size);
+    return result;
+}
+
 void game_init(Memory *memory) {
     game_state_init(memory);
     GameState *gs = game_state(memory);
 
     gs->platform_arena = arena_create(memory, mb(20));
     gs->gpu = gpu_load(&gs->platform_arena);
+
+    gs->font = font_load(gs->gpu, &gs->platform_arena, "arial.ttf");
+
     gs->angle = 0;
+
     gs->bitmap = bitmap_load(&gs->platform_arena, "Player.png");
     gs->bitmap1 = bitmap_load(&gs->platform_arena, "link.png");
     gs->texture = gpu_texture_load(gs->gpu, &gs->bitmap);
@@ -43,7 +71,10 @@ void game_init(Memory *memory) {
 
 void game_update(Memory *memory, f32 dt) {
     GameState *gs = game_state(memory);
-    gs->angle += dt; 
+    gs->angle += dt;
+    if(gs->angle == 2*3.14) {
+        gs->angle = 0;
+    }
 }
 
 void game_render(Memory *memory) {
@@ -55,6 +86,8 @@ void game_render(Memory *memory) {
     gpu_frame_begin(gs->gpu);
 
     gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v3(0.1f, 0.1f, 0.15f));
+
+    font_draw_text(gs->gpu, gs->font, "Hello, Sailor!", -200, -400, v3(1, 1, 1));
 
     f32 scale = 10;
     gpu_draw_quad_texture(gs->gpu, 0, 0, gs->bitmap.width * scale,

@@ -1,6 +1,7 @@
 #ifndef EDF_H
 #define EDF_H
 
+#include "edf_font.h"
 #include "edf_memory.h"
 #include "edf_platform.h"
 
@@ -10,6 +11,8 @@ struct Memory;
 typedef struct GameState {
     Gpu gpu;
     Arena platform_arena;
+    Font *font;
+
     f32 angle;
 
     Bitmap bitmap;

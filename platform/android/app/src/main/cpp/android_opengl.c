@@ -5,7 +5,7 @@
 #include "android_opengl.h"
 #include "android.h"
 
-OpenglTexture *texture_atlas_add_bitmap(OpenglTextureAtlas *atlas, Bitmap *bitmap) {
+OpenglTexture *texture_atlas_add_bitmap(Arena *arena, OpenglTextureAtlas *atlas, Bitmap *bitmap) {
 
     assert(atlas->texture_count <= array_len(atlas->textures));
 
@@ -25,13 +25,13 @@ void texture_atlas_sort_textures_per_height(OpenglTextureAtlas *atlas) {
 
     for(u32 i = 0; i < atlas->texture_count; ++i) {
 
-        u32 *bucket = atlas->buckets + i;
-        OpenglTexture *texture = atlas->textures + (*bucket);
-        u32 h = texture->bitmap->height;
-
         for(u32 j = i; j < atlas->texture_count; ++j) {
 
             if(i == j) continue;
+
+            u32 *bucket = atlas->buckets + i;
+            OpenglTexture *texture = atlas->textures + (*bucket);
+            u32 h = texture->bitmap->height;
 
             u32 *other_bucket = atlas->buckets + j;
             OpenglTexture *other_texture = atlas->textures + (*other_bucket);
@@ -44,9 +44,17 @@ void texture_atlas_sort_textures_per_height(OpenglTextureAtlas *atlas) {
             }
         }
     }
+
+    u32 break_here = 0;
+    unused(break_here);
+
 }
 
 void texture_atlas_calculate_size_and_alloc(Arena *arena, OpenglTextureAtlas *atlas) {
+    atlas->bitmap.width = TEXTURE_ATLAS_START_WIDTH;
+    atlas->bitmap.height = 1;
+    atlas->current_x = 1 + TEXTURE_ATLAS_DEFAULT_PADDING;
+
     for(u32 i = 0; i < atlas->texture_count; ++i) {
 
         u32 *bucket = atlas->buckets + i;
@@ -55,18 +63,14 @@ void texture_atlas_calculate_size_and_alloc(Arena *arena, OpenglTextureAtlas *at
         assert(bitmap);
 
         if(i == 0) {
-            atlas->last_row_added_height = bitmap->height + TEXTURE_ATLAS_DEFAULT_PADDING;
-            atlas->bitmap.height = atlas->last_row_added_height;
-            atlas->bitmap.width = TEXTURE_ATLAS_START_WIDTH;
-            atlas->current_x = 1 + TEXTURE_ATLAS_DEFAULT_PADDING;
+            atlas->bitmap.height = bitmap->height + TEXTURE_ATLAS_DEFAULT_PADDING;
+            atlas->last_row_added_height = atlas->bitmap.height;
         }
 
         u32 width_left = atlas->bitmap.width - atlas->current_x;
         if(width_left < (i32)bitmap->width) {
-
             u32 new_row_height = bitmap->height + TEXTURE_ATLAS_DEFAULT_PADDING;
-            atlas->bitmap.height = atlas->bitmap.width;
-            atlas->bitmap.width = atlas->bitmap.height + new_row_height;
+            atlas->bitmap.height += new_row_height;
             atlas->current_x = 0;
             atlas->current_y += atlas->last_row_added_height;
             atlas->last_row_added_height = new_row_height;
@@ -81,50 +85,51 @@ void texture_atlas_calculate_size_and_alloc(Arena *arena, OpenglTextureAtlas *at
     atlas->current_y = 0;
     atlas->last_row_added_height = 0;
 
-    atlas->bitmap.data[0] = 0xffffffff;
+    ((u32 *)atlas->bitmap.data)[0] = 0xffffffff;
     atlas->current_x = 1 + TEXTURE_ATLAS_DEFAULT_PADDING;
 }
 
-void texture_atlas_insert(OpenglTextureAtlas *atlas, OpenglTexture *texture) {
-    Bitmap *bitmap = texture->bitmap;
-    assert(bitmap);
+void texture_atlas_insert_textures(OpenglTextureAtlas *atlas) {
 
-    u32 width_left = atlas->bitmap.width - atlas->current_x;
-    if(width_left < (i32)bitmap->width) {
+    for(u32 i = 0; i < atlas->texture_count; ++i) {
 
-        u32 new_row_height = bitmap->height + TEXTURE_ATLAS_DEFAULT_PADDING;
-        atlas->bitmap.height = atlas->bitmap.width;
-        atlas->bitmap.width = atlas->bitmap.height + new_row_height;
-        atlas->current_x = 0;
-        atlas->current_y += atlas->last_row_added_height;
-        atlas->last_row_added_height = new_row_height;
+        u32 *bucket = atlas->buckets + i;
+        OpenglTexture *texture = atlas->textures + (*bucket);
+        Bitmap *bitmap = texture->bitmap;
+        assert(bitmap);
 
-    }
-
-    texture->dim = r2_from_wh((i32)atlas->current_x, (i32)atlas->current_y, (i32)bitmap->width, (i32)bitmap->height);
-    texture->min = (V2){(f32)texture->dim.min.x / (f32)atlas->bitmap.width, (f32)texture->dim.min.y / (f32)atlas->bitmap.height};
-    texture->max = (V2){(f32)(texture->dim.max.x + 1) / (f32)atlas->bitmap.width, ((f32)texture->dim.max.y + 1) / (f32)atlas->bitmap.height};
-
-    for(i32 y = 0; y < bitmap->height; ++y) {
-        i32 yy = y + (i32)atlas->current_y;
-        for(i32 x = 0; x < bitmap->width; ++x) {
-            i32 xx = x + (i32)atlas->current_x;
-            atlas->bitmap.data[yy*atlas->bitmap.width+xx] = texture->bitmap->data[y*bitmap->width+x];
+        if(i == 0) {
+            atlas->last_row_added_height = bitmap->height + TEXTURE_ATLAS_DEFAULT_PADDING;
         }
-    }
 
-    atlas->current_x += bitmap->width + TEXTURE_ATLAS_DEFAULT_PADDING;
+        u32 width_left = atlas->bitmap.width - atlas->current_x;
+        if(width_left < (i32)bitmap->width) {
+            u32 new_row_height = bitmap->height + TEXTURE_ATLAS_DEFAULT_PADDING;
+            atlas->current_x = 0;
+            atlas->current_y += atlas->last_row_added_height;
+            atlas->last_row_added_height = new_row_height;
+        }
+
+        texture->dim = r2_from_wh((i32)atlas->current_x, (i32)atlas->current_y, (i32)bitmap->width, (i32)bitmap->height);
+        texture->min = (V2){(f32)texture->dim.min.x / (f32)atlas->bitmap.width, (f32)texture->dim.min.y / (f32)atlas->bitmap.height};
+        texture->max = (V2){(f32)(texture->dim.max.x + 1) / (f32)atlas->bitmap.width, ((f32)texture->dim.max.y + 1) / (f32)atlas->bitmap.height};
+
+        for(i32 y = 0; y < bitmap->height; ++y) {
+            i32 yy = y + (i32)atlas->current_y;
+            for(i32 x = 0; x < bitmap->width; ++x) {
+                i32 xx = x + (i32)atlas->current_x;
+                ((u32 *)atlas->bitmap.data)[yy*atlas->bitmap.width+xx] = ((u32 *)texture->bitmap->data)[y*bitmap->width+x];
+            }
+        }
+
+        atlas->current_x += bitmap->width + TEXTURE_ATLAS_DEFAULT_PADDING;
+    }
 }
 
 void texture_atlas_generate(Arena *arena, OpenglTextureAtlas *atlas) {
     texture_atlas_sort_textures_per_height(atlas);
     texture_atlas_calculate_size_and_alloc(arena, atlas);
-
-    for(u32 i = 0; i < atlas->texture_count; ++i) {
-        u32 *bucket = atlas->buckets + i;
-        OpenglTexture *texture = atlas->textures + (*bucket);
-        texture_atlas_insert(atlas, texture);
-    }
+    texture_atlas_insert_textures(atlas);
 
     glGenTextures(1, &atlas->id);
     glBindTexture(GL_TEXTURE_2D, atlas->id);

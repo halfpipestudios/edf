@@ -32,7 +32,14 @@ File os_file_read(struct Arena *arena, char *path) {
     file.data = arena_push(arena, file.size+1, 8);
     memcpy(file.data, AAsset_getBuffer(asset), file.size);
     ((u8 *)file.data)[file.size] = 0;
+    AAsset_close(asset);
     return file;
+}
+
+bool os_file_write(u8 *data, sz size) {
+    unused(data);
+    unused(size);
+    return false;
 }
 
 Gpu gpu_load(struct Arena *arena) {
@@ -84,9 +91,7 @@ void gpu_unload(Gpu gpu) {
 }
 
 void gpu_frame_begin(Gpu gpu) {
-
     OpenglGPU *renderer = (OpenglGPU *)gpu;
-
     if(renderer->load_textures) {
         texture_atlas_generate(renderer->arena, &renderer->atlas);
         renderer->load_textures = false;
@@ -94,7 +99,6 @@ void gpu_frame_begin(Gpu gpu) {
     }
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     glClear(GL_COLOR_BUFFER_BIT);
     glClearColor(0, 0.5f, 1, 1.0f);
 
@@ -104,12 +108,57 @@ void gpu_frame_begin(Gpu gpu) {
 
 void gpu_frame_end(Gpu gpu) {
     OpenglGPU *renderer = (OpenglGPU *)gpu;
+
+    // draw texture atlas test
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    float angle = 0;
+
+    float window_w = (f32)os_display_width();
+    float window_h = (f32)os_display_height();
+
+    float ratio = (f32)renderer->atlas.bitmap.height / (f32)renderer->atlas.bitmap.width;
+    float render_scale = 1;
+    float w = (f32)renderer->atlas.bitmap.width  * render_scale;
+    float h = w * ratio;
+
+    float padding = 64;
+
+    float x = (-window_w/2) + (w/2) + padding;
+    float y = (window_h/2) - (h/2) - padding;
+
+    M4 translate = m4_translate(v3(x, y, 0));
+    M4 rotate = m4_rotate_z(angle);
+    M4 scale = m4_scale(v3(w, h, 1));
+    M4 world = m4_mul(translate, m4_mul(rotate, scale));
+
+    OpenglQuad quad;
+    V2 uvs[array_len(quad.vertex)] = {
+        {1, 1}, // bottom right
+        {0, 1}, // bottom left
+        {0, 0}, // top left
+        {1, 1}, // bottom right
+        {0, 0}, // bottom right
+        {1, 0}  // top right
+    };
+
+    for(u32 i = 0; i < array_len(quad.vertex); ++i) {
+        V3 vertex = m4_mul_v3(world, vertices[i]);
+        quad.vertex[i].pos = v2(vertex.x, vertex.y);
+        quad.vertex[i].color = v3(1, 1, 1);
+        quad.vertex[i].uvs = uvs[i];
+    }
+    quad_batch_push(renderer, quad);
+
+    // -----------------------------------------------
+
     quad_batch_flush(renderer);
 }
 
 Texture gpu_texture_load(Gpu gpu, Bitmap *bitmap) {
     OpenglGPU *renderer = (OpenglGPU *)gpu;
-    OpenglTexture *texture = texture_atlas_add_bitmap(&renderer->atlas, bitmap);
+    OpenglTexture *texture = texture_atlas_add_bitmap(renderer->arena, &renderer->atlas, bitmap);
     return (Texture)texture;
 }
 
@@ -211,7 +260,6 @@ JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameUpdate(JNIEnv *env
 JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameRender(JNIEnv *env, jobject thiz) {
     (void)env;
     (void)thiz;
-
     game_render(&global_memory);
 }
 

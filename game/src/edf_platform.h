@@ -24,7 +24,7 @@ typedef struct Input {
 } Input;
 
 typedef struct Bitmap {
-    u32 *data;
+    void *data;
     u32 width;
     u32 height;
 } Bitmap;
@@ -49,6 +49,10 @@ typedef void *Gpu;
 typedef void *Spu;
 
 Bitmap bitmap_load(struct Arena *arena, char *path);
+Bitmap bitmap_empty(struct Arena *arena, i32 w, i32 h, sz pixel_size);
+Bitmap bitmap_copy(struct Arena *arena, Bitmap *bitmap, sz pixel_size);
+void bitmap_copy_u8_u32(struct Arena *arena, Bitmap *bitmap8, Bitmap *bitmap32);
+
 Wave wave_load(struct Arena *Arena, char *path);
 
 File os_file_read(struct Arena *arena, char *path);
@@ -66,6 +70,8 @@ void gpu_texture_unload(Gpu gpu, Texture texture);
 void gpu_blend_state_set(Gpu gpu, GpuBlendState blend_state);
 void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle,
                            Texture texture);
+void gpu_draw_quad_texture_tinted(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle,
+                           Texture texture, V3 color);
 void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle,
                          V3 color);
 void gpu_camera_set(Gpu gpu, V3 pos, f32 angle);
