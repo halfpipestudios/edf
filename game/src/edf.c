@@ -5,7 +5,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-V3 v3(f32 x, f32 y, f32 z) { return (V3){x, y, z}; }
 
 Bitmap bitmap_load(struct Arena *arena, char *path) {
     File file = os_file_read(arena, path);
@@ -30,17 +29,21 @@ void game_init(Memory *memory) {
     gs->gpu = gpu_load(&gs->platform_arena);
     gs->angle = 0;
     gs->bitmap = bitmap_load(&gs->platform_arena, "Player.png");
-    gs->bitmap1 = bitmap_load(&gs->platform_arena, "button_out.png");
+    gs->bitmap1 = bitmap_load(&gs->platform_arena, "link.png");
     gs->texture = gpu_texture_load(gs->gpu, &gs->bitmap);
     gs->texture1 = gpu_texture_load(gs->gpu, &gs->bitmap1);
 
     gs->orbe_bitmap = bitmap_load(&gs->platform_arena, "orbe.png");
     gs->orbe_texture = gpu_texture_load(gs->gpu, &gs->orbe_bitmap);
+
+    gs->laser_bitmap = bitmap_load(&gs->platform_arena, "laser.png");
+    gs->laser_texture = gpu_texture_load(gs->gpu, &gs->laser_bitmap);
+
 }
 
-void game_update(Memory *memory, Input *input, f32 dt) {
+void game_update(Memory *memory, f32 dt) {
     GameState *gs = game_state(memory);
-    gs->angle += dt;
+    gs->angle += dt; 
 }
 
 void game_render(Memory *memory) {
@@ -61,6 +64,8 @@ void game_render(Memory *memory) {
                         gs->bitmap1.height * scale, gs->angle, gs->texture1);
 
     gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ADDITIVE);
+
+
     gpu_draw_quad_texture(gs->gpu, -100, 500, gs->orbe_bitmap.width * scale,
                         gs->orbe_bitmap.height * scale, 0, gs->orbe_texture);
     gpu_draw_quad_texture(gs->gpu, 0, 600, gs->orbe_bitmap.width * scale,
@@ -69,19 +74,32 @@ void game_render(Memory *memory) {
                         gs->orbe_bitmap.height * scale, 0, gs->orbe_texture);
     gpu_draw_quad_texture(gs->gpu, 100, 500, gs->orbe_bitmap.width * scale,
                         gs->orbe_bitmap.height * scale, 0, gs->orbe_texture);
-    gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ALPHA);
 
+    gpu_draw_quad_texture(gs->gpu, 0, 700, gs->laser_bitmap.width * scale,
+                        gs->laser_bitmap.height * scale, 3.14/2.0, gs->laser_texture);
+
+
+    gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ALPHA);
     gpu_draw_quad_color(gs->gpu, 200, 400, 100, 200, gs->angle, v3(1, 0, 0));
 
     gpu_frame_end(gs->gpu);
 }
 
 void game_shutdown(Memory *memory) {
-      GameState *gs = game_state(memory);
-      gpu_unload(gs->gpu);
+    GameState *gs = game_state(memory);
+    gpu_unload(gs->gpu);
 }
 
-void game_resize(struct Memory *memory, u32 w, u32 h) {
-      GameState *gs = game_state(memory);
-      gpu_resize(gs->gpu, w, h);
+void game_resize(Memory *memory, u32 w, u32 h) {
+    GameState *gs = game_state(memory);
+    gpu_resize(gs->gpu, w, h);
+}
+
+void game_touches_down(Memory *memory, Input *input) {
+}
+
+void game_touches_up(Memory *memory, Input *input) {
+}
+
+void game_touches_move(Memory *memory, Input *input) {
 }

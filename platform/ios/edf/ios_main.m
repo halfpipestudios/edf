@@ -15,20 +15,42 @@
 #import<MetalKit/MetalKit.h>
 #include "ios_shader_types.h"
 
+// TODO(manu): add IOS_ prefix to this defines
 #define MAX_FRAMES_IN_FLIGHT 3
 #define MAX_UBUFFER_COUNT 1
 #define MAX_QUAD_COUNT 10000
-#define MAX_TEXTURE_COUNT 10
+
+#define MAX_TEXTURE_COUNT 200
+#define TEXTURE_SIZE_8x8 0
+#define TEXTURE_SIZE_16x16 1
+#define TEXTURE_SIZE_32x32 2
+#define TEXTURE_SIZE_64x64 3
+#define TEXTURE_SIZE_COUNT 4
 
 static const Vertex quad_vertices[] = {
-    { {  0.5,  -0.5 }, {1, 1} },
-    { { -0.5,  -0.5 }, {0, 1} },
-    { { -0.5,   0.5 }, {0, 0} },
-
-    { {  0.5,  -0.5 }, {1, 1} },
-    { { -0.5,   0.5 }, {0, 0} },
-    { {  0.5,   0.5 }, {1, 0} }
+    { {  0.5,  -0.5 }, {1.0, 1.0} },
+    { { -0.5,  -0.5 }, {0.0, 1.0} },
+    { { -0.5,   0.5 }, {0.0, 0.0} },
+    { {  0.5,  -0.5 }, {1.0, 1.0} },
+    { { -0.5,   0.5 }, {0.0, 0.0} },
+    { {  0.5,   0.5 }, {1.0, 0.0} }
 };
+
+typedef struct IosTexture {
+    i32 array_index;
+    i32 texture_index;
+    f32 u_ratio;
+    f32 v_ratio;
+} IosTexture;
+
+
+typedef struct IosTextureArray {
+    id<MTLTexture> array;
+    IosTexture textures[MAX_TEXTURE_COUNT];
+    i32 index_array[MAX_TEXTURE_COUNT];
+    i32 free_list;
+    u32 count;
+} IosTextureArray;
 
 typedef struct IosRenderer {
     MTKView *view;
@@ -46,6 +68,7 @@ typedef struct IosRenderer {
     id<MTLBuffer> vbuffer;
     
     GpuBlendState blend_state;
+    // TODO(manu): create a struct for this
     id<MTLBuffer> ubuffer[2][MAX_FRAMES_IN_FLIGHT][MAX_UBUFFER_COUNT];
     u32 quad_count[2];
     u32 buffer_index[2];
@@ -53,12 +76,8 @@ typedef struct IosRenderer {
     matrix_float4x4 proj_m4;
     matrix_float4x4 view_m4;
     
-    id<MTLTexture> texture_array;
-    i32 texture_index_array[MAX_TEXTURE_COUNT];
-    i32 texture_free_list;
-    
-    u32 texture_count;
-    
+    IosTextureArray texture_arrays[TEXTURE_SIZE_COUNT]; 
+
 } IosRenderer;
 
 
@@ -123,6 +142,26 @@ matrix_float4x4 matrix_ortho(float l, float r, float b, float t, float n, float 
         {(l + r) / (l - r), (t + b) / (b - t), n / (n - f), 1}
     }};
 }
+
+
+void ios_texture_array_init(IosRenderer *renderer, IosTextureArray *texture_array, i32 width, i32 height) {
+    MTLTextureDescriptor *texture_descriptor;
+    texture_descriptor = [[MTLTextureDescriptor alloc] init];
+    texture_descriptor.pixelFormat = MTLPixelFormatRGBA8Unorm;
+    texture_descriptor.width = width;
+    texture_descriptor.height = height;
+    texture_descriptor.arrayLength = MAX_TEXTURE_COUNT;
+    texture_descriptor.textureType = MTLTextureType2DArray;
+    texture_array->array = [renderer->device newTextureWithDescriptor: texture_descriptor];
+    texture_array->count = 0;
+    texture_array->free_list = 0;
+    for(i32 i = 0; i < MAX_TEXTURE_COUNT - 1; i++) {
+        texture_array->index_array[i] = i + 1;
+    }
+    texture_array->index_array[MAX_TEXTURE_COUNT - 1] = -1;
+}
+
+
 //=====================================================================
 //=====================================================================
 
@@ -159,12 +198,6 @@ File os_file_read(struct Arena *arena, char *path) {
     
     NSString *file_path = [[NSBundle mainBundle] pathForResource: [NSString stringWithUTF8String:file_name]
                                                           ofType: [NSString stringWithUTF8String:file_ext]];
-    if(file_path != nil) {
-        
-        NSLog(@"file found!!\n");
-        
-    }
-    
     
     FILE *file_handle = fopen([file_path cStringUsingEncoding:NSUTF8StringEncoding], "rb");
     if(!file_handle) {
@@ -198,6 +231,16 @@ u32 os_display_width(void) {
 
 u32 os_display_height(void) {
     return g_view_height;
+}
+
+
+void os_print(char *message, ...) {
+    char buffer[32000];
+    va_list valist;
+    va_start(valist, message);
+    vsnprintf(buffer, array_len(buffer), message, valist);
+    va_end(valist);
+    NSLog(@"%@", [NSString stringWithUTF8String:buffer]);
 }
 
 Gpu gpu_load(struct Arena *arena) {
@@ -288,33 +331,21 @@ Gpu gpu_load(struct Arena *arena) {
                                                                        options:MTLResourceCPUCacheModeDefaultCache];
         }
     }
-    
-    // create a texture block array and initialize the free list
-    MTLTextureDescriptor *texture_descriptor;
-    texture_descriptor = [[MTLTextureDescriptor alloc] init];
-    texture_descriptor.pixelFormat = MTLPixelFormatRGBA8Unorm;
-    texture_descriptor.width = 32;
-    texture_descriptor.height = 32;
-    texture_descriptor.arrayLength = MAX_TEXTURE_COUNT;
-    texture_descriptor.textureType = MTLTextureType2DArray;
-    renderer->texture_array = [renderer->device newTextureWithDescriptor: texture_descriptor];
-    renderer->texture_count = 0;
 
-    renderer->texture_free_list = 0;
-    for(i32 i = 0; i < MAX_TEXTURE_COUNT - 1; i++) {
-        renderer->texture_index_array[i] = i + 1;
-    }
-    renderer->texture_index_array[MAX_TEXTURE_COUNT - 1] = -1;
+    ios_texture_array_init(renderer, &renderer->texture_arrays[TEXTURE_SIZE_8x8], 8, 8);
+    ios_texture_array_init(renderer, &renderer->texture_arrays[TEXTURE_SIZE_16x16], 16, 16);
+    ios_texture_array_init(renderer, &renderer->texture_arrays[TEXTURE_SIZE_32x32], 32, 32);
+    ios_texture_array_init(renderer, &renderer->texture_arrays[TEXTURE_SIZE_64x64], 64, 64);
 
-    u32 white[32*32];
-    for(u32 i = 0; i < 32*32; i++) {
+    u32 white[8*8];
+    for(u32 i = 0; i < 8*8; i++) {
         white[i] = 0xFFFFFFFF;
     }
 
     Bitmap white_bitmap;
     white_bitmap.data = white;
-    white_bitmap.width = 32;
-    white_bitmap.height = 32;
+    white_bitmap.width = 8;
+    white_bitmap.height = 8;
     gpu_texture_load((void *)renderer, &white_bitmap);
 
     renderer->view_m4 = matrix4x4_translation(0, 0, 0);
@@ -351,7 +382,10 @@ void gpu_frame_begin(Gpu gpu) {
     [renderer->command_encoder setVertexBuffer: renderer->vbuffer offset:0 atIndex:VertexInputIndexVertices];
     [renderer->command_encoder setVertexBytes:&renderer->view_m4 length:sizeof(matrix_float4x4) atIndex:VertexInputIndexView];
     [renderer->command_encoder setVertexBytes:&renderer->proj_m4 length:sizeof(matrix_float4x4) atIndex:VertexInputIndexProj];
-    [renderer->command_encoder setFragmentTexture:renderer->texture_array atIndex:0];
+    [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[TEXTURE_SIZE_8x8].array atIndex:TEXTURE_SIZE_8x8];
+    [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[TEXTURE_SIZE_16x16].array atIndex:TEXTURE_SIZE_16x16];
+    [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[TEXTURE_SIZE_32x32].array atIndex:TEXTURE_SIZE_32x32];
+    [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[TEXTURE_SIZE_64x64].array atIndex:TEXTURE_SIZE_64x64];
 }
 
 void gpu_frame_end(Gpu gpu) {
@@ -388,15 +422,36 @@ void gpu_frame_end(Gpu gpu) {
 
 Texture gpu_texture_load(Gpu gpu, Bitmap *bitmap) {
     IosRenderer *renderer = (IosRenderer *)gpu;
+    
+    i32 gpu_texture_sizes[TEXTURE_SIZE_COUNT] = {
+        8, 16, 32, 64
+    };
 
-    if(renderer->texture_count + 1 >= MAX_TEXTURE_COUNT) {
+    i32 bitmap_size = max(bitmap->width, bitmap->height);
+    i32 array_index = TEXTURE_SIZE_8x8;
+    if(bitmap_size > 8) {
+        array_index = TEXTURE_SIZE_16x16;
+        if(bitmap_size > 16) {
+            array_index = TEXTURE_SIZE_32x32;
+            if(bitmap_size > 32) {
+                array_index = TEXTURE_SIZE_64x64;
+                if(bitmap_size > 64) {
+                    assert(!"texture bigger that 64x64 are not supported!");
+                }
+            }
+        } 
+    }
+
+    IosTextureArray *array = renderer->texture_arrays + array_index;
+    if(array->count + 1 >= MAX_TEXTURE_COUNT) {
         return (void *)-1;
     }
 
     // find the next free texture index
-    i32 free_index = renderer->texture_free_list;
-    renderer->texture_free_list = renderer->texture_index_array[free_index];
-    renderer->texture_index_array[free_index] = -1;
+    i32 free_index = array->free_list;
+    array->free_list = array->index_array[free_index];
+    IosTexture *texture = &array->textures[free_index];
+    array->index_array[free_index] = -1;
 
     NSUInteger bytes_per_row = 4 * bitmap->width;
     MTLRegion region = {
@@ -404,24 +459,37 @@ Texture gpu_texture_load(Gpu gpu, Bitmap *bitmap) {
         {bitmap->width, bitmap->height, 1}
     };
     // Copy the bytes from the data object into the texture
-    [renderer->texture_array replaceRegion:region
-                               mipmapLevel:0
-                                     slice:free_index
-                                 withBytes:bitmap->data
-                               bytesPerRow:bytes_per_row
-                             bytesPerImage:0];
+    [array->array replaceRegion:region
+                    mipmapLevel:0
+                          slice:free_index
+                      withBytes:bitmap->data
+                    bytesPerRow:bytes_per_row
+                  bytesPerImage:0];
+
     
-    renderer->texture_count++;
+    texture->u_ratio = (f32)bitmap->width / (f32)gpu_texture_sizes[array_index];
+    texture->v_ratio = (f32)bitmap->height / (f32)gpu_texture_sizes[array_index];
+    texture->array_index = array_index;
+    texture->texture_index = free_index;
     
-    return (Texture)free_index;
+    array->count++;
+    
+    return (Texture)texture;
 }
 
 void gpu_texture_unload(Gpu gpu, Texture texture) {
     IosRenderer *renderer = (IosRenderer *)gpu;
-    i32 index_to_free = (i32)texture;
-    renderer->texture_index_array[index_to_free] = renderer->texture_free_list;
-    renderer->texture_free_list = index_to_free;
-    renderer->texture_count--;
+    
+    IosTexture *ios_texture = (IosTexture *)texture;
+    
+    i32 array_index = ios_texture->array_index;
+    i32 texture_index_to_free = ios_texture->texture_index;
+    
+    IosTextureArray *array = renderer->texture_arrays + array_index;
+
+    array->index_array[texture_index_to_free] = array->free_list;
+    array->free_list = texture_index_to_free;
+    array->count--;
 }
 
 
@@ -432,6 +500,9 @@ void gpu_blend_state_set(Gpu gpu, GpuBlendState blend_state) {
 
 void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Texture texture) {
     IosRenderer *renderer = (IosRenderer *)gpu;
+
+    IosTexture *ios_texture = (IosTexture *)texture;
+
     matrix_float4x4 trans = matrix4x4_translation(x, y, -20);
     matrix_float4x4 rot = matrix4x4_rotation_z(angle);
     matrix_float4x4 scale = matrix4x4_scale(w, h, 1);
@@ -443,7 +514,10 @@ void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Textu
     }
     Uniform *dst = renderer->ubuffer[i][renderer->current_buffer][renderer->buffer_index[i]].contents + (sizeof(Uniform) * renderer->quad_count[i]);
     memcpy(&dst->world, &world, sizeof(matrix_float4x4));
-    dst->texture_id = (i32)texture;
+    dst->u_ratio = ios_texture->u_ratio;
+    dst->v_ratio = ios_texture->v_ratio;
+    dst->array_index = ios_texture->array_index;
+    dst->texture_index = ios_texture->texture_index;
     dst->color.x = 1.0;
     dst->color.y = 1.0;
     dst->color.z = 1.0;
@@ -478,7 +552,10 @@ void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V3 colo
     }
     Uniform *dst = renderer->ubuffer[i][renderer->current_buffer][renderer->buffer_index[i]].contents + (sizeof(Uniform) * renderer->quad_count[i]);
     memcpy(&dst->world, &world, sizeof(matrix_float4x4));
-    dst->texture_id = 0;
+    dst->u_ratio = 1.0;
+    dst->v_ratio = 1.0;
+    dst->array_index = 0;
+    dst->texture_index = 0;
     dst->color.x = color.x;
     dst->color.y = color.y;
     dst->color.z = color.z;
@@ -500,8 +577,9 @@ void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V3 colo
     }
 }
 
-void gpu_camera_set(V3 pos, f32 angle) {
-
+void gpu_camera_set(Gpu gpu, V3 pos, f32 angle) {
+    IosRenderer *renderer = (IosRenderer *)gpu;
+    renderer->view_m4 = matrix4x4_translation(-pos.x, -pos.y, -pos.z);
 }
 
 
@@ -556,7 +634,7 @@ void gpu_resize(Gpu gpu, u32 w, u32 h) {
 }
 
 - (void)drawInMTKView:(nonnull MTKView *)view {
-    game_update(&g_memory, 0, 0.016);
+    game_update(&g_memory, 0.016);
     game_render(&g_memory);
 }
 
@@ -609,6 +687,48 @@ void gpu_resize(Gpu gpu, u32 w, u32 h) {
     [_metal_view_delegate mtkView:tmp_view drawableSizeWillChange:tmp_view.drawableSize];
     
     tmp_view = nil;
+}
+
+- (void) touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    assert(touches.count <= MAX_TOUCHES);
+    Input input;
+    input.touches_count = touches.count;
+    for(i32 i = 0; i < input.touches_count; i++) {
+        UITouch *uitouch = touches.allObjects[i]; 
+        CGPoint location = [uitouch locationInView:self.view];
+        Touch *touch = input.touches + i; 
+        touch->pos.x = location.x;
+        touch->pos.y = location.y;
+    } 
+    game_touches_down(&g_memory, &input);
+}
+
+- (void) touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {  
+    assert(touches.count <= MAX_TOUCHES);
+    Input input;
+    input.touches_count = touches.count;
+    for(i32 i = 0; i < input.touches_count; i++) {
+        UITouch *uitouch = touches.allObjects[i]; 
+        CGPoint location = [uitouch locationInView:self.view];
+        Touch *touch = input.touches + i; 
+        touch->pos.x = location.x;
+        touch->pos.y = location.y;
+    } 
+    game_touches_move(&g_memory, &input);
+}
+
+- (void) touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    assert(touches.count <= MAX_TOUCHES);
+    Input input;
+    input.touches_count = touches.count;
+    for(i32 i = 0; i < input.touches_count; i++) {
+        UITouch *uitouch = touches.allObjects[i]; 
+        CGPoint location = [uitouch locationInView:self.view];
+        Touch *touch = input.touches + i; 
+        touch->pos.x = location.x;
+        touch->pos.y = location.y;
+    } 
+    game_touches_up(&g_memory, &input);
 }
 
 @end

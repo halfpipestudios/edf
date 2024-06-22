@@ -43,7 +43,7 @@ typedef union V3 {
     f32 m[3];
 } V3;
 
-V3 v3(f32 x, f32 y, f32 z);
+static inline V3 v3(f32 x, f32 y, f32 z) { return (V3){x, y, z}; }
 
 typedef union V4 {
     struct {

@@ -25,7 +25,10 @@ typedef struct {
 typedef struct Uniform {
     matrix_float4x4 world;
     vector_float3 color;
-    uint32_t texture_id;
+    float u_ratio;
+    float v_ratio;
+    uint32_t array_index;
+    uint32_t texture_index;
 } Uniform;
 
 #endif /* IOS_SHADER_TYPES_H */

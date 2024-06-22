@@ -15,9 +15,7 @@ typedef enum TouchEvent {
 } TouchEvent;
 
 typedef struct Touch {
-    TouchEvent event;
     V2i pos;
-    u32 id;
 } Touch;
 
 typedef struct Input {
@@ -57,6 +55,7 @@ File os_file_read(struct Arena *arena, char *path);
 bool os_file_write(u8 *data, sz size);
 u32 os_display_width(void);
 u32 os_display_height(void);
+void os_print(char *message, ...);
 
 Gpu gpu_load(struct Arena *arena);
 void gpu_unload(Gpu gpu);
@@ -69,7 +68,7 @@ void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle,
                            Texture texture);
 void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle,
                          V3 color);
-void gpu_camera_set(V3 pos, f32 angle);
+void gpu_camera_set(Gpu gpu, V3 pos, f32 angle);
 void gpu_resize(Gpu gpu, u32 w, u32 h);
 
 Spu spu_load(struct Arena *arena);
