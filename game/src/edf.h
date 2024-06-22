@@ -29,6 +29,9 @@ typedef struct GameState {
     Bitmap laser_bitmap;
     Texture laser_texture;
 
+    Input input;
+    Input last_input;
+
 } GameState;
 
 #define game_state(memory) ((GameState *)(memory)->data);
@@ -36,7 +39,7 @@ typedef struct GameState {
   ((memory)->used = (memory)->used + sizeof(GameState))
 
 void game_init(struct Memory *memory);
-void game_update(struct Memory *memory, f32 dt);
+void game_update(struct Memory *memory,  f32 dt);
 void game_render(struct Memory *memory);
 void game_shutdown(struct Memory *memory);
 void game_resize(struct Memory *memory, u32 w, u32 h);

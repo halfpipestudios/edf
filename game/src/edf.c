@@ -152,6 +152,7 @@ void game_touches_down(Memory *memory, Input *input) {
 }
 
 void game_touches_up(Memory *memory, Input *input) {
+    os_print("up\n");
 }
 
 void game_touches_move(Memory *memory, Input *input) {

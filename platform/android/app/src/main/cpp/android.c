@@ -247,12 +247,11 @@ void gpu_blend_state_set(Gpu gpu, GpuBlendState blend_state) {
     } else {
         assert(!"Invalid code path");
     }
-
 }
 
 JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameInit(JNIEnv *env, jobject thiz, jobject manager) {
     (void)thiz;
-    asset_manager_ref = (*env)->NewLocalRef(env, manager);
+    asset_manager_ref = (*env)->NewGlobalRef(env, manager);
     asset_manager     = AAssetManager_fromJava(env, asset_manager_ref);
     assert(asset_manager_ref);
     assert(asset_manager);
@@ -280,4 +279,47 @@ JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gpuSetViewport(JNIEnv 
     game_resize(&global_memory, w, h);
     global_display_width  = w;
     global_display_height = h;
+}
+
+Input input_from_java(JNIEnv *env, jint touches_count, jobjectArray touches) {
+    Input input;
+
+    input.touches_count = touches_count;
+    i32 len = (*env)->GetArrayLength(env, touches);
+
+    for(u32 i = 0; i < input.touches_count; ++i) {
+        jobject touch = (*env)->GetObjectArrayElement(env, touches, (jsize)i);
+
+        jclass touch_class = (*env)->GetObjectClass(env, touch);
+        jfieldID event_id = (*env)->GetFieldID(env, touch_class, "event", "I");
+        jfieldID x_id  = (*env)->GetFieldID(env, touch_class, "x", "F");
+        jfieldID y_id  = (*env)->GetFieldID(env, touch_class, "y", "F");
+
+        input.touches[i].event = (*env)->GetIntField(env, touch, event_id);
+        input.touches[i].pos.x = (i32)(*env)->GetFloatField(env, touch, x_id);
+        input.touches[i].pos.y = (i32)(*env)->GetFloatField(env, touch, y_id);
+    }
+
+    return input;
+}
+
+JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameView_gameTouchesDown(JNIEnv *env, jobject thiz, jint touches_count, jobjectArray touches) {
+    (void) env;
+    (void) thiz;
+    Input input = input_from_java(env, touches_count, touches);
+    game_touches_down(&global_memory, &input);
+}
+
+JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameView_gameTouchesUp(JNIEnv *env, jobject thiz, jint touches_count, jobjectArray touches) {
+    (void) env;
+    (void) thiz;
+    Input input = input_from_java(env, touches_count, touches);
+    game_touches_up(&global_memory, &input);
+}
+
+JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameView_gameTouchesMove(JNIEnv *env, jobject thiz, jint touches_count, jobjectArray touches) {
+    (void) env;
+    (void) thiz;
+    Input input = input_from_java(env, touches_count, touches);
+    game_touches_move(&global_memory, &input);
 }

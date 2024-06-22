@@ -15,6 +15,7 @@ typedef enum TouchEvent {
 } TouchEvent;
 
 typedef struct Touch {
+    TouchEvent event;
     V2i pos;
 } Touch;
 
