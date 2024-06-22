@@ -17,6 +17,13 @@ static Memory global_memory;
 static u32 global_display_width;
 static u32 global_display_height;
 
+void os_print(char *message, ...) {
+    va_list args;
+    va_start(args, message);
+    logd("Game", message, args);
+    va_end(args);
+}
+
 u32 os_display_width() {
     return global_display_width;
 }
