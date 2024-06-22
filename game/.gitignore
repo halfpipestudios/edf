@@ -1,0 +1,5 @@
+.clang-format
+.clangd
+compile_flags.txt
+build.bat
+.vscode

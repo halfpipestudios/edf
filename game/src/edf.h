@@ -38,11 +38,10 @@ typedef struct GameState {
 } GameState;
 
 #define game_state(memory) ((GameState *)(memory)->data);
-#define game_state_init(memory)                                                \
-  ((memory)->used = (memory)->used + sizeof(GameState))
+#define game_state_init(memory) ((memory)->used = (memory)->used + sizeof(GameState))
 
 void game_init(struct Memory *memory);
-void game_update(struct Memory *memory,  f32 dt);
+void game_update(struct Memory *memory, f32 dt);
 void game_render(struct Memory *memory);
 void game_shutdown(struct Memory *memory);
 void game_resize(struct Memory *memory, u32 w, u32 h);

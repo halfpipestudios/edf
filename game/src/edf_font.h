@@ -20,7 +20,6 @@ typedef struct Glyph {
     f32 advance_w;
     f32 left_bearing;
 
-
 } Glyph;
 
 typedef struct Font {
@@ -42,4 +41,4 @@ void font_unload(Gpu gpu, Font *font);
 R2 font_size_text(Font *font, const char *text, f32 x, f32 y);
 void font_draw_text(Gpu gpu, Font *font, const char *text, f32 x, f32 y, V3 color);
 
-#endif //EDF_EDF_FONT_H
+#endif // EDF_EDF_FONT_H
