@@ -13,20 +13,24 @@
 #import <UIKit/UIKit.h>
 #import <Metal/Metal.h>
 #import<MetalKit/MetalKit.h>
+#import <AVFoundation/AVFoundation.h>
 #include "ios_shader_types.h"
+#include "ios_sound.h"
 
-// TODO(manu): add IOS_ prefix to this defines
-#define MAX_FRAMES_IN_FLIGHT 3
-#define MAX_UBUFFER_COUNT 1
-#define MAX_QUAD_COUNT 10000
+#define IOS_MAX_FRAMES_IN_FLIGHT 3
+#define IOS_MAX_UBUFFER_COUNT 1
+#define IOS_MAX_QUAD_COUNT 10000
 
-#define MAX_TEXTURE_COUNT 100
-#define TEXTURE_SIZE_8x8     0
-#define TEXTURE_SIZE_16x16   1
-#define TEXTURE_SIZE_32x32   2
-#define TEXTURE_SIZE_64x64   3
-#define TEXTURE_SIZE_128x128 4
-#define TEXTURE_SIZE_COUNT   5
+#define IOS_MAX_TEXTURE_COUNT 100
+typedef enum IosTextureSize {
+    IOS_TEXTURE_SIZE_8x8,
+    IOS_TEXTURE_SIZE_16x16,
+    IOS_TEXTURE_SIZE_32x32,
+    IOS_TEXTURE_SIZE_64x64,
+    IOS_TEXTURE_SIZE_128x128,
+
+    IOS_TEXTURE_SIZE_COUNT
+} IosTextureSize;
 
 static const Vertex quad_vertices[] = {
     { {  0.5,  -0.5 }, {1.0, 1.0} },
@@ -47,8 +51,8 @@ typedef struct IosTexture {
 
 typedef struct IosTextureArray {
     id<MTLTexture> array;
-    IosTexture textures[MAX_TEXTURE_COUNT];
-    i32 index_array[MAX_TEXTURE_COUNT];
+    IosTexture textures[IOS_MAX_TEXTURE_COUNT];
+    i32 index_array[IOS_MAX_TEXTURE_COUNT];
     i32 free_list;
     u32 count;
 } IosTextureArray;
@@ -70,14 +74,14 @@ typedef struct IosRenderer {
     
     GpuBlendState blend_state;
     // TODO(manu): create a struct for this
-    id<MTLBuffer> ubuffer[2][MAX_FRAMES_IN_FLIGHT][MAX_UBUFFER_COUNT];
+    id<MTLBuffer> ubuffer[2][IOS_MAX_FRAMES_IN_FLIGHT][IOS_MAX_UBUFFER_COUNT];
     u32 quad_count[2];
     u32 buffer_index[2];
 
     matrix_float4x4 proj_m4;
     matrix_float4x4 view_m4;
     
-    IosTextureArray texture_arrays[TEXTURE_SIZE_COUNT]; 
+    IosTextureArray texture_arrays[IOS_TEXTURE_SIZE_COUNT];
 
 } IosRenderer;
 
@@ -86,6 +90,7 @@ typedef struct IosRenderer {
 static Memory g_memory;
 static u32 g_view_width;
 static u32 g_view_height;
+static AUAudioUnit *g_audio_unit;
 // temporal globals (after the gpu_load this variables are set to nil)
 static MTKView *tmp_view;
 
@@ -151,24 +156,33 @@ void ios_texture_array_init(IosRenderer *renderer, IosTextureArray *texture_arra
     texture_descriptor.pixelFormat = MTLPixelFormatRGBA8Unorm;
     texture_descriptor.width = width;
     texture_descriptor.height = height;
-    texture_descriptor.arrayLength = MAX_TEXTURE_COUNT;
+    texture_descriptor.arrayLength = IOS_MAX_TEXTURE_COUNT;
     texture_descriptor.textureType = MTLTextureType2DArray;
     texture_array->array = [renderer->device newTextureWithDescriptor: texture_descriptor];
     texture_array->count = 0;
     texture_array->free_list = 0;
-    for(i32 i = 0; i < MAX_TEXTURE_COUNT - 1; i++) {
+    for(i32 i = 0; i < IOS_MAX_TEXTURE_COUNT - 1; i++) {
         texture_array->index_array[i] = i + 1;
     }
-    texture_array->index_array[MAX_TEXTURE_COUNT - 1] = -1;
+    texture_array->index_array[IOS_MAX_TEXTURE_COUNT - 1] = -1;
 }
 
+void ios_get_name_and_ext(char *path, char *name, char *ext) { 
+    char file_header[7] = "assets/";
+    i32 path_length = (i32)strlen(path);
+    char *letter = path;
+    i32 point_offset = 0;
+    for(; *letter != '.'; letter++, point_offset++);
+    memcpy(name, file_header, 7);
+    memcpy(name + 7, path, point_offset);
+    name[point_offset + 7] = 0;
+    point_offset++;
+    memcpy(ext, path + point_offset, path_length - point_offset);
+    ext[path_length - point_offset] = 0;   
+}
 
 //=====================================================================
 //=====================================================================
-
-
-
-
 
 
 //=====================================================================
@@ -178,25 +192,10 @@ void ios_texture_array_init(IosRenderer *renderer, IosTextureArray *texture_arra
 File os_file_read(struct Arena *arena, char *path) {
     File file = {0};
     
-    char file_header[7] = "assets/";
     char file_name[1024];
     char file_ext[1024];
-     
-    i32 path_legth = (i32)strlen(path);
-    
-    char *letter = path;
-    i32 point_offset = 0;
-    for(; *letter != '.'; letter++, point_offset++);
-    
-    memcpy(file_name, file_header, 7);
-    memcpy(file_name + 7, path, point_offset);
-    file_name[point_offset + 7] = 0;
-    
-    point_offset++;
-    
-    memcpy(file_ext, path + point_offset, path_legth - point_offset);
-    file_ext[path_legth - point_offset] = 0;
-    
+    ios_get_name_and_ext(path, file_name, file_ext);
+         
     NSString *file_path = [[NSBundle mainBundle] pathForResource: [NSString stringWithUTF8String:file_name]
                                                           ofType: [NSString stringWithUTF8String:file_ext]];
     
@@ -222,8 +221,23 @@ File os_file_read(struct Arena *arena, char *path) {
     return file;
 }
 
-bool os_file_write(u8 *data, sz size) {
-    return false;
+bool os_file_write(u8 *data, sz size, char *path) {
+    // TODO(manu): see how write are going to be handle ...
+    char file_name[1024];
+    char file_ext[1024];
+    ios_get_name_and_ext(path, file_name, file_ext);
+    
+    NSString *file_path = [[NSBundle mainBundle] pathForResource: [NSString stringWithUTF8String:file_name]
+                                                          ofType: [NSString stringWithUTF8String:file_ext]];
+    
+    FILE *file_handle = fopen([file_path cStringUsingEncoding:NSUTF8StringEncoding], "a+");
+    if(!file_handle) {
+        return false;
+    }
+
+    //sz bytes_writed = fwrite(data, size, 1, file_handle);
+
+    return true;
 }
 
 u32 os_display_width(void) {
@@ -251,7 +265,7 @@ Gpu gpu_load(struct Arena *arena) {
     renderer->device = tmp_view.device;
     renderer->command_queue = [renderer->device newCommandQueue];
     
-    renderer->in_flight_semaphore = dispatch_semaphore_create(MAX_FRAMES_IN_FLIGHT);
+    renderer->in_flight_semaphore = dispatch_semaphore_create(IOS_MAX_FRAMES_IN_FLIGHT);
     renderer->current_buffer = 0;
 
 
@@ -324,20 +338,20 @@ Gpu gpu_load(struct Arena *arena) {
                                                       length:(sizeof(Vertex) * 6)
                                                      options:MTLResourceStorageModeShared];
     
-    for(int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        for(int j = 0; j < MAX_UBUFFER_COUNT; j++) {
-            renderer->ubuffer[0][i][j] = [renderer->device newBufferWithLength:MAX_QUAD_COUNT * sizeof(Uniform)
+    for(int i = 0; i < IOS_MAX_FRAMES_IN_FLIGHT; i++) {
+        for(int j = 0; j < IOS_MAX_UBUFFER_COUNT; j++) {
+            renderer->ubuffer[0][i][j] = [renderer->device newBufferWithLength:IOS_MAX_QUAD_COUNT * sizeof(Uniform)
                                                                        options:MTLResourceCPUCacheModeDefaultCache];
-            renderer->ubuffer[1][i][j] = [renderer->device newBufferWithLength:MAX_QUAD_COUNT * sizeof(Uniform)
+            renderer->ubuffer[1][i][j] = [renderer->device newBufferWithLength:IOS_MAX_QUAD_COUNT * sizeof(Uniform)
                                                                        options:MTLResourceCPUCacheModeDefaultCache];
         }
     }
 
-    ios_texture_array_init(renderer, &renderer->texture_arrays[TEXTURE_SIZE_8x8], 8, 8);
-    ios_texture_array_init(renderer, &renderer->texture_arrays[TEXTURE_SIZE_16x16], 16, 16);
-    ios_texture_array_init(renderer, &renderer->texture_arrays[TEXTURE_SIZE_32x32], 32, 32);
-    ios_texture_array_init(renderer, &renderer->texture_arrays[TEXTURE_SIZE_64x64], 64, 64);
-    ios_texture_array_init(renderer, &renderer->texture_arrays[TEXTURE_SIZE_128x128], 128, 128);
+    ios_texture_array_init(renderer, &renderer->texture_arrays[IOS_TEXTURE_SIZE_8x8], 8, 8);
+    ios_texture_array_init(renderer, &renderer->texture_arrays[IOS_TEXTURE_SIZE_16x16], 16, 16);
+    ios_texture_array_init(renderer, &renderer->texture_arrays[IOS_TEXTURE_SIZE_32x32], 32, 32);
+    ios_texture_array_init(renderer, &renderer->texture_arrays[IOS_TEXTURE_SIZE_64x64], 64, 64);
+    ios_texture_array_init(renderer, &renderer->texture_arrays[IOS_TEXTURE_SIZE_128x128], 128, 128);
 
     u32 white[8*8];
     for(u32 i = 0; i < 8*8; i++) {
@@ -356,7 +370,7 @@ Gpu gpu_load(struct Arena *arena) {
 }
 
 void gpu_unload(Gpu gpu) {
-    IosRenderer *renderer = (IosRenderer *)gpu;
+    //IosRenderer *renderer = (IosRenderer *)gpu;
 }
 
 void gpu_frame_begin(Gpu gpu) {
@@ -365,7 +379,7 @@ void gpu_frame_begin(Gpu gpu) {
     renderer->blend_state = GPU_BLEND_STATE_ALPHA;
     
     dispatch_semaphore_wait(renderer->in_flight_semaphore, DISPATCH_TIME_FOREVER);
-    renderer->current_buffer = (renderer->current_buffer + 1) % MAX_FRAMES_IN_FLIGHT;
+    renderer->current_buffer = (renderer->current_buffer + 1) % IOS_MAX_FRAMES_IN_FLIGHT;
     renderer->buffer_index[0] = 0;
     renderer->buffer_index[1] = 0;
     renderer->quad_count[0] = 0;
@@ -383,11 +397,11 @@ void gpu_frame_begin(Gpu gpu) {
     [renderer->command_encoder setVertexBuffer: renderer->vbuffer offset:0 atIndex:VertexInputIndexVertices];
     [renderer->command_encoder setVertexBytes:&renderer->view_m4 length:sizeof(matrix_float4x4) atIndex:VertexInputIndexView];
     [renderer->command_encoder setVertexBytes:&renderer->proj_m4 length:sizeof(matrix_float4x4) atIndex:VertexInputIndexProj];
-    [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[TEXTURE_SIZE_8x8].array atIndex:TEXTURE_SIZE_8x8];
-    [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[TEXTURE_SIZE_16x16].array atIndex:TEXTURE_SIZE_16x16];
-    [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[TEXTURE_SIZE_32x32].array atIndex:TEXTURE_SIZE_32x32];
-    [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[TEXTURE_SIZE_64x64].array atIndex:TEXTURE_SIZE_64x64];
-    [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[TEXTURE_SIZE_128x128].array atIndex:TEXTURE_SIZE_128x128];
+    [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[IOS_TEXTURE_SIZE_8x8].array atIndex:IOS_TEXTURE_SIZE_8x8];
+    [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[IOS_TEXTURE_SIZE_16x16].array atIndex:IOS_TEXTURE_SIZE_16x16];
+    [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[IOS_TEXTURE_SIZE_32x32].array atIndex:IOS_TEXTURE_SIZE_32x32];
+    [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[IOS_TEXTURE_SIZE_64x64].array atIndex:IOS_TEXTURE_SIZE_64x64];
+    [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[IOS_TEXTURE_SIZE_128x128].array atIndex:IOS_TEXTURE_SIZE_128x128];
 
 }
 
@@ -426,20 +440,20 @@ void gpu_frame_end(Gpu gpu) {
 Texture gpu_texture_load(Gpu gpu, Bitmap *bitmap) {
     IosRenderer *renderer = (IosRenderer *)gpu;
     
-    i32 gpu_texture_sizes[TEXTURE_SIZE_COUNT] = {
+    i32 gpu_texture_sizes[IOS_TEXTURE_SIZE_COUNT] = {
         8, 16, 32, 64, 128
     };
 
     i32 bitmap_size = max(bitmap->w, bitmap->h);
-    i32 array_index = TEXTURE_SIZE_8x8;
+    i32 array_index = IOS_TEXTURE_SIZE_8x8;
     if(bitmap_size > 8) {
-        array_index = TEXTURE_SIZE_16x16;
+        array_index = IOS_TEXTURE_SIZE_16x16;
         if(bitmap_size > 16) {
-            array_index = TEXTURE_SIZE_32x32;
+            array_index = IOS_TEXTURE_SIZE_32x32;
             if(bitmap_size > 32) {
-                array_index = TEXTURE_SIZE_64x64;
+                array_index = IOS_TEXTURE_SIZE_64x64;
                 if(bitmap_size > 64) {
-                    array_index = TEXTURE_SIZE_128x128;
+                    array_index = IOS_TEXTURE_SIZE_128x128;
                     if(bitmap_size > 128) {
                         assert(!"texture bigger that 128x128 are not supported!");
                     }
@@ -449,7 +463,7 @@ Texture gpu_texture_load(Gpu gpu, Bitmap *bitmap) {
     }
 
     IosTextureArray *array = renderer->texture_arrays + array_index;
-    if(array->count + 1 >= MAX_TEXTURE_COUNT) {
+    if(array->count + 1 >= IOS_MAX_TEXTURE_COUNT) {
         return (void *)-1;
     }
 
@@ -515,7 +529,7 @@ void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Textu
     matrix_float4x4 world = matrix_multiply(trans, matrix_multiply(rot, scale));
     
     u32 i = renderer->blend_state;
-    if(renderer->buffer_index[i] == MAX_UBUFFER_COUNT) {
+    if(renderer->buffer_index[i] == IOS_MAX_UBUFFER_COUNT) {
         return;
     }
     Uniform *dst = renderer->ubuffer[i][renderer->current_buffer][renderer->buffer_index[i]].contents + (sizeof(Uniform) * renderer->quad_count[i]);
@@ -529,7 +543,7 @@ void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Textu
     dst->color.z = 1.0;
     renderer->quad_count[i]++;
 
-    if(renderer->quad_count[i] == MAX_QUAD_COUNT) {
+    if(renderer->quad_count[i] == IOS_MAX_QUAD_COUNT) {
         if(i == GPU_BLEND_STATE_ALPHA) {
             [renderer->command_encoder setRenderPipelineState: renderer->alpha_blend_state];
         }
@@ -558,7 +572,7 @@ void gpu_draw_quad_texture_tinted(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle
     matrix_float4x4 world = matrix_multiply(trans, matrix_multiply(rot, scale));
     
     u32 i = renderer->blend_state;
-    if(renderer->buffer_index[i] == MAX_UBUFFER_COUNT) {
+    if(renderer->buffer_index[i] == IOS_MAX_UBUFFER_COUNT) {
         return;
     }
     Uniform *dst = renderer->ubuffer[i][renderer->current_buffer][renderer->buffer_index[i]].contents + (sizeof(Uniform) * renderer->quad_count[i]);
@@ -572,7 +586,7 @@ void gpu_draw_quad_texture_tinted(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle
     dst->color.z = color.z;
     renderer->quad_count[i]++;
 
-    if(renderer->quad_count[i] == MAX_QUAD_COUNT) {
+    if(renderer->quad_count[i] == IOS_MAX_QUAD_COUNT) {
         if(i == GPU_BLEND_STATE_ALPHA) {
             [renderer->command_encoder setRenderPipelineState: renderer->alpha_blend_state];
         }
@@ -596,7 +610,7 @@ void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V3 colo
     matrix_float4x4 world = matrix_multiply(trans, matrix_multiply(rot, scale));
 
     u32 i = renderer->blend_state;
-    if(renderer->buffer_index[i] == MAX_UBUFFER_COUNT) {
+    if(renderer->buffer_index[i] == IOS_MAX_UBUFFER_COUNT) {
         return;
     }
     Uniform *dst = renderer->ubuffer[i][renderer->current_buffer][renderer->buffer_index[i]].contents + (sizeof(Uniform) * renderer->quad_count[i]);
@@ -610,7 +624,7 @@ void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V3 colo
     dst->color.z = color.z;
     renderer->quad_count[i]++;
 
-    if(renderer->quad_count[i] == MAX_QUAD_COUNT) {
+    if(renderer->quad_count[i] == IOS_MAX_QUAD_COUNT) {
         if(i == GPU_BLEND_STATE_ALPHA) {
             [renderer->command_encoder setRenderPipelineState: renderer->alpha_blend_state];
         }
@@ -639,10 +653,99 @@ void gpu_resize(Gpu gpu, u32 w, u32 h) {
     renderer->proj_m4 = matrix_ortho(-hw, hw, -hh, hh, 0, -100.0f);
     
 }
-//=====================================================================
-//=====================================================================
 
 
+Spu spu_load(struct Arena *arena) {
+    IosSoundSystem *sound_sys = arena_push(arena, sizeof(IosSoundSystem), 8);
+
+    // start sound hardware
+    AudioComponentDescription audio_desc;
+    audio_desc.componentType = kAudioUnitType_Output;
+    audio_desc.componentSubType = kAudioUnitSubType_RemoteIO;
+    audio_desc.componentManufacturer = kAudioUnitManufacturer_Apple;
+    audio_desc.componentFlags = 0;
+    audio_desc.componentFlagsMask = 0;
+    NSError *error = nil;
+    g_audio_unit = [[AUAudioUnit alloc] initWithComponentDescription:audio_desc error:&error];
+
+    // init render callback struct for core audio
+    g_audio_unit.outputProvider = ^AUAudioUnitStatus(AudioUnitRenderActionFlags * _Nonnull action_flags,
+                                                    const AudioTimeStamp * _Nonnull timestamp,
+                                                    AUAudioFrameCount frame_count,
+                                                    NSInteger input_bus_number,
+                                                    AudioBufferList * _Nonnull input_data) {
+        return CoreAudioCallback(sound_sys, action_flags, timestamp, (UInt32)input_bus_number, (UInt32)frame_count, input_data);
+    };
+    
+    AudioStreamBasicDescription stream_format;
+    stream_format.mSampleRate = 44100;
+    stream_format.mFormatID = kAudioFormatLinearPCM;
+    stream_format.mFormatFlags = kAudioFormatFlagIsPacked | kAudioFormatFlagIsSignedInteger; 
+    stream_format.mFramesPerPacket = 1;
+    stream_format.mBytesPerPacket = 2 * sizeof(i16);
+    stream_format.mChannelsPerFrame = 2;
+    stream_format.mBitsPerChannel =  sizeof(i16) * 8;
+    stream_format.mBytesPerFrame = 2 * sizeof(i16);
+    
+    AVAudioFormat *audio_format = [[AVAudioFormat alloc] initWithStreamDescription:&stream_format];
+    [g_audio_unit.inputBusses[0] setFormat:audio_format error:&error];
+
+    IosSoundSysInit(arena, sound_sys, 1024);
+
+    [g_audio_unit allocateRenderResourcesAndReturnError:&error];
+    if(error) {
+        NSLog(@"Error allocating render resources: %@", error.localizedDescription);    
+    }
+    
+    [g_audio_unit startHardwareAndReturnError:&error];
+    if (error) {
+        NSLog(@"Error starting audio unit: %@", error);
+    }
+
+    return (Spu)sound_sys;
+}
+
+void spu_unload(Spu spu) {
+    // NOTE: see if this is realy necesary
+}
+
+void spu_clear(Spu spu) {
+    IosSoundSystem *sound_sys = (IosSoundSystem *)spu;
+    IosSoundSysClear(sound_sys);
+}
+
+Sound spu_sound_add(Spu spu, Wave *wave, bool playing, bool looping) {
+    IosSoundSystem *sound_sys = (IosSoundSystem *)spu;
+    IosSoundHandle sound = IosSoundSysAdd(sound_sys, wave, playing, looping);
+    return (Sound)sound;
+}
+
+void spu_sound_remove(Spu spu, Sound sound) {
+    IosSoundSystem *sound_sys = (IosSoundSystem *)spu;
+    IosSoundHandle handle = (IosSoundHandle)sound;
+    IosSoundSysRemove(sound_sys, &handle);
+}
+
+void spu_sound_play(Spu spu, Sound sound) {
+    IosSoundSystem *sound_sys = (IosSoundSystem *)spu;
+    IosSoundHandle handle = (IosSoundHandle)sound;
+    IosSoundSysPlay(sound_sys, handle);
+}
+
+void spu_sound_pause(Spu spu, Sound sound) {
+    IosSoundSystem *sound_sys = (IosSoundSystem *)spu;
+    IosSoundHandle handle = (IosSoundHandle)sound;
+    IosSoundSysPause(sound_sys, handle);
+}
+
+void spu_sound_restart(Spu spu, Sound sound) {
+    IosSoundSystem *sound_sys = (IosSoundSystem *)spu;
+    IosSoundHandle handle = (IosSoundHandle)sound;
+    IosSoundSysRestart(sound_sys, handle);
+}
+
+//=====================================================================
+//=====================================================================
 
 
 //=====================================================================
@@ -663,10 +766,6 @@ void gpu_resize(Gpu gpu, u32 w, u32 h) {
 @end
 //=====================================================================
 //=====================================================================
-
-
-
-
 
 //=====================================================================
 // MTKViewDelegate
@@ -703,12 +802,6 @@ void gpu_resize(Gpu gpu, u32 w, u32 h) {
 //=====================================================================
 //=====================================================================
 
-
-
-
-
-
-
 //=====================================================================
 // ViewController
 //=====================================================================
@@ -726,17 +819,18 @@ void gpu_resize(Gpu gpu, u32 w, u32 h) {
     tmp_view.device = MTLCreateSystemDefaultDevice();
     tmp_view.clearColor = MTLClearColorMake(0.2, 0.5, 0.7, 1.0);
     
+    // init the view delegate
     _metal_view_delegate = [[MetalViewDelegate alloc] initWithMetalKitView:tmp_view];
     if(!_metal_view_delegate) {
         NSLog(@"Renderer initialization failed");
         return;
     }
+    tmp_view.delegate = _metal_view_delegate;
 
+    // alloc memory for the entire game
     g_memory.size = mb(256);
     g_memory.used = 0;
     g_memory.data = malloc(g_memory.size);
-    
-    tmp_view.delegate = _metal_view_delegate;
     
     game_init(&g_memory);
 
@@ -794,11 +888,6 @@ void gpu_resize(Gpu gpu, u32 w, u32 h) {
 @end
 //=====================================================================
 //=====================================================================
-
-
-
-
-
 
 //=====================================================================
 // Main Entry point of the program

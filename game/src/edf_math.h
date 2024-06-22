@@ -117,7 +117,7 @@ static inline M4 m4_mul(M4 a, M4 b) {
 }
 
 static inline V3 m4_mul_v3(M4 m, V3 v) {
-    V3 result;
+    V3 result = {0};
     for(u32 row = 0; row < 4; ++row) {
         u32 row_offset = row<<2;
         result.m[row] = m.m[row_offset+0] * v.m[0] +

@@ -43,11 +43,16 @@ File os_file_read(struct Arena *arena, char *path) {
     return file;
 }
 
-bool os_file_write(u8 *data, sz size) {
-    unused(data);
-    unused(size);
-    return false;
-}
+bool os_file_write(u8 *data, sz size, char *path) { return false; }
+
+Spu spu_load(struct Arena *arena) { return 0; }
+void spu_unload(Spu spu) {}
+void spu_clear(Spu spu) {}
+Sound spu_sound_add(Spu spu, Wave *wave, bool playing, bool looping) { return (Sound){0}; }
+void spu_sound_remove(Spu spu, Sound sound) {}
+void spu_sound_play(Spu spu, Sound sound) {}
+void spu_sound_pause(Spu spu, Sound sound) {}
+void spu_sound_restart(Spu spu, Sound sound) {}
 
 Gpu gpu_load(struct Arena *arena) {
 

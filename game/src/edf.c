@@ -1,54 +1,14 @@
 #include "edf.h"
-#include "edf_math.h"
-#include "edf_memory.h"
-
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
-Bitmap bitmap_load(Arena *arena, char *path) {
-    File file = os_file_read(arena, path);
-    Bitmap bitmap = {0};
-    i32 width, height, channels;
-    u8 *data = stbi_load_from_memory(file.data, (i32)file.size, &width, &height, &channels, 4);
-    if (!data) {
-        return bitmap;
-    }
-    bitmap.data = (u32 *)data;
-    bitmap.w = width;
-    bitmap.h = height;
-    return bitmap;
-}
-
-Bitmap bitmap_empty(Arena *arena, i32 w, i32 h, sz pixel_size) {
-    Bitmap result;
-    result.w = w;
-    result.h = h;
-    result.data = arena_push(arena, w*h*pixel_size, 8);
-    return result;
-}
-
-void bitmap_copy_u8_u32(struct Arena *arena, Bitmap *bitmap8, Bitmap *bitmap32) {
-
-    for(u32 y = 0; y < bitmap8->h; ++y) {
-        for(u32 x = 0; x < bitmap8->w; ++x) {
-            u8 src = ((u8 *)bitmap8->data)[y*bitmap8->w+x];
-            ((u32 *)bitmap32->data)[y*bitmap32->w+x] = (src << 24) | (src << 16) | (src << 8) | src;
-        }
-    }
-}
-
-Bitmap bitmap_copy(struct Arena *arena, Bitmap *bitmap, sz pixel_size) {
-    Bitmap result = bitmap_empty(arena, (i32)bitmap->w, (i32)bitmap->h, pixel_size);
-    memcpy(result.data, bitmap->data, bitmap->w*bitmap->h*pixel_size);
-    return result;
-}
 
 void game_init(Memory *memory) {
     game_state_init(memory);
     GameState *gs = game_state(memory);
 
-    gs->platform_arena = arena_create(memory, mb(20));
+    init_scratch_arenas(memory, 3, mb(10));
+
+    gs->platform_arena = arena_create(memory, mb(100));
     gs->gpu = gpu_load(&gs->platform_arena);
+    gs->spu = spu_load(&gs->platform_arena);
 
     gs->arial = font_load(gs->gpu, &gs->platform_arena, "arial.ttf", 128);
     gs->times = font_load(gs->gpu, &gs->platform_arena, "times.ttf", 64);
@@ -66,6 +26,8 @@ void game_init(Memory *memory) {
     gs->laser_bitmap = bitmap_load(&gs->platform_arena, "laser.png");
     gs->laser_texture = gpu_texture_load(gs->gpu, &gs->laser_bitmap);
 
+    gs->test_wave = wave_load(&gs->platform_arena, "test.wav");
+    gs->test_sound = spu_sound_add(gs->spu, &gs->test_wave, false, true);
 }
 
 void game_update(Memory *memory, f32 dt) {
@@ -116,8 +78,6 @@ void game_render(Memory *memory) {
                         gs->bitmap1.h * scale, gs->angle, gs->texture1);
 
     gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ADDITIVE);
-
-
     gpu_draw_quad_texture(gs->gpu, -100, 500, gs->orbe_bitmap.w * scale,
                         gs->orbe_bitmap.h * scale, 0, gs->orbe_texture);
     gpu_draw_quad_texture(gs->gpu, 0, 600, gs->orbe_bitmap.w * scale,
@@ -147,13 +107,19 @@ void game_resize(Memory *memory, u32 w, u32 h) {
     gpu_resize(gs->gpu, w, h);
 }
 
-void game_touches_down(Memory *memory, Input *input) {
+void game_touches_down(struct Memory *memory, struct Input *input) {
+    GameState *gs = game_state(memory);
+    spu_sound_play(gs->spu, gs->test_sound);
     os_print("down\n");
 }
 
-void game_touches_up(Memory *memory, Input *input) {
+void game_touches_up(struct Memory *memory, struct Input *input) {
+    GameState *gs = game_state(memory);
+    spu_sound_pause(gs->spu, gs->test_sound);
     os_print("up\n");
+
 }
 
-void game_touches_move(Memory *memory, Input *input) {
+void game_touches_move(struct Memory *memory, struct Input *input) {
+
 }
