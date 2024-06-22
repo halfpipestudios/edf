@@ -129,6 +129,7 @@ void game_resize(Memory *memory, u32 w, u32 h) {
 }
 
 void game_touches_down(Memory *memory, Input *input) {
+    os_print("down\n");
 }
 
 void game_touches_up(Memory *memory, Input *input) {

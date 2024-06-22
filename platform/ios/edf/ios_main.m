@@ -20,12 +20,13 @@
 #define MAX_UBUFFER_COUNT 1
 #define MAX_QUAD_COUNT 10000
 
-#define MAX_TEXTURE_COUNT 200
-#define TEXTURE_SIZE_8x8 0
-#define TEXTURE_SIZE_16x16 1
-#define TEXTURE_SIZE_32x32 2
-#define TEXTURE_SIZE_64x64 3
-#define TEXTURE_SIZE_COUNT 4
+#define MAX_TEXTURE_COUNT 100
+#define TEXTURE_SIZE_8x8     0
+#define TEXTURE_SIZE_16x16   1
+#define TEXTURE_SIZE_32x32   2
+#define TEXTURE_SIZE_64x64   3
+#define TEXTURE_SIZE_128x128 4
+#define TEXTURE_SIZE_COUNT   5
 
 static const Vertex quad_vertices[] = {
     { {  0.5,  -0.5 }, {1.0, 1.0} },
@@ -336,6 +337,7 @@ Gpu gpu_load(struct Arena *arena) {
     ios_texture_array_init(renderer, &renderer->texture_arrays[TEXTURE_SIZE_16x16], 16, 16);
     ios_texture_array_init(renderer, &renderer->texture_arrays[TEXTURE_SIZE_32x32], 32, 32);
     ios_texture_array_init(renderer, &renderer->texture_arrays[TEXTURE_SIZE_64x64], 64, 64);
+    ios_texture_array_init(renderer, &renderer->texture_arrays[TEXTURE_SIZE_128x128], 128, 128);
 
     u32 white[8*8];
     for(u32 i = 0; i < 8*8; i++) {
@@ -355,7 +357,6 @@ Gpu gpu_load(struct Arena *arena) {
 
 void gpu_unload(Gpu gpu) {
     IosRenderer *renderer = (IosRenderer *)gpu;
-
 }
 
 void gpu_frame_begin(Gpu gpu) {
@@ -386,6 +387,8 @@ void gpu_frame_begin(Gpu gpu) {
     [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[TEXTURE_SIZE_16x16].array atIndex:TEXTURE_SIZE_16x16];
     [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[TEXTURE_SIZE_32x32].array atIndex:TEXTURE_SIZE_32x32];
     [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[TEXTURE_SIZE_64x64].array atIndex:TEXTURE_SIZE_64x64];
+    [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[TEXTURE_SIZE_128x128].array atIndex:TEXTURE_SIZE_128x128];
+
 }
 
 void gpu_frame_end(Gpu gpu) {
@@ -424,7 +427,7 @@ Texture gpu_texture_load(Gpu gpu, Bitmap *bitmap) {
     IosRenderer *renderer = (IosRenderer *)gpu;
     
     i32 gpu_texture_sizes[TEXTURE_SIZE_COUNT] = {
-        8, 16, 32, 64
+        8, 16, 32, 64, 128
     };
 
     i32 bitmap_size = max(bitmap->width, bitmap->height);
@@ -436,7 +439,10 @@ Texture gpu_texture_load(Gpu gpu, Bitmap *bitmap) {
             if(bitmap_size > 32) {
                 array_index = TEXTURE_SIZE_64x64;
                 if(bitmap_size > 64) {
-                    assert(!"texture bigger that 64x64 are not supported!");
+                    array_index = TEXTURE_SIZE_128x128;
+                    if(bitmap_size > 128) {
+                        assert(!"texture bigger that 128x128 are not supported!");
+                    }
                 }
             }
         } 
@@ -521,6 +527,49 @@ void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Textu
     dst->color.x = 1.0;
     dst->color.y = 1.0;
     dst->color.z = 1.0;
+    renderer->quad_count[i]++;
+
+    if(renderer->quad_count[i] == MAX_QUAD_COUNT) {
+        if(i == GPU_BLEND_STATE_ALPHA) {
+            [renderer->command_encoder setRenderPipelineState: renderer->alpha_blend_state];
+        }
+        else {
+            [renderer->command_encoder setRenderPipelineState: renderer->additive_blend_state];
+        }
+        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[i][renderer->current_buffer][renderer->buffer_index[i]]
+                                            offset:0
+                                           atIndex:VertexInputIndexWorld];
+        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count[i]];
+        renderer->quad_count[i] = 0;
+        renderer->buffer_index[i]++;
+    }
+}
+
+void gpu_draw_quad_texture_tinted(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle,
+                           Texture texture, V3 color) {
+
+    IosRenderer *renderer = (IosRenderer *)gpu;
+
+    IosTexture *ios_texture = (IosTexture *)texture;
+
+    matrix_float4x4 trans = matrix4x4_translation(x, y, -20);
+    matrix_float4x4 rot = matrix4x4_rotation_z(angle);
+    matrix_float4x4 scale = matrix4x4_scale(w, h, 1);
+    matrix_float4x4 world = matrix_multiply(trans, matrix_multiply(rot, scale));
+    
+    u32 i = renderer->blend_state;
+    if(renderer->buffer_index[i] == MAX_UBUFFER_COUNT) {
+        return;
+    }
+    Uniform *dst = renderer->ubuffer[i][renderer->current_buffer][renderer->buffer_index[i]].contents + (sizeof(Uniform) * renderer->quad_count[i]);
+    memcpy(&dst->world, &world, sizeof(matrix_float4x4));
+    dst->u_ratio = ios_texture->u_ratio;
+    dst->v_ratio = ios_texture->v_ratio;
+    dst->array_index = ios_texture->array_index;
+    dst->texture_index = ios_texture->texture_index;
+    dst->color.x = color.x;
+    dst->color.y = color.y;
+    dst->color.z = color.z;
     renderer->quad_count[i]++;
 
     if(renderer->quad_count[i] == MAX_QUAD_COUNT) {
@@ -626,15 +675,22 @@ void gpu_resize(Gpu gpu, u32 w, u32 h) {
 - (nonnull instancetype)initWithMetalKitView:(nonnull MTKView *)view;
 @end
 
-@implementation MetalViewDelegate
+@implementation MetalViewDelegate {
+    CFAbsoluteTime last_time;
+}
 
 - (nonnull instancetype) initWithMetalKitView:(nonnull MTKView *)view {
     self = [super init];
+    last_time = CACurrentMediaTime(); 
     return self;   
 }
 
 - (void)drawInMTKView:(nonnull MTKView *)view {
-    game_update(&g_memory, 0.016);
+    CFAbsoluteTime current_time = CACurrentMediaTime();
+    f64 delta_time = current_time - last_time;
+    last_time = current_time;
+
+    game_update(&g_memory, delta_time);
     game_render(&g_memory);
 }
 
@@ -686,13 +742,17 @@ void gpu_resize(Gpu gpu, u32 w, u32 h) {
 
     [_metal_view_delegate mtkView:tmp_view drawableSizeWillChange:tmp_view.drawableSize];
     
+    tmp_view.multipleTouchEnabled = YES;
+    
     tmp_view = nil;
+    
+
 }
 
 - (void) touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     assert(touches.count <= MAX_TOUCHES);
     Input input;
-    input.touches_count = touches.count;
+    input.touches_count = (u32)touches.count;
     for(i32 i = 0; i < input.touches_count; i++) {
         UITouch *uitouch = touches.allObjects[i]; 
         CGPoint location = [uitouch locationInView:self.view];
@@ -706,7 +766,7 @@ void gpu_resize(Gpu gpu, u32 w, u32 h) {
 - (void) touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {  
     assert(touches.count <= MAX_TOUCHES);
     Input input;
-    input.touches_count = touches.count;
+    input.touches_count = (u32)touches.count;
     for(i32 i = 0; i < input.touches_count; i++) {
         UITouch *uitouch = touches.allObjects[i]; 
         CGPoint location = [uitouch locationInView:self.view];
@@ -720,7 +780,7 @@ void gpu_resize(Gpu gpu, u32 w, u32 h) {
 - (void) touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     assert(touches.count <= MAX_TOUCHES);
     Input input;
-    input.touches_count = touches.count;
+    input.touches_count = (u32)touches.count;
     for(i32 i = 0; i < input.touches_count; i++) {
         UITouch *uitouch = touches.allObjects[i]; 
         CGPoint location = [uitouch locationInView:self.view];

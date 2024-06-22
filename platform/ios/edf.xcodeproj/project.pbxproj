@@ -14,6 +14,7 @@
 		6E1420812C23192100C8BB04 /* ios_main.m in Sources */ = {isa = PBXBuildFile; fileRef = 6E1420802C23192100C8BB04 /* ios_main.m */; };
 		6E1420822C23196300C8BB04 /* edf.c in Sources */ = {isa = PBXBuildFile; fileRef = 6EE114D82C222A030018B7E1 /* edf.c */; };
 		6ED097D82C266CEE005630FB /* edf_font.c in Sources */ = {isa = PBXBuildFile; fileRef = 6ED097D62C266CEE005630FB /* edf_font.c */; };
+		6ED7993E2C2708EE005E0FDF /* ios_sound.c in Sources */ = {isa = PBXBuildFile; fileRef = 6ED7993D2C2708EE005E0FDF /* ios_sound.c */; };
 		6EE114C92C22285C0018B7E1 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6EE114C72C22285C0018B7E1 /* Main.storyboard */; };
 		6EE114CB2C2228600018B7E1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6EE114CA2C2228600018B7E1 /* Assets.xcassets */; };
 		6EE114CE2C2228600018B7E1 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6EE114CC2C2228600018B7E1 /* LaunchScreen.storyboard */; };
@@ -34,6 +35,8 @@
 		6ED097D52C266CCE005630FB /* stb_truetype.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stb_truetype.h; sourceTree = "<group>"; };
 		6ED097D62C266CEE005630FB /* edf_font.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = edf_font.c; sourceTree = "<group>"; };
 		6ED097D72C266CEE005630FB /* edf_font.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = edf_font.h; sourceTree = "<group>"; };
+		6ED7993C2C2708EE005E0FDF /* ios_sound.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ios_sound.h; sourceTree = "<group>"; };
+		6ED7993D2C2708EE005E0FDF /* ios_sound.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ios_sound.c; sourceTree = "<group>"; };
 		6EE114BB2C22285C0018B7E1 /* edf.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = edf.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6EE114C82C22285C0018B7E1 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		6EE114CA2C2228600018B7E1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -103,6 +106,8 @@
 				6EE114CF2C2228600018B7E1 /* Info.plist */,
 				6E0F64BC2C237E3D00FC0EC0 /* ios_shader_types.h */,
 				6E0F64BD2C23837600FC0EC0 /* ios_shader.metal */,
+				6ED7993C2C2708EE005E0FDF /* ios_sound.h */,
+				6ED7993D2C2708EE005E0FDF /* ios_sound.c */,
 			);
 			path = edf;
 			sourceTree = "<group>";
@@ -196,6 +201,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6E0F64BB2C23687100FC0EC0 /* edf_memory.c in Sources */,
+				6ED7993E2C2708EE005E0FDF /* ios_sound.c in Sources */,
 				6E1420822C23196300C8BB04 /* edf.c in Sources */,
 				6E0F64BE2C23837600FC0EC0 /* ios_shader.metal in Sources */,
 				6E1420812C23192100C8BB04 /* ios_main.m in Sources */,
