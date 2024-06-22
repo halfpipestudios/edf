@@ -5,6 +5,8 @@
 
 #include "edf_common.h"
 #include "edf_math.h"
+#include "edf_graphics.h"
+#include "edf_sound.h"
 
 struct Arena;
 
@@ -23,16 +25,7 @@ typedef struct Input {
     u32 touches_count;
 } Input;
 
-typedef struct Bitmap {
-    void *data;
-    i32 w;
-    i32 h;
-} Bitmap;
 
-typedef struct Wave {
-    void *data;
-    sz size;
-} Wave;
 
 typedef struct File {
     void *data;
@@ -48,13 +41,6 @@ typedef void *Texture;
 typedef void *Sound;
 typedef void *Gpu;
 typedef void *Spu;
-
-Bitmap bitmap_load(struct Arena *arena, char *path);
-Bitmap bitmap_empty(struct Arena *arena, i32 w, i32 h, sz pixel_size);
-Bitmap bitmap_copy(struct Arena *arena, Bitmap *bitmap, sz pixel_size);
-void bitmap_copy_u8_u32(struct Arena *arena, Bitmap *bitmap8, Bitmap *bitmap32);
-
-Wave wave_load(struct Arena *Arena, char *path);
 
 File os_file_read(struct Arena *arena, char *path);
 bool os_file_write(u8 *data, sz size, char *path);
@@ -82,7 +68,7 @@ void gpu_resize(Gpu gpu, u32 w, u32 h);
 Spu spu_load(struct Arena *arena);
 void spu_unload(Spu spu);
 void spu_clear(Spu spu);
-Sound spu_sound_add(Spu spu, Wave wave, bool playing, bool looping);
+Sound spu_sound_add(Spu spu, Wave *wave, bool playing, bool looping);
 void spu_sound_remove(Spu spu, Sound sound);
 void spu_sound_play(Spu spu, Sound sound);
 void spu_sound_pause(Spu spu, Sound sound);

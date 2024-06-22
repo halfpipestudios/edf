@@ -7,6 +7,9 @@
 
 #include "edf_memory.h"
 
+static Arena scratch_arenas[MAX_SCRATCH_ARENA_COUNT];
+static u32 scratch_arenas_count = 0;
+
 Arena arena_create(Memory *memory, sz size) {
     assert(memory->used + size <= memory->size);
     void *data = memory->data + memory->used;
@@ -34,4 +37,28 @@ void *arena_push(Arena *arena, sz size, sz align) {
 
 void arena_clear(Arena *arena) {
     arena->used = 0;
+}
+
+TempArena temp_arena_begin(Arena *arena) {
+    TempArena tmp = {0};
+    tmp.arena = arena;
+    tmp.pos = arena->used;
+    return tmp;
+}
+
+void temp_arena_end(TempArena tmp) {
+    tmp.arena->used = tmp.pos;
+}
+
+void init_scratch_arenas(Memory *memory, u32 count, u64 size) {
+    assert(count <= MAX_SCRATCH_ARENA_COUNT);
+    scratch_arenas_count = count;
+    for(i32 i = 0; i < count; i++) {
+        scratch_arenas[i] = arena_create(memory, size);
+    }
+}
+
+Arena *get_scratch_arena(i32 index) {
+    assert(index < scratch_arenas_count);
+    return scratch_arenas + index;
 }

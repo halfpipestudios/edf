@@ -38,7 +38,8 @@ typedef struct IosSoundSystem {
 } IosSoundSystem;
 
 void IosSoundSysInit(struct Arena *arena, IosSoundSystem *sound_sys, i32 max_channels);
-IosSoundHandle IosSoundSysAdd(IosSoundSystem *sound_sys, Wave stream, bool playing, bool looping);
+IosSoundHandle IosSoundSysAdd(IosSoundSystem *sound_sys, Wave *wave, bool playing, bool looping);
+void IosSoundSysClear(IosSoundSystem *sound_sys);
 void IosSoundSysRemove(IosSoundSystem *sound_sys, IosSoundHandle *out_handle);
 void IosSoundSysPlay(IosSoundSystem *sound_sys, IosSoundHandle handle);
 void IosSoundSysPause(IosSoundSystem *sound_sys, IosSoundHandle handle);

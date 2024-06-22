@@ -235,7 +235,7 @@ bool os_file_write(u8 *data, sz size, char *path) {
         return false;
     }
 
-    sz bytes_writed = fwrite(data, size, 1, file_handle);
+    //sz bytes_writed = fwrite(data, size, 1, file_handle);
 
     return true;
 }
@@ -370,7 +370,7 @@ Gpu gpu_load(struct Arena *arena) {
 }
 
 void gpu_unload(Gpu gpu) {
-    IosRenderer *renderer = (IosRenderer *)gpu;
+    //IosRenderer *renderer = (IosRenderer *)gpu;
 }
 
 void gpu_frame_begin(Gpu gpu) {
@@ -710,10 +710,11 @@ void spu_unload(Spu spu) {
 }
 
 void spu_clear(Spu spu) {
-    // TODO(manu): ...
+    IosSoundSystem *sound_sys = (IosSoundSystem *)spu;
+    IosSoundSysClear(sound_sys);
 }
 
-Sound spu_sound_add(Spu spu, Wave wave, bool playing, bool looping) {
+Sound spu_sound_add(Spu spu, Wave *wave, bool playing, bool looping) {
     IosSoundSystem *sound_sys = (IosSoundSystem *)spu;
     IosSoundHandle sound = IosSoundSysAdd(sound_sys, wave, playing, looping);
     return (Sound)sound;

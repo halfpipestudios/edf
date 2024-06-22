@@ -40,7 +40,7 @@ void IosSoundSysInit(struct Arena *arena, IosSoundSystem *sound_sys, i32 max_cha
     }
 }
 
-IosSoundHandle IosSoundSysAdd(IosSoundSystem *sound_sys, Wave stream,
+IosSoundHandle IosSoundSysAdd(IosSoundSystem *sound_sys, Wave *wave,
                               bool playing, bool looping) {
 
     if((sound_sys->channel_used + 1) > sound_sys->channel_count) {
@@ -55,10 +55,10 @@ IosSoundHandle IosSoundSysAdd(IosSoundSystem *sound_sys, Wave stream,
     IosSoundChannel *channel = sound_sys->channels + handle;
     sound_sys->first_free = channel->next;
     // initialize the channel
-    channel->stream = stream;
+    channel->stream = *wave;
     channel->loop = looping;
     channel->playing = playing;
-    channel->sample_count = (i32)(stream.size / sizeof(i32));
+    channel->sample_count = (i32)(wave->size / sizeof(i32));
     channel->current_sample = 0;
     channel->next = sound_sys->first;
     channel->prev = -1;
@@ -72,6 +72,33 @@ IosSoundHandle IosSoundSysAdd(IosSoundSystem *sound_sys, Wave stream,
     sound_sys->channel_used++;
 
     return handle;
+}
+
+
+void IosSoundSysClear(IosSoundSystem *sound_sys) {
+    sound_sys->channel_used = 0;
+    sound_sys->first = -1;
+    sound_sys->first_free = 0;
+    for(i32 i = 0; i < sound_sys->channel_count; i++) {
+        IosSoundChannel *channel = sound_sys->channels + i;
+        channel->stream.data = 0;
+        channel->stream.size = 0;
+        channel->loop = false;
+        channel->playing = false;
+        if(i < (sound_sys->channel_count - 1)) {
+            channel->next = i + 1;
+        }
+        else {
+            channel->next = -1;
+        }
+        if(i == 0) {
+            channel->prev = -1;
+        }
+        else {
+            channel->prev = i - 1;
+        }
+    }
+
 }
 
 void IosSoundSysRemove(IosSoundSystem *sound_sys, IosSoundHandle *out_handle) {
@@ -133,7 +160,7 @@ OSStatus CoreAudioCallback(void *in_ref_con, AudioUnitRenderActionFlags *io_acti
         return noErr;
     }
 
-    IosSoundHandle handle = sound_sys->first;
+     IosSoundHandle handle = sound_sys->first;
     while(handle != -1) {
         IosSoundChannel *channel = sound_sys->channels + handle;
 
