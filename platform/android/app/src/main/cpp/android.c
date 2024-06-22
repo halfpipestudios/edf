@@ -254,7 +254,7 @@ JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameInit(JNIEnv *env, 
 JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameUpdate(JNIEnv *env, jobject thiz, jfloat dt) {
     (void)env;
     (void)thiz;
-    game_update(&global_memory, 0, dt);
+    game_update(&global_memory, dt);
 }
 
 JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameRender(JNIEnv *env, jobject thiz) {

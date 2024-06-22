@@ -55,6 +55,7 @@ void texture_atlas_calculate_size_and_alloc(Arena *arena, OpenglTextureAtlas *at
     atlas->bitmap.height = 1;
     atlas->current_x = 1 + TEXTURE_ATLAS_DEFAULT_PADDING;
 
+
     for(u32 i = 0; i < atlas->texture_count; ++i) {
 
         u32 *bucket = atlas->buckets + i;
@@ -65,16 +66,16 @@ void texture_atlas_calculate_size_and_alloc(Arena *arena, OpenglTextureAtlas *at
         if(i == 0) {
             atlas->bitmap.height = bitmap->height + TEXTURE_ATLAS_DEFAULT_PADDING;
             atlas->last_row_added_height = atlas->bitmap.height;
-        }
+        } else {
+            i32 width_left = (i32)atlas->bitmap.width - (i32)atlas->current_x;
+            if(width_left < (i32)bitmap->width) {
+                u32 new_row_height = bitmap->height + TEXTURE_ATLAS_DEFAULT_PADDING;
+                atlas->bitmap.height += new_row_height;
+                atlas->current_x = 0;
+                atlas->current_y += atlas->last_row_added_height;
+                atlas->last_row_added_height = new_row_height;
 
-        u32 width_left = atlas->bitmap.width - atlas->current_x;
-        if(width_left < (i32)bitmap->width) {
-            u32 new_row_height = bitmap->height + TEXTURE_ATLAS_DEFAULT_PADDING;
-            atlas->bitmap.height += new_row_height;
-            atlas->current_x = 0;
-            atlas->current_y += atlas->last_row_added_height;
-            atlas->last_row_added_height = new_row_height;
-
+            }
         }
 
         atlas->current_x += bitmap->width + TEXTURE_ATLAS_DEFAULT_PADDING;
@@ -100,14 +101,14 @@ void texture_atlas_insert_textures(OpenglTextureAtlas *atlas) {
 
         if(i == 0) {
             atlas->last_row_added_height = bitmap->height + TEXTURE_ATLAS_DEFAULT_PADDING;
-        }
-
-        u32 width_left = atlas->bitmap.width - atlas->current_x;
-        if(width_left < (i32)bitmap->width) {
-            u32 new_row_height = bitmap->height + TEXTURE_ATLAS_DEFAULT_PADDING;
-            atlas->current_x = 0;
-            atlas->current_y += atlas->last_row_added_height;
-            atlas->last_row_added_height = new_row_height;
+        } else {
+            i32 width_left = (i32)atlas->bitmap.width - (i32)atlas->current_x;
+            if(width_left < (i32)bitmap->width) {
+                u32 new_row_height = bitmap->height + TEXTURE_ATLAS_DEFAULT_PADDING;
+                atlas->current_x = 0;
+                atlas->current_y += atlas->last_row_added_height;
+                atlas->last_row_added_height = new_row_height;
+            }
         }
 
         texture->dim = r2_from_wh((i32)atlas->current_x, (i32)atlas->current_y, (i32)bitmap->width, (i32)bitmap->height);

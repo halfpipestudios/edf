@@ -33,7 +33,7 @@ typedef struct OpenglTexture {
     Bitmap *bitmap;
 } OpenglTexture;
 
-#define TEXTURE_ATLAS_START_WIDTH 512
+#define TEXTURE_ATLAS_START_WIDTH 1024
 #define TEXTURE_ATLAS_DEFAULT_PADDING 4
 #define MAX_ATLAS_TEXTURES 512
 

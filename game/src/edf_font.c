@@ -21,7 +21,7 @@ Font *font_load(Gpu gpu, Arena *arena, char *path) {
     i32 ascent_i, decent_i, line_gap_i;
     stbtt_GetFontVMetrics(&font, &ascent_i, &decent_i, &line_gap_i);
 
-    float scale = stbtt_ScaleForPixelHeight(&font, 64);
+    float scale = stbtt_ScaleForPixelHeight(&font, 64*2);
     result->ascent = (f32)ascent_i * scale;
     result->decent = (f32)decent_i * scale;
     result->line_gap = (f32)line_gap_i * scale;
