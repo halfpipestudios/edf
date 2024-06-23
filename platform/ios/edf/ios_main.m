@@ -850,9 +850,11 @@ void spu_sound_restart(Spu spu, Sound sound) {
     for(i32 i = 0; i < input.touches_count; i++) {
         UITouch *uitouch = touches.allObjects[i]; 
         CGPoint location = [uitouch locationInView:self.view];
-        Touch *touch = input.touches + i; 
-        touch->pos.x = location.x;
-        touch->pos.y = location.y;
+        Touch *touch = input.touches + i;
+        f32 w = self.view.bounds.size.width;
+        f32 h = self.view.bounds.size.height;
+        touch->pos.x = (i32)(((f32)location.x / w) * g_view_width);
+        touch->pos.y = (i32)(((f32)location.y / h) * g_view_height);
     } 
     game_touches_down(&g_memory, &input);
 }
@@ -865,8 +867,10 @@ void spu_sound_restart(Spu spu, Sound sound) {
         UITouch *uitouch = touches.allObjects[i]; 
         CGPoint location = [uitouch locationInView:self.view];
         Touch *touch = input.touches + i; 
-        touch->pos.x = location.x;
-        touch->pos.y = location.y;
+        f32 w = self.view.bounds.size.width;
+        f32 h = self.view.bounds.size.height;
+        touch->pos.x = (i32)(((f32)location.x / w) * g_view_width);
+        touch->pos.y = (i32)(((f32)location.y / h) * g_view_height);
     } 
     game_touches_move(&g_memory, &input);
 }
@@ -879,8 +883,10 @@ void spu_sound_restart(Spu spu, Sound sound) {
         UITouch *uitouch = touches.allObjects[i]; 
         CGPoint location = [uitouch locationInView:self.view];
         Touch *touch = input.touches + i; 
-        touch->pos.x = location.x;
-        touch->pos.y = location.y;
+        f32 w = self.view.bounds.size.width;
+        f32 h = self.view.bounds.size.height;
+        touch->pos.x = (i32)(((f32)location.x / w) * g_view_width);
+        touch->pos.y = (i32)(((f32)location.y / h) * g_view_height);
     } 
     game_touches_up(&g_memory, &input);
 }
