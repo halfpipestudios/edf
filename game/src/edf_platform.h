@@ -1,7 +1,7 @@
 #ifndef EDF_PLATFORM_H
 #define EDF_PLATFORM_H
 
-#define MAX_TOUCHES 10
+#define MAX_TOUCHES 3
 
 #include "edf_common.h"
 #include "edf_math.h"
@@ -19,6 +19,7 @@ typedef enum TouchEvent {
 typedef struct Touch {
     TouchEvent event;
     V2i pos;
+    u64 uid;
 } Touch;
 
 typedef struct Input {

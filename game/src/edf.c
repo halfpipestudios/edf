@@ -140,6 +140,13 @@ bool point_in_circle(V2 point, V2 c, f32 r) {
 }
 
 void game_touches_down(struct Memory *memory, struct Input *input) {
+    
+    for(u32 i = 0; i < input->touches_count; i++) {
+        V2 pos = v2(input->touches[i].pos.x, input->touches[i].pos.y);
+        os_print("[%d] x: %f, y: %f\n", i, pos.x, pos.y);
+    }
+    
+    /*
     if(input->touches_count > 2) {
         return;
     }
@@ -178,10 +185,16 @@ void game_touches_down(struct Memory *memory, struct Input *input) {
             gs->joystick_is_down = true;
         }
     }
+    */
 }
 
 void game_touches_up(struct Memory *memory, struct Input *input) {
-    if(input->touches_count > 1) {
+    for(u32 i = 0; i < input->touches_count; i++) {
+        V2 pos = v2(input->touches[i].pos.x, input->touches[i].pos.y);
+        os_print("[%d] x: %f, y: %f\n", i, pos.x, pos.y);
+    }
+    /*
+    if(input->touches_count > 2) {
         return;
     }
     GameState *gs = game_state(memory);
@@ -202,10 +215,16 @@ void game_touches_up(struct Memory *memory, struct Input *input) {
             gs->c_pos            = gs->s_pos;
         }
     }
+    */
 }
 
 void game_touches_move(struct Memory *memory, struct Input *input) {
-    if(input->touches_count > 1) {
+    for(u32 i = 0; i < input->touches_count; i++) {
+        V2 pos = v2(input->touches[i].pos.x, input->touches[i].pos.y);
+        os_print("[%d] x: %f, y: %f\n", i, pos.x, pos.y);
+    }
+    /*
+    if(input->touches_count > 2) {
         return;
     }
     GameState *gs = game_state(memory);
@@ -236,4 +255,5 @@ void game_touches_move(struct Memory *memory, struct Input *input) {
             gs->c_pos.y *= -height;
         }
     }
+     */
 }
