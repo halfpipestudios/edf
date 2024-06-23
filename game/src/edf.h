@@ -11,29 +11,40 @@ struct Memory;
 typedef struct GameState {
     Gpu gpu;
     Spu spu;
+
     Arena platform_arena;
+    Arena game_arena;
 
     Font *arial;
     Font *times;
 
-    f32 angle;
+    Bitmap ship_bitmap;
+    Bitmap move_outer_bitmap;
+    Bitmap move_inner_bitmap;
+    Bitmap boost_bitmap;
 
-    Bitmap bitmap;
-    Texture texture;
+    Texture ship_texture;
+    Texture move_outer_texture;
+    Texture move_inner_texture;
+    Texture boost_texture;
 
-    Bitmap bitmap1;
-    Texture texture1;
+    V3 boost_tint;
 
-    Bitmap orbe_bitmap;
-    Texture orbe_texture;
+    Sprite *ship;
+    V2 ship_vel;
+    V2 ship_acc;
+    f32 ship_damping;
 
-    Bitmap laser_bitmap;
-    Texture laser_texture;
+    f32 s_inner;
 
-    Input input;
-    Input last_input;
-    Wave test_wave;
-    Sound test_sound;
+    bool joystick_is_down;
+    f32 joystick_max_distance;
+    f32 joystick_scale;
+    V2 s_pos, c_pos;
+
+    bool button_is_down[2];
+    V2 button_center;
+    f32 button_radii;
 
 } GameState;
 

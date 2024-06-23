@@ -6,36 +6,93 @@ void game_init(Memory *memory) {
 
     init_scratch_arenas(memory, 3, mb(10));
 
-    gs->platform_arena = arena_create(memory, mb(100));
-    gs->gpu            = gpu_load(&gs->platform_arena);
-    gs->spu            = spu_load(&gs->platform_arena);
+    gs->platform_arena = arena_create(memory, mb(20));
+    gs->game_arena     = arena_create(memory, mb(50));
 
+    gs->gpu   = gpu_load(&gs->platform_arena);
+    gs->spu   = spu_load(&gs->platform_arena);
     gs->arial = font_load(gs->gpu, &gs->platform_arena, "arial.ttf", 128);
     gs->times = font_load(gs->gpu, &gs->platform_arena, "times.ttf", 64);
 
-    gs->angle = 0;
+    gs->ship_bitmap       = bitmap_load(&gs->game_arena, "Player.png");
+    gs->move_outer_bitmap = bitmap_load(&gs->game_arena, "move_outer.png");
+    gs->move_inner_bitmap = bitmap_load(&gs->game_arena, "move_inner.png");
+    gs->boost_bitmap      = bitmap_load(&gs->game_arena, "boost.png");
 
-    gs->bitmap   = bitmap_load(&gs->platform_arena, "Player.png");
-    gs->bitmap1  = bitmap_load(&gs->platform_arena, "link.png");
-    gs->texture  = gpu_texture_load(gs->gpu, &gs->bitmap);
-    gs->texture1 = gpu_texture_load(gs->gpu, &gs->bitmap1);
+    gs->ship_texture       = gpu_texture_load(gs->gpu, &gs->ship_bitmap);
+    gs->move_outer_texture = gpu_texture_load(gs->gpu, &gs->move_outer_bitmap);
+    gs->move_inner_texture = gpu_texture_load(gs->gpu, &gs->move_inner_bitmap);
+    gs->boost_texture      = gpu_texture_load(gs->gpu, &gs->boost_bitmap);
 
-    gs->orbe_bitmap  = bitmap_load(&gs->platform_arena, "orbe.png");
-    gs->orbe_texture = gpu_texture_load(gs->gpu, &gs->orbe_bitmap);
+    f32 size = 32.0f * 3.0f;
+    gs->ship =
+        sprite_load(&gs->game_arena, v2(0, 0), v2(size, size), v3(1, 1, 1), 0, gs->ship_texture);
+    gs->ship_vel = v2(0, 0);
+    gs->ship_acc = v2(0, 0);
+    gs->ship_damping = 0.4f;
 
-    gs->laser_bitmap  = bitmap_load(&gs->platform_arena, "laser.png");
-    gs->laser_texture = gpu_texture_load(gs->gpu, &gs->laser_bitmap);
 
-    gs->test_wave  = wave_load(&gs->platform_arena, "test.wav");
-    gs->test_sound = spu_sound_add(gs->spu, &gs->test_wave, false, true);
+    gs->joystick_scale   = 4;
+    gs->joystick_is_down = false;
+
+    gs->s_inner      = 2;
+    gs->button_radii = (gs->boost_bitmap.w * gs->joystick_scale * gs->s_inner) * 0.5f;
+
+    gs->button_is_down[0] = false;
+    gs->button_is_down[1] = false;
+
+    gs->button_center  = v2(740, -250);
+    gs->button_radii   = 100;
+
+    gs->boost_tint = v3(1, 1, 1);
 }
 
 void game_update(Memory *memory, f32 dt) {
-    GameState *gs = game_state(memory);
-    gs->angle += dt;
-    if(gs->angle == 2 * 3.14) {
-        gs->angle = 0;
+    GameState *gs             = game_state(memory);
+    gs->joystick_max_distance = ((f32)gs->move_outer_bitmap.w * 0.5f) * gs->joystick_scale;
+
+    V2 diff = v2_sub(gs->s_pos, gs->c_pos);
+    f32 len = v2_len(diff);
+    if(len > gs->joystick_max_distance) {
+        V2 dir      = v2_normalized(diff);
+        gs->s_pos.x = gs->c_pos.x + dir.x * gs->joystick_max_distance;
+        gs->s_pos.y = gs->c_pos.y + dir.y * gs->joystick_max_distance;
     }
+
+    if(gs->joystick_is_down) {
+        if(len > (gs->joystick_max_distance * 0.2f)) {
+            V2 dir          = v2_normalized(diff);
+            gs->ship->angle = atan2f(dir.y, dir.x) + (PI / 2.0f);
+        }
+    }
+
+    V2 dir = v2_sub(gs->c_pos, gs->s_pos);
+    gs->boost_tint = v3(1, 1, 1);
+    if(gs->button_is_down[0]) {
+        gs->boost_tint = v3(0.5f, 0.5f, 0.5f);
+        V2 dir = {0};
+        dir.x = cosf(gs->ship->angle + (PI / 2.0f));
+        dir.y = sinf(gs->ship->angle + (PI / 2.0f));
+        if(v2_len(dir) > 0) {
+            dir = v2_normalized(dir);
+            gs->ship_acc.x += dir.x * 800.0f;
+            gs->ship_acc.y += dir.y * 800.0f;
+        }
+
+    }
+
+    gs->ship->pos.x += gs->ship_vel.x * dt;
+    gs->ship->pos.y += gs->ship_vel.y * dt;
+
+    gs->ship_vel.x += gs->ship_acc.x * dt;
+    gs->ship_vel.y += gs->ship_acc.y * dt;
+
+    gs->ship_vel.x *= powf(gs->ship_damping, dt);
+    gs->ship_vel.y *= powf(gs->ship_damping, dt);
+
+    gs->ship_acc = v2(0, 0);
+
+    gs->button_is_down[1] = gs->button_is_down[0];
 }
 
 void game_render(Memory *memory) {
@@ -46,52 +103,19 @@ void game_render(Memory *memory) {
 
     gpu_frame_begin(gs->gpu);
 
-    gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v3(0.1f, 0.1f, 0.15f));
+    gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v3(0.05f, 0.05f, 0.1f));
 
-    {
-        char *text   = "Tomas Cabrerizo";
-        R2 text_size = font_size_text(gs->arial, text, -400, 200);
-        f32 pos_x    = (f32)text_size.min.x + (f32)r2_width(text_size) * 0.5f;
-        f32 pos_y    = (f32)text_size.min.y + (f32)r2_height(text_size) * 0.5f;
-        gpu_draw_quad_color(gs->gpu, pos_x, pos_y, (f32)r2_width(text_size),
-                            (f32)r2_height(text_size), 0, v3(0, 1, 0));
-        font_draw_text(gs->gpu, gs->arial, text, -400, 200, v3(0, 0, 1));
-    }
+    sprite_draw(gs->gpu, gs->ship);
 
-    {
-        char *text   = "Hello, Sailor!";
-        R2 text_size = font_size_text(gs->times, text, -200, -400);
-        f32 pos_x    = (f32)text_size.min.x + (f32)r2_width(text_size) * 0.5f;
-        f32 pos_y    = (f32)text_size.min.y + (f32)r2_height(text_size) * 0.5f;
-        gpu_draw_quad_color(gs->gpu, pos_x, pos_y, (f32)r2_width(text_size),
-                            (f32)r2_height(text_size), 0, v3(0, 0, 1));
-        font_draw_text(gs->gpu, gs->times, text, -200, -400, v3(1, 0, 1));
-    }
+    f32 s       = gs->joystick_scale;
+    f32 s_inner = gs->s_inner;
 
-    font_draw_text(gs->gpu, gs->arial, "Jose Lagos", -200, -1000, v3(1, 0.7f, 0.2f));
-
-    f32 scale = 10;
-    gpu_draw_quad_texture(gs->gpu, 0, 0, gs->bitmap.w * scale, gs->bitmap.h * scale, gs->angle,
-                          gs->texture);
-
-    gpu_draw_quad_texture(gs->gpu, 0, -600, gs->bitmap1.w * scale, gs->bitmap1.h * scale, gs->angle,
-                          gs->texture1);
-
-    gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ADDITIVE);
-    gpu_draw_quad_texture(gs->gpu, -100, 500, gs->orbe_bitmap.w * scale, gs->orbe_bitmap.h * scale,
-                          0, gs->orbe_texture);
-    gpu_draw_quad_texture(gs->gpu, 0, 600, gs->orbe_bitmap.w * scale, gs->orbe_bitmap.h * scale, 0,
-                          gs->orbe_texture);
-    gpu_draw_quad_texture(gs->gpu, 0, 450, gs->orbe_bitmap.w * scale, gs->orbe_bitmap.h * scale, 0,
-                          gs->orbe_texture);
-    gpu_draw_quad_texture(gs->gpu, 100, 500, gs->orbe_bitmap.w * scale, gs->orbe_bitmap.h * scale,
-                          0, gs->orbe_texture);
-
-    gpu_draw_quad_texture(gs->gpu, 0, 700, gs->laser_bitmap.w * scale, gs->laser_bitmap.h * scale,
-                          3.14f / 2.0f, gs->laser_texture);
-
-    gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ALPHA);
-    gpu_draw_quad_color(gs->gpu, 200, 400, 100, 200, gs->angle, v3(1, 0, 0));
+    gpu_draw_quad_texture(gs->gpu, gs->s_pos.x, gs->s_pos.y, gs->move_outer_bitmap.w * s,
+                          gs->move_outer_bitmap.h * s, 0, gs->move_outer_texture);
+    gpu_draw_quad_texture(gs->gpu, gs->c_pos.x, gs->c_pos.y, gs->move_inner_bitmap.w * s * s_inner,
+                          gs->move_inner_bitmap.h * s * s_inner, 0, gs->move_inner_texture);
+    gpu_draw_quad_texture_tinted(gs->gpu, gs->button_center.x, gs->button_center.y, gs->button_radii * 2,
+                          gs->button_radii * 2, 0, gs->boost_texture, gs->boost_tint);
 
     gpu_frame_end(gs->gpu);
 }
@@ -106,21 +130,109 @@ void game_resize(Memory *memory, u32 w, u32 h) {
     gpu_resize(gs->gpu, w, h);
 }
 
+bool point_in_circle(V2 point, V2 c, f32 r) {
+    f32 len = v2_len(v2_sub(point, c));
+    if(len > r) {
+        return false;
+    }
+    return true;
+}
+
 void game_touches_down(struct Memory *memory, struct Input *input) {
-    unused(input);
+    if(input->touches_count > 2) {
+        return;
+    }
     GameState *gs = game_state(memory);
-    spu_sound_play(gs->spu, gs->test_sound);
-    os_print("down\n");
+
+    for(u32 i = 0; i < input->touches_count; i++) {
+        f32 width  = os_display_width();
+        f32 height = os_display_height();
+        V2 pos = v2(input->touches[i].pos.x, input->touches[i].pos.y);
+        pos.x /= width;
+        pos.y /= height;
+        pos.x -= 0.5f;
+        pos.y -= 0.5f;
+        pos.x *= width;
+        pos.y *= -height;
+        if(point_in_circle(pos, gs->button_center, gs->button_radii)) {
+            gs->button_is_down[0] = true;
+        } else {
+            gs->s_pos.x = input->touches[i].pos.x;
+            gs->s_pos.y = input->touches[i].pos.y;
+            gs->c_pos   = gs->s_pos;
+
+            gs->s_pos.x /= width;
+            gs->s_pos.y /= height;
+            gs->s_pos.x -= 0.5f;
+            gs->s_pos.y -= 0.5f;
+            gs->s_pos.x *= width;
+            gs->s_pos.y *= -height;
+
+            gs->c_pos.x /= width;
+            gs->c_pos.y /= height;
+            gs->c_pos.x -= 0.5f;
+            gs->c_pos.y -= 0.5f;
+            gs->c_pos.x *= width;
+            gs->c_pos.y *= -height;
+            gs->joystick_is_down = true;
+        }
+    }
 }
 
 void game_touches_up(struct Memory *memory, struct Input *input) {
-    unused(input);
+    if(input->touches_count > 1) {
+        return;
+    }
     GameState *gs = game_state(memory);
-    spu_sound_pause(gs->spu, gs->test_sound);
-    os_print("up\n");
+    for(u32 i = 0; i < input->touches_count; i++) {
+        f32 width  = os_display_width();
+        f32 height = os_display_height();
+        V2 pos = v2(input->touches[i].pos.x, input->touches[i].pos.y);
+        pos.x /= width;
+        pos.y /= height;
+        pos.x -= 0.5f;
+        pos.y -= 0.5f;
+        pos.x *= width;
+        pos.y *= -height;
+        if(point_in_circle(pos, gs->button_center, gs->button_radii)) {
+            gs->button_is_down[0] = false;
+        } else {
+            gs->joystick_is_down = false;
+            gs->c_pos            = gs->s_pos;
+        }
+    }
 }
 
 void game_touches_move(struct Memory *memory, struct Input *input) {
-    unused(memory);
-    unused(input);
+    if(input->touches_count > 1) {
+        return;
+    }
+    GameState *gs = game_state(memory);
+    for(u32 i = 0; i < input->touches_count; i++) {
+        f32 width  = os_display_width();
+        f32 height = os_display_height();
+        V2 pos = v2(input->touches[i].pos.x, input->touches[i].pos.y);
+        pos.x /= width;
+        pos.y /= height;
+        pos.x -= 0.5f;
+        pos.y -= 0.5f;
+        pos.x *= width;
+        pos.y *= -height;
+        if(point_in_circle(pos, gs->button_center, gs->button_radii)) {
+            
+        } else {
+            gs->c_pos.x = input->touches[0].pos.x;
+            gs->c_pos.y = input->touches[0].pos.y;
+
+            f32 width  = os_display_width();
+            f32 height = os_display_height();
+
+            gs->c_pos.x /= width;
+            gs->c_pos.y /= height;
+            gs->c_pos.x -= 0.5f;
+            gs->c_pos.y -= 0.5f;
+            gs->c_pos.x *= width;
+            gs->c_pos.y *= -height;
+        }
+    }
 }
