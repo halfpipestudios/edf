@@ -31,11 +31,12 @@ void game_init(Memory *memory) {
     gs->ship_acc = v2(0, 0);
     gs->ship_damping = 0.4f;
 
-
+    gs->s_pos = v2(-740, -250);
+    gs->c_pos = gs->s_pos;
     gs->joystick_scale   = 4;
     gs->joystick_is_down = false;
 
-    gs->s_inner      = 2;
+    gs->s_inner      = 1.5f;
     gs->button_radii = (gs->boost_bitmap.w * gs->joystick_scale * gs->s_inner) * 0.5f;
 
     gs->button_is_down[0] = false;
