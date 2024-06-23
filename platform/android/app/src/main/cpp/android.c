@@ -121,8 +121,9 @@ void gpu_frame_begin(Gpu gpu) {
 void gpu_frame_end(Gpu gpu) {
     OpenglGPU *renderer = (OpenglGPU *)gpu;
 
-    // draw texture atlas test
 
+    // draw texture atlas test
+#if 0
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     float angle = 0;
@@ -164,7 +165,7 @@ void gpu_frame_end(Gpu gpu) {
     quad_batch_push(renderer, quad);
 
     // -----------------------------------------------
-
+#endif
     quad_batch_flush(renderer);
 }
 
