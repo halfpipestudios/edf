@@ -763,6 +763,11 @@ void spu_sound_restart(Spu spu, Sound sound) {
 - (void)applicationWillTerminate:(UIApplication *)application {
     game_shutdown(&g_memory);
 }
+
+- (UIInterfaceOrientationMask)application:(UIApplication *)application supportedInterfaceOrientationsForWindow:(UIWindow *)window {
+    return UIInterfaceOrientationMaskLandscape;
+}
+
 @end
 //=====================================================================
 //=====================================================================
@@ -889,6 +894,10 @@ void spu_sound_restart(Spu spu, Sound sound) {
         touch->pos.y = (i32)(((f32)location.y / h) * g_view_height);
     } 
     game_touches_up(&g_memory, &input);
+}
+
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations {
+    return UIInterfaceOrientationMaskLandscape;
 }
 
 @end
