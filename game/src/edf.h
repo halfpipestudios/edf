@@ -53,6 +53,7 @@ typedef struct GameState {
     V2 button_center;
     f32 button_radii;
 
+    bool stars_init;
     Sprite stars[MAX_STARS];
 
 

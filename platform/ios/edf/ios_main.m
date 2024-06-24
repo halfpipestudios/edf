@@ -845,7 +845,10 @@ void spu_sound_restart(Spu spu, Sound sound) {
 @end
 
 @implementation AppDelegate
+
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+    [[UIDevice currentDevice] setValue:@(UIInterfaceOrientationLandscapeLeft) forKey:@"orientation"];
+    
     return YES;
 }
 
@@ -917,6 +920,7 @@ void spu_sound_restart(Spu spu, Sound sound) {
     [super viewDidLoad];
 
     tmp_view = (MTKView *)self.view;
+
     tmp_view.device = MTLCreateSystemDefaultDevice();
     tmp_view.clearColor = MTLClearColorMake(0.2, 0.5, 0.7, 1.0);
     
@@ -927,17 +931,18 @@ void spu_sound_restart(Spu spu, Sound sound) {
         return;
     }
     tmp_view.delegate = _metal_view_delegate;
+    tmp_view.multipleTouchEnabled = YES;
 
     // alloc memory for the entire game
     g_memory.size = mb(256);
     g_memory.used = 0;
     g_memory.data = malloc(g_memory.size);
-
+    
     game_init(&g_memory);
 
     [_metal_view_delegate mtkView:tmp_view drawableSizeWillChange:tmp_view.drawableSize];
     
-    tmp_view.multipleTouchEnabled = YES;
+    
     
     tmp_view = nil;
     
@@ -1037,6 +1042,12 @@ void spu_sound_restart(Spu spu, Sound sound) {
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations {
     return UIInterfaceOrientationMaskLandscape;
 }
+
+
+- (BOOL)shouldAutorotate {
+    return YES;
+}
+
 
 @end
 //=====================================================================

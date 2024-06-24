@@ -53,36 +53,47 @@ void game_init(Memory *memory) {
     gs->joystick_touch = -1;
     gs->button_touch = -1;
 
-    u32 star_colors[4] = {
-        0xFDF4F5,
-        0xE8A0BF,
-        0xBA90C6,
-        0xC0DBEA
-    };
 
-    i32 hw = os_display_width() * 0.5f;
-    i32 hh = os_display_height() * 0.5f;
-
-    // Init star sprites
-    i32 color_index = 0;
-    for(i32 i = 0; i < MAX_STARS; i++) {
-        Sprite *star = gs->stars + i;
-        star->texture = gs->star_texture;
-        star->pos.x = rand_range(-hw, hw);
-        star->pos.y = rand_range(-hh, hh);
-        star->z = (f32)rand_range(1, 10);
-        star->scale.x = 20/star->z;
-        star->scale.y = 20/star->z;
-        star->tint = hex_to_v3(star_colors[color_index]);
-        star->angle = 0;
-        
-        color_index = (color_index + 1) % array_len(star_colors);
-    }
+    gs->stars_init = false;
 
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {
     GameState *gs             = game_state(memory);
+    
+    if(gs->stars_init == false) {
+        u32 star_colors[4] = {
+            0xFDF4F5,
+            0xE8A0BF,
+            0xBA90C6,
+            0xC0DBEA
+        };
+
+        i32 hw = (os_display_width() * 0.5f) * 1.25f;
+        i32 hh = (os_display_height() * 0.5f) * 1.25f;
+
+        // Init star sprites
+        i32 color_index = 0;
+        for(i32 i = 0; i < MAX_STARS; i++) {
+            Sprite *star = gs->stars + i;
+            star->texture = gs->star_texture;
+            star->pos.x = rand_range(-hw, hw);
+            star->pos.y = rand_range(-hh, hh);
+            star->z = (f32)rand_range(1, 10);
+            star->scale.x = 20/star->z;
+            star->scale.y = 20/star->z;
+            star->tint = hex_to_v3(star_colors[color_index]);
+            star->angle = 0;
+            
+            color_index = (color_index + 1) % array_len(star_colors);
+        }
+        gs->stars_init = true;
+    }
+
+
+
+
+
     gs->joystick_max_distance = ((f32)gs->move_outer_bitmap.w * 0.5f) * gs->joystick_scale;
     
     os_print("[%d]: %d\n", 0, input->locations[0]);
