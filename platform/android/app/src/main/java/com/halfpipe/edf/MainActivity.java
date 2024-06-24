@@ -167,7 +167,10 @@ class GameRenderer implements GLSurfaceView.Renderer {
 
     public native void gameRender();
 
+    public native void gameResize(int x, int y, int w, int h);
+
     public native void gpuSetViewport(int x, int y, int w, int h);
+
 
     private static final double NANOS_PER_SECOND = 1000000000.0;
     private long lastTime;
@@ -183,12 +186,11 @@ class GameRenderer implements GLSurfaceView.Renderer {
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         lastTime = System.nanoTime();
         gameInit(assetManager);
-
     }
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
-        gpuSetViewport(0, 0, width, height);
+        gameResize(0, 0, width, height);
     }
 
     @Override
