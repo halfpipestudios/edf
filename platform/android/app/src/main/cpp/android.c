@@ -20,7 +20,7 @@ static u32 global_display_height;
 void os_print(char *message, ...) {
     va_list args;
     va_start(args, message);
-    logd("Game", message, args);
+    logv("Game", message, args);
     va_end(args);
 }
 
@@ -298,10 +298,12 @@ Input input_from_java(JNIEnv *env, jint touches_count, jobjectArray touches) {
 
         jclass touch_class = (*env)->GetObjectClass(env, touch);
         jfieldID event_id = (*env)->GetFieldID(env, touch_class, "event", "I");
+        jfieldID index_id = (*env)->GetFieldID(env, touch_class, "index", "I");
         jfieldID x_id  = (*env)->GetFieldID(env, touch_class, "x", "F");
         jfieldID y_id  = (*env)->GetFieldID(env, touch_class, "y", "F");
 
         input.touches[i].event = (*env)->GetIntField(env, touch, event_id);
+        input.touches[i].uid = (u64)(*env)->GetIntField(env, touch, index_id);
         input.touches[i].pos.x = (i32)(*env)->GetFloatField(env, touch, x_id);
         input.touches[i].pos.y = (i32)(*env)->GetFloatField(env, touch, y_id);
     }

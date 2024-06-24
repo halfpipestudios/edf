@@ -9,4 +9,8 @@
 
 #define logd(tag, ...) __android_log_print(ANDROID_LOG_DEBUG, tag, __VA_ARGS__)
 
+static inline void logv(const char *tag,  const char *format, va_list args) {
+    __android_log_vprint(ANDROID_LOG_DEBUG, tag, format, args);
+}
+
 #endif //EDF_ANDROID_H

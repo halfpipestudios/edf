@@ -1,5 +1,6 @@
 package com.halfpipe.edf;
 
+import android.annotation.SuppressLint;
 import android.content.res.AssetManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -52,17 +53,25 @@ class Touch {
     static final int TOUCH_EVENT_UP = 2;
 
     int event;
+    int index;
     float x, y;
 }
 
 class GameInput {
 
     Touch[] touches;
-    int touches_count;
+    int[] indices;
+    int indices_count;
 
     GameInput() {
         touches = new Touch[10];
-        touches_count = 0;
+        indices = new int[10];
+
+        for(int i = 0; i < touches.length; ++i) {
+            touches[i] = new Touch();
+        }
+
+        indices_count = 0;
     }
 
 }
@@ -90,39 +99,44 @@ class GameView extends GLSurfaceView {
         input = new GameInput();
     }
 
-    private void updateInput(final MotionEvent event, int touchEvent) {
-        input.touches_count = Math.min(10, event.getPointerCount());
-        for(int i = 0; i < input.touches_count; ++i) {
-            Touch touch = new Touch();
-            touch.event = touchEvent;
-            touch.x = event.getX(i);
-            touch.y = event.getY(i);
-            input.touches[i] = (touch);
-        }
+    private void updateTouch(MotionEvent event, int eventType, int action_index) {
+        int index = event.getPointerId(action_index);
+        input.touches[index].event = eventType;
+        input.touches[index].x = event.getX(action_index);
+        input.touches[index].y = event.getY(action_index);
+        input.touches[index].index = index;
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouchEvent(final MotionEvent event) {
 
         int action = event.getAction() &  MotionEvent.ACTION_MASK;
+        int action_index = event.getActionIndex();
+
 
         switch (action) {
 
             case  MotionEvent.ACTION_DOWN:
             case  MotionEvent.ACTION_POINTER_DOWN: {
-                updateInput(event, Touch.TOUCH_EVENT_DOWN);
-                gameTouchesDown(input.touches_count, input.touches);
+                updateTouch(event, Touch.TOUCH_EVENT_DOWN, action_index);
+                int index = event.getPointerId(action_index);
+                input.indices[input.indices_count++] = index;
             } break;
 
             case  MotionEvent.ACTION_UP:
-            case  MotionEvent.ACTION_POINTER_UP: {
-                updateInput(event, Touch.TOUCH_EVENT_UP);
-                gameTouchesUp(input.touches_count, input.touches);
+            case  MotionEvent.ACTION_POINTER_UP:
+            case MotionEvent.ACTION_CANCEL: {
+                updateTouch(event, Touch.TOUCH_EVENT_UP, action_index);
+                int index = event.getPointerId(action_index);
+                input.indices[index] = input.indices[input.indices_count-1];
+                --input.indices_count;
             } break;
 
             case  MotionEvent.ACTION_MOVE: {
-                updateInput(event, Touch.TOUCH_EVENT_MOVE);
-                gameTouchesMove(input.touches_count, input.touches);
+                for(int i = 0; i < input.indices_count; ++i) {
+                    updateTouch(event, Touch.TOUCH_EVENT_MOVE, i);
+                }
             } break;
 
         }
