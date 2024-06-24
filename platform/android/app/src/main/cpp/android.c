@@ -234,7 +234,6 @@ void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Textu
 
 void gpu_resize(Gpu gpu, u32 w, u32 h) {
     OpenglGPU *renderer = (OpenglGPU *)gpu;
-    glViewport(0, 0, (i32)w, (i32)h);
     f32 hw = (f32)w*0.5f;
     f32 hh = (f32)h*0.5f;
     M4 projection = m4_ortho(-hw, hw, hh, -hh, 0, 100);
@@ -301,6 +300,7 @@ JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameInit(JNIEnv *env, 
     asset_manager     = AAssetManager_fromJava(env, asset_manager_ref);
     assert(asset_manager_ref);
     assert(asset_manager);
+
     global_memory.size = GAME_MEMORY_SIZE;
     global_memory.used = 0;
     global_memory.data = malloc(global_memory.size);
@@ -320,10 +320,17 @@ JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameRender(JNIEnv *env
     game_render(&global_memory);
 }
 
+JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameResize(JNIEnv *env, jobject thiz, jint x, jint y, jint w, jint h) {
+    global_display_width  = w;
+    global_display_height = h;
+    game_resize(&global_memory, w, h);
+}
+
+
 JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gpuSetViewport(JNIEnv *env, jobject thiz, jint x, jint y, jint w, jint h) {
     (void) env;
     (void) thiz;
-    game_resize(&global_memory, w, h);
     global_display_width  = w;
     global_display_height = h;
+    glViewport(0, 0, w, h);
 }
