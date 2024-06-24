@@ -91,6 +91,8 @@ Gpu gpu_load(struct Arena *arena) {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
+    gpu_camera_set(renderer, v3(0, 0, 0), 0);
+
     return (Gpu *)renderer;
 }
 
@@ -239,6 +241,19 @@ void gpu_resize(Gpu gpu, u32 w, u32 h) {
     glUseProgram(renderer->program);
     i32 location = glGetUniformLocation(renderer->program, "projection");
     glUniformMatrix4fv(location, 1, true, projection.m);
+}
+
+void gpu_camera_set(Gpu gpu, V3 pos, f32 angle) {
+    OpenglGPU *renderer = (OpenglGPU *)gpu;
+    quad_batch_flush(renderer);
+
+    M4 view = m4_identity();
+    M4 translate = m4_translate(v3(-pos.x, -pos.y, -pos.z));
+    M4 rotate = m4_rotate_z(-angle);
+    view = m4_mul(translate, m4_mul(rotate, view));
+    glUseProgram(renderer->program);
+    i32 location = glGetUniformLocation(renderer->program, "view");
+    glUniformMatrix4fv(location, 1, true, view.m);
 }
 
 void gpu_blend_state_set(Gpu gpu, GpuBlendState blend_state) {
