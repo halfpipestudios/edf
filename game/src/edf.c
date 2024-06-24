@@ -46,8 +46,7 @@ void game_init(Memory *memory) {
     gs->boost_texture      = gpu_texture_load(gs->gpu, &gs->boost_bitmap);
 
     f32 size = 32.0f * 3.0f;
-    gs->ship =
-        sprite_load(&gs->game_arena, v2(0, 0), v2(size, size), v3(1, 1, 1), 0, gs->ship_texture);
+    gs->ship = sprite_load(&gs->game_arena, v2(0, 0), v2(size, size), v3(1, 1, 1), 0, gs->ship_texture);
     gs->ship_vel = v2(0, 0);
     gs->ship_acc = v2(0, 0);
     gs->ship_damping = 0.4f;
@@ -135,7 +134,6 @@ void game_update(Memory *memory, Input *input, f32 dt) {
         }
     }
 
-    V2 dir = v2_sub(gs->c_pos, gs->s_pos);
     gs->boost_tint = v3(1, 1, 1);
     if(gs->button_is_down[0]) {
         gs->boost_tint = v3(0.5f, 0.5f, 0.5f);
@@ -198,116 +196,3 @@ void game_resize(Memory *memory, u32 w, u32 h) {
     GameState *gs = game_state(memory);
     gpu_resize(gs->gpu, w, h);
 }
-
-/*
-void game_touches_down(struct Memory *memory, struct Input *input) {
-    if(input->touches_count > 2) {
-        return;
-    }
-
-    GameState *gs = game_state(memory);
-
-    for(u32 i = 0; i < input->touches_count; i++) {
-
-        os_print("pointer down index: %d\n", input->touches[i].index);
-
-        f32 width  = os_display_width();
-        f32 height = os_display_height();
-        V2 pos = v2(input->touches[i].pos.x, input->touches[i].pos.y);
-        pos.x /= width;
-        pos.y /= height;
-        pos.x -= 0.5f;
-        pos.y -= 0.5f;
-        pos.x *= width;
-        pos.y *= -height;
-        if(point_in_circle(pos, gs->button_center, gs->button_radii)) {
-            gs->button_is_down[0] = true;
-        } else {
-            gs->s_pos.x = input->touches[i].pos.x;
-            gs->s_pos.y = input->touches[i].pos.y;
-            gs->c_pos   = gs->s_pos;
-
-            gs->s_pos.x /= width;
-            gs->s_pos.y /= height;
-            gs->s_pos.x -= 0.5f;
-            gs->s_pos.y -= 0.5f;
-            gs->s_pos.x *= width;
-            gs->s_pos.y *= -height;
-
-            gs->c_pos.x /= width;
-            gs->c_pos.y /= height;
-            gs->c_pos.x -= 0.5f;
-            gs->c_pos.y -= 0.5f;
-            gs->c_pos.x *= width;
-            gs->c_pos.y *= -height;
-            gs->joystick_is_down = true;
-        }
-    }
-}
-
-void game_touches_up(struct Memory *memory, struct Input *input) {
-    if(input->touches_count > 2) {
-        return;
-    }
-
-    GameState *gs = game_state(memory);
-    for(u32 i = 0; i < input->touches_count; i++) {
-
-        os_print("pointer up index: %d\n", input->touches[i].index);
-
-        f32 width  = os_display_width();
-        f32 height = os_display_height();
-        V2 pos = v2(input->touches[i].pos.x, input->touches[i].pos.y);
-        pos.x /= width;
-        pos.y /= height;
-        pos.x -= 0.5f;
-        pos.y -= 0.5f;
-        pos.x *= width;
-        pos.y *= -height;
-        if(point_in_circle(pos, gs->button_center, gs->button_radii)) {
-            gs->button_is_down[0] = false;
-        } else {
-            gs->joystick_is_down = false;
-            gs->c_pos            = gs->s_pos;
-        }
-    }
-}
-
-void game_touches_move(struct Memory *memory, struct Input *input) {
-    if(input->touches_count > 2) {
-        return;
-    }
-
-    GameState *gs = game_state(memory);
-    for(u32 i = 0; i < input->touches_count; i++) {
-
-        //os_print("pointer move index: %d\n", input->touches[i].index);
-
-        f32 width  = os_display_width();
-        f32 height = os_display_height();
-        V2 pos = v2(input->touches[i].pos.x, input->touches[i].pos.y);
-        pos.x /= width;
-        pos.y /= height;
-        pos.x -= 0.5f;
-        pos.y -= 0.5f;
-        pos.x *= width;
-        pos.y *= -height;
-        if(point_in_circle(pos, gs->button_center, gs->button_radii)) {
-            
-        } else {
-            gs->c_pos.x = input->touches[0].pos.x;
-            gs->c_pos.y = input->touches[0].pos.y;
-
-            f32 width  = os_display_width();
-            f32 height = os_display_height();
-
-            gs->c_pos.x /= width;
-            gs->c_pos.y /= height;
-            gs->c_pos.x -= 0.5f;
-            gs->c_pos.y -= 0.5f;
-            gs->c_pos.x *= width;
-            gs->c_pos.y *= -height;
-        }
-    }
-}
-*/

@@ -93,9 +93,23 @@ static u32 g_view_height;
 static AUAudioUnit *g_audio_unit;
 
 static Input g_input;
-
+// TODO: remove the free list
 static i32 touches_index_array[MAX_TOUCHES];
 static i32 touches_free_list;
+
+/*
+TOUCH_IOS:[X X X X X]
+TOUCH_EDF:[Y Y Y Y Y]
+
+add() {
+    for(uitouches_count) {
+        UITouch *uitouch = uitouches + i;
+        Touch *touch = touches + count;
+        touch->uid = uitouches->hash
+        count++;
+    }
+}
+*/
 
 // temporal globals (after the gpu_load this variables are set to nil)
 static MTKView *tmp_view;
@@ -903,12 +917,14 @@ void spu_sound_restart(Spu spu, Sound sound) {
     return -1;
 }
 
-
+- (void) touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    ios_touch_reset();
+}
 - (void) touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     if(g_input.count >= MAX_TOUCHES) {
         ios_touch_reset();
     }
-    
+        
     for(i32 i = 0; i < touches.count; i++) {
         i32 free_index = touches_free_list;
         if(free_index == -1) {
