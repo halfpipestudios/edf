@@ -114,7 +114,6 @@ class GameView extends GLSurfaceView {
         int action = event.getAction() &  MotionEvent.ACTION_MASK;
         int action_index = event.getActionIndex();
 
-
         switch (action) {
 
             case  MotionEvent.ACTION_DOWN:

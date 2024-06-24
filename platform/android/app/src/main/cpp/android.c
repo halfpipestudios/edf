@@ -256,18 +256,12 @@ void gpu_blend_state_set(Gpu gpu, GpuBlendState blend_state) {
 }
 
 Input input_from_java(JNIEnv *env, jint touches_count, jintArray  indices, jobjectArray touches) {
-    Input input;
+    Input input = { 0 };
 
-
-    input.count = touches_count;
-    i32 len = (*env)->GetArrayLength(env, touches);
-    i32 other_len = (*env)->GetArrayLength(env, indices);
-    assert(len == other_len);
-    len = min(len, MAX_TOUCHES);
-
+    input.count = min(touches_count, MAX_TOUCHES);
     int *indices_arr = (*env)->GetIntArrayElements(env, indices, false);
 
-    for(u32 i = 0; i < len; ++i) {
+    for(u32 i = 0; i < input.count; ++i) {
         jobject touch = (*env)->GetObjectArrayElement(env, touches, (jsize)i);
 
         jclass touch_class = (*env)->GetObjectClass(env, touch);
