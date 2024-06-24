@@ -59,13 +59,15 @@ class Touch {
 
 class GameInput {
 
+    static final int MAX_TOUCHES = 10;
+
     Touch[] touches;
     int[] indices;
     int indices_count;
 
     GameInput() {
-        touches = new Touch[10];
-        indices = new int[10];
+        touches = new Touch[MAX_TOUCHES];
+        indices = new int[MAX_TOUCHES];
 
         for(int i = 0; i < touches.length; ++i) {
             touches[i] = new Touch();
@@ -81,22 +83,20 @@ class GameView extends GLSurfaceView {
     private final GameRenderer renderer;
     private GameInput input;
 
-    public native void gameTouchesDown(int touch_count, Touch[] touches);
-    public native void gameTouchesUp(int touch_count, Touch[] touches);
-    public native void gameTouchesMove(int touch_count, Touch[] touches);
-
     public GameView(Context context) {
         super(context);
 
         setEGLContextClientVersion(3);
         setEGLConfigChooser(8, 8, 8, 8, 24, 8);
 
-        renderer = new GameRenderer(context.getAssets());
+        input = new GameInput();
+        renderer = new GameRenderer(context.getAssets(), input);
+
         setRenderer(renderer);
 
         setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
 
-        input = new GameInput();
+
     }
 
     private void updateTouch(MotionEvent event, int eventType, int action_index) {
@@ -149,7 +149,7 @@ class GameRenderer implements GLSurfaceView.Renderer {
 
     public native void gameInit(AssetManager assetManager);
 
-    public native void gameUpdate(float dt);
+    public native void gameUpdate(int count, int[] indices, Touch[] touches, float dt);
 
     public native void gameRender();
 
@@ -158,9 +158,11 @@ class GameRenderer implements GLSurfaceView.Renderer {
     private static final double NANOS_PER_SECOND = 1000000000.0;
     private long lastTime;
     AssetManager assetManager;
+    private GameInput input;
 
-    public GameRenderer(AssetManager assetManager) {
+    public GameRenderer(AssetManager assetManager, GameInput input) {
         this.assetManager = assetManager;
+        this.input = input;
     }
 
     @Override
@@ -180,7 +182,7 @@ class GameRenderer implements GLSurfaceView.Renderer {
         long currentTime = System.nanoTime();
         double dt = (currentTime - lastTime) / NANOS_PER_SECOND;
         lastTime = currentTime;
-        gameUpdate((float) dt);
+        gameUpdate(input.indices_count, input.indices, input.touches, (float) dt);
         gameRender();
     }
 

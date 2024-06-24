@@ -37,11 +37,13 @@ typedef struct GameState {
 
     f32 s_inner;
 
+    i32 joystick_location;
     bool joystick_is_down;
     f32 joystick_max_distance;
     f32 joystick_scale;
     V2 s_pos, c_pos;
 
+    i32 button_location;
     bool button_is_down[2];
     V2 button_center;
     f32 button_radii;
@@ -52,13 +54,9 @@ typedef struct GameState {
 #define game_state_init(memory) ((memory)->used = (memory)->used + sizeof(GameState))
 
 void game_init(struct Memory *memory);
-void game_update(struct Memory *memory, f32 dt);
+void game_update(struct Memory *memory, Input *input, f32 dt);
 void game_render(struct Memory *memory);
 void game_shutdown(struct Memory *memory);
 void game_resize(struct Memory *memory, u32 w, u32 h);
-
-void game_touches_down(struct Memory *memory, struct Input *input);
-void game_touches_up(struct Memory *memory, struct Input *input);
-void game_touches_move(struct Memory *memory, struct Input *input);
 
 #endif // EDF_H

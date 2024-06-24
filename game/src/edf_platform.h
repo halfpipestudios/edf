@@ -1,7 +1,7 @@
 #ifndef EDF_PLATFORM_H
 #define EDF_PLATFORM_H
 
-#define MAX_TOUCHES 3
+#define MAX_TOUCHES 5
 
 #include "edf_common.h"
 #include "edf_math.h"
@@ -20,13 +20,14 @@ typedef struct Touch {
     TouchEvent event;
     V2i pos;
     u64 uid;
+    i32 location;
 } Touch;
 
 typedef struct Input {
     Touch touches[MAX_TOUCHES];
-    u32 touches_count;
+    i32 locations[MAX_TOUCHES];
+    u32 count;
 } Input;
-
 
 typedef struct File {
     void *data;
