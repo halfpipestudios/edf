@@ -28,7 +28,6 @@ typedef struct Input {
 } Input;
 
 
-
 typedef struct File {
     void *data;
     sz size;

@@ -255,45 +255,15 @@ void gpu_blend_state_set(Gpu gpu, GpuBlendState blend_state) {
     }
 }
 
-JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameInit(JNIEnv *env, jobject thiz, jobject manager) {
-    (void)thiz;
-    asset_manager_ref = (*env)->NewGlobalRef(env, manager);
-    asset_manager     = AAssetManager_fromJava(env, asset_manager_ref);
-    assert(asset_manager_ref);
-    assert(asset_manager);
-    global_memory.size = GAME_MEMORY_SIZE;
-    global_memory.used = 0;
-    global_memory.data = malloc(global_memory.size);
-    game_init(&global_memory);
-}
-
-JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameUpdate(JNIEnv *env, jobject thiz, jfloat dt) {
-    (void)env;
-    (void)thiz;
-    game_update(&global_memory, dt);
-}
-
-JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameRender(JNIEnv *env, jobject thiz) {
-    (void)env;
-    (void)thiz;
-    game_render(&global_memory);
-}
-
-JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gpuSetViewport(JNIEnv *env, jobject thiz, jint x, jint y, jint w, jint h) {
-    (void) env;
-    (void) thiz;
-    game_resize(&global_memory, w, h);
-    global_display_width  = w;
-    global_display_height = h;
-}
-
-Input input_from_java(JNIEnv *env, jint touches_count, jobjectArray touches) {
+Input input_from_java(JNIEnv *env, jint touches_count, jobjectArray  indices, jobjectArray touches) {
     Input input;
 
     input.touches_count = touches_count;
+
     i32 len = (*env)->GetArrayLength(env, touches);
 
-    for(u32 i = 0; i < input.touches_count; ++i) {
+
+    for(u32 i = 0; i < len; ++i) {
         jobject touch = (*env)->GetObjectArrayElement(env, touches, (jsize)i);
 
         jclass touch_class = (*env)->GetObjectClass(env, touch);
@@ -310,6 +280,40 @@ Input input_from_java(JNIEnv *env, jint touches_count, jobjectArray touches) {
 
     return input;
 }
+
+JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameInit(JNIEnv *env, jobject thiz, jobject manager) {
+    (void)thiz;
+    asset_manager_ref = (*env)->NewGlobalRef(env, manager);
+    asset_manager     = AAssetManager_fromJava(env, asset_manager_ref);
+    assert(asset_manager_ref);
+    assert(asset_manager);
+    global_memory.size = GAME_MEMORY_SIZE;
+    global_memory.used = 0;
+    global_memory.data = malloc(global_memory.size);
+    game_init(&global_memory);
+}
+
+JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameUpdate(JNIEnv *env, jobject thiz, jint count, jobjectArray indices, jobjectArray touches, jfloat dt) {
+    (void)env;
+    (void)thiz;
+    Input input = input_from_java(env, count, indices, touches);
+    game_update(&global_memory, &input, dt);
+}
+
+JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameRender(JNIEnv *env, jobject thiz) {
+    (void)env;
+    (void)thiz;
+    game_render(&global_memory);
+}
+
+JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gpuSetViewport(JNIEnv *env, jobject thiz, jint x, jint y, jint w, jint h) {
+    (void) env;
+    (void) thiz;
+    game_resize(&global_memory, w, h);
+    global_display_width  = w;
+    global_display_height = h;
+}
+
 
 JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameView_gameTouchesDown(JNIEnv *env, jobject thiz, jint touches_count, jobjectArray touches) {
     (void) env;
