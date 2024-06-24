@@ -28,9 +28,14 @@ typedef struct Multitouch {
     int *registry[MAX_TOUCHES];
 } Multitouch;
 
-void mt_update(Multitouch *mt, Input *input);
+void mt_begin(Multitouch *mt, Input *input);
+void mt_end(Multitouch *mt, Input *input);
+
 b32 mt_touch_in_circle(Multitouch *mt, i32 *touch, V2 pos, float radii);
+b32 mt_touch_just_in_circle(Multitouch *mt, i32 *touch, V2 pos, float radii);
 b32 mt_touch_in_rect(Multitouch *mt, i32 *touch, R2 rect);
+b32 mt_touch_just_in_rect(Multitouch *mt, i32 *touch, R2 rect);
 V2 mt_touch_pos(Multitouch *mt, int touch);
+b32 mt_touch_down(Multitouch *mt, int touch);
 
 #endif //EDF_EDF_INPUT_H

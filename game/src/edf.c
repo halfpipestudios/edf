@@ -33,21 +33,17 @@ void game_init(Memory *memory) {
     gs->s_pos = v2(-740, -250);
     gs->c_pos = gs->s_pos;
     gs->joystick_scale   = 4;
-    gs->joystick_is_down = false;
-
+    
     gs->s_inner      = 1.5f;
     gs->button_radii = (gs->boost_bitmap.w * gs->joystick_scale * gs->s_inner) * 0.5f;
-
-    gs->button_is_down[0] = false;
-    gs->button_is_down[1] = false;
 
     gs->button_center  = v2(740, -250);
     gs->button_radii   = 100;
 
     gs->boost_tint = v3(1, 1, 1);
 
-    gs->joystick_location = -1;
-    gs->button_location = -1;
+    gs->joystick_touch = -1;
+    gs->button_touch = -1;
 
 }
 
@@ -61,16 +57,10 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     os_print("[%d]: %d\n", 3, input->locations[3]);
     os_print("[%d]: %d\n", 4, input->locations[4]);
 
-    mt_update(&gs->mt, input);
+    mt_begin(&gs->mt, input);
 
-    mt_touch_in_circle(&gs->mt, &gs->button_location, gs->button_center, gs->button_radii);
+    mt_touch_just_in_circle(&gs->mt, &gs->button_touch, gs->button_center, gs->button_radii);
     
-    if(gs->button_location != -1) {
-        gs->button_is_down[0] = true;
-    } else {
-        gs->button_is_down[0] = false;
-    }
-
     u32 hw = os_display_width() * 0.5f;
     u32 hh = os_display_height() * 0.5f;
 
@@ -80,24 +70,10 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     window_rect.min.y = -hh;
     window_rect.max.y = hh;
 
-    if(mt_touch_in_rect(&gs->mt, &gs->joystick_location, window_rect)) {
-        gs->s_pos = mt_touch_pos(&gs->mt, gs->joystick_location);
+    if(mt_touch_in_rect(&gs->mt, &gs->joystick_touch, window_rect)) {
+        gs->s_pos = mt_touch_pos(&gs->mt, gs->joystick_touch);
         gs->c_pos   = gs->s_pos;
     }
-    
-    if(gs->joystick_location != -1) {
-        gs->joystick_is_down = true;
-    } else {
-        gs->joystick_is_down = false;
-    }
-
-    if(gs->joystick_is_down) {
-        V2 pos = mt_touch_pos(&gs->mt, gs->joystick_location);
-        gs->c_pos = pos;
-    } else {
-        gs->c_pos = gs->s_pos;
-    }
-
 
     V2 diff = v2_sub(gs->s_pos, gs->c_pos);
     f32 len = v2_len(diff);
@@ -107,15 +83,20 @@ void game_update(Memory *memory, Input *input, f32 dt) {
         gs->s_pos.y = gs->c_pos.y + dir.y * gs->joystick_max_distance;
     }
 
-    if(gs->joystick_is_down) {
+
+    if(mt_touch_down(&gs->mt, gs->joystick_touch)) {
+        V2 pos = mt_touch_pos(&gs->mt, gs->joystick_touch);
+        gs->c_pos = pos;
         if(len > (gs->joystick_max_distance * 0.2f)) {
             V2 dir          = v2_normalized(diff);
             gs->ship->angle = atan2f(dir.y, dir.x) + (PI / 2.0f);
         }
+    } else {
+        gs->c_pos = gs->s_pos;
     }
 
     gs->boost_tint = v3(1, 1, 1);
-    if(gs->button_is_down[0]) {
+    if(mt_touch_down(&gs->mt, gs->button_touch)) {
         gs->boost_tint = v3(0.5f, 0.5f, 0.5f);
         V2 dir = {0};
         dir.x = cosf(gs->ship->angle + (PI / 2.0f));
@@ -139,7 +120,7 @@ void game_update(Memory *memory, Input *input, f32 dt) {
 
     gs->ship_acc = v2(0, 0);
 
-    gs->button_is_down[1] = gs->button_is_down[0];
+    mt_end(&gs->mt, input);
 }
 
 void game_render(Memory *memory) {

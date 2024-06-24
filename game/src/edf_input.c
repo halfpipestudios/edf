@@ -26,10 +26,8 @@ bool point_in_circle(V2 point, V2 c, f32 r) {
     return true;
 }
 
-void mt_update(Multitouch *mt, Input *input) {
-
+void mt_begin(Multitouch *mt, Input *input) {
     mt->input = input;
-
     for(u32 i = 0; i < mt->last_input.count; ++i) {
         b32 found = false;
         int location_to_found = mt->last_input.locations[i];
@@ -47,9 +45,20 @@ void mt_update(Multitouch *mt, Input *input) {
             mt->registry[location_to_found] = 0;
         }
     }
+}
 
+void mt_end(Multitouch *mt, Input *input) {
     memcpy(&mt->last_input, mt->input, sizeof(*mt->input));
+}
 
+static inline b32 found_location_in_last_input(Multitouch *mt, int location_index) {
+    for(u32 j = 0; j < mt->last_input.count; ++j) {
+        if(location_index == mt->last_input.locations[j]) {
+            return true;
+            break;
+        }
+    }
+    return false;
 }
 
 b32 mt_touch_in_circle(Multitouch *mt, i32 *touch, V2 pos, float radii) {
@@ -67,16 +76,56 @@ b32 mt_touch_in_circle(Multitouch *mt, i32 *touch, V2 pos, float radii) {
     return false;
 }
 
+b32 mt_touch_just_in_circle(Multitouch *mt, i32 *touch, V2 pos, float radii) {
+    if(*touch != -1) return false;
+    for(u32 i = 0; i < mt->input->count; ++i) {
+        
+        int location_index = mt->input->locations[i];
+        b32 found = found_location_in_last_input(mt, location_index);
+
+        if(!found) {
+            Touch *t = mt->input->touches + mt->input->locations[i];
+            V2 tpos = input_to_game_coords(t->pos);
+            if(!mt->registry[location_index] && point_in_circle(tpos, pos, radii)) {
+                mt->registry[location_index] = touch;
+                *touch = location_index;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 b32 mt_touch_in_rect(Multitouch *mt, i32 *touch, R2 rect) {
     if(*touch != -1) return false;
     for(u32 i = 0; i < mt->input->count; ++i) {
         Touch *t = mt->input->touches + mt->input->locations[i];
         V2 tpos = input_to_game_coords(t->pos);
         int location_index = mt->input->locations[i];
-        if(!mt->registry[location_index] && r2_point_overlaps(rect, tpos.x, tpos.y)) {
+        if(!mt->registry[location_index] && r2_point_overlaps(rect, (i32)tpos.x, (i32)tpos.y)) {
             mt->registry[location_index] = touch;
             *touch = location_index;
             return true;
+        }
+    }
+    return false;
+}
+
+b32 mt_touch_just_in_rect(Multitouch *mt, i32 *touch, R2 rect) {
+    if(*touch != -1) return false;
+    for(u32 i = 0; i < mt->input->count; ++i) {
+
+        int location_index = mt->input->locations[i];
+        b32 found = found_location_in_last_input(mt, location_index);
+
+        if(!found) {
+            Touch *t = mt->input->touches + mt->input->locations[i];
+            V2 tpos = input_to_game_coords(t->pos);
+            if(!mt->registry[location_index] && r2_point_overlaps(rect, (i32)tpos.x, (i32)tpos.y)) {
+                mt->registry[location_index] = touch;
+                *touch = location_index;
+                return true;
+            }
         }
     }
     return false;
@@ -86,5 +135,9 @@ V2 mt_touch_pos(Multitouch *mt, int touch) {
     assert(touch != -1);
     Touch *t = mt->input->touches + touch;
     return input_to_game_coords(t->pos);
+}
+
+b32 mt_touch_down(Multitouch *mt, int touch) {
+    return touch != -1;
 }
 
