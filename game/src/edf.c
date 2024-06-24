@@ -105,11 +105,11 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     if(joystick_found == false) {
         gs->joystick_location = -1;
         gs->joystick_is_down = false;
+        gs->c_pos = gs->s_pos;
     }
     if(button_found == false) {
         gs->button_location = -1;
         gs->button_is_down[0] = false;
-        gs->c_pos = gs->s_pos;
     }
 
     if(gs->joystick_is_down) {
