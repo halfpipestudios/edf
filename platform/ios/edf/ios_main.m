@@ -91,6 +91,12 @@ static Memory g_memory;
 static u32 g_view_width;
 static u32 g_view_height;
 static AUAudioUnit *g_audio_unit;
+
+static Input g_input;
+
+static i32 touches_index_array[MAX_TOUCHES];
+static i32 touches_free_list;
+
 // temporal globals (after the gpu_load this variables are set to nil)
 static MTKView *tmp_view;
 
@@ -150,7 +156,7 @@ matrix_float4x4 matrix_ortho(float l, float r, float b, float t, float n, float 
 }
 
 
-void ios_texture_array_init(IosRenderer *renderer, IosTextureArray *texture_array, i32 width, i32 height) {
+static void ios_texture_array_init(IosRenderer *renderer, IosTextureArray *texture_array, i32 width, i32 height) {
     MTLTextureDescriptor *texture_descriptor;
     texture_descriptor = [[MTLTextureDescriptor alloc] init];
     texture_descriptor.pixelFormat = MTLPixelFormatRGBA8Unorm;
@@ -167,7 +173,7 @@ void ios_texture_array_init(IosRenderer *renderer, IosTextureArray *texture_arra
     texture_array->index_array[IOS_MAX_TEXTURE_COUNT - 1] = -1;
 }
 
-void ios_get_name_and_ext(char *path, char *name, char *ext) { 
+static void ios_get_name_and_ext(char *path, char *name, char *ext) {
     char file_header[7] = "assets/";
     i32 path_length = (i32)strlen(path);
     char *letter = path;
@@ -179,6 +185,21 @@ void ios_get_name_and_ext(char *path, char *name, char *ext) {
     point_offset++;
     memcpy(ext, path + point_offset, path_length - point_offset);
     ext[path_length - point_offset] = 0;   
+}
+
+static void ios_touch_reset() {
+    g_input.count = 0;
+    touches_free_list = 0;
+    for(i32 i = 0; i < MAX_TOUCHES - 1; i++) {
+        touches_index_array[i] = i + 1;
+    }
+    touches_index_array[MAX_TOUCHES - 1] = -1;
+    Touch touch = {0};
+    for(i32 i = 0; i < MAX_TOUCHES; i++) {
+        g_input.touches[i] = touch;
+        g_input.locations[i] = -1;
+
+    }
 }
 
 //=====================================================================
@@ -769,6 +790,13 @@ void spu_sound_restart(Spu spu, Sound sound) {
     return UIInterfaceOrientationMaskLandscape;
 }
 
+- (void)applicationDidBecomeActive:(UIApplication *)application {
+    ios_touch_reset();
+}
+
+- (void)applicationDidEnterBackground:(UIApplication *)application {
+}
+
 @end
 //=====================================================================
 //=====================================================================
@@ -794,8 +822,24 @@ void spu_sound_restart(Spu spu, Sound sound) {
     CFAbsoluteTime current_time = CACurrentMediaTime();
     f64 delta_time = current_time - last_time;
     last_time = current_time;
+    
+    game_update(&g_memory, &g_input, delta_time);
+    
+    // clean touch up events
+    for(i32 i = 0; i < MAX_TOUCHES; i++) {
+        Touch *touch = g_input.touches + i;
+        if(touch->event == TOUCH_EVENT_UP) {
+            g_input.touches[g_input.locations[g_input.count - 1]].location = touch->location;
+            g_input.locations[touch->location] = g_input.locations[g_input.count - 1];
+            g_input.locations[g_input.count - 1] = -1;
+            Touch zero = {0};
+            g_input.touches[i] = zero;
+            touches_index_array[i] = touches_free_list;
+            touches_free_list = i;
+            g_input.count--;
+        }
+    }
 
-    game_update(&g_memory, delta_time);
     game_render(&g_memory);
 }
 
@@ -816,10 +860,6 @@ void spu_sound_restart(Spu spu, Sound sound) {
 
 @implementation ViewController {
     MetalViewDelegate *_metal_view_delegate;
-    Touch touches_array[MAX_TOUCHES];
-    i32 touches_index_array[MAX_TOUCHES];
-    i32 touches_free_list;
-    i32 touches_count;
 }
 
 - (void)viewDidLoad {
@@ -851,120 +891,93 @@ void spu_sound_restart(Spu spu, Sound sound) {
     tmp_view = nil;
     
     // init the touches count array and free list
-    touches_count = 0;
-    touches_free_list = 0;
-    for(i32 i = 0; i < MAX_TOUCHES - 1; i++) {
-        touches_index_array[i] = i + 1;
-    }
-    touches_index_array[MAX_TOUCHES - 1] = -1;
+    ios_touch_reset();
 }
 
 - (i32) find_touch_index:(u64) hash {
     for(i32 j = 0; j < MAX_TOUCHES; j++) {
-        if(hash == touches_array[j].uid) {
+        if(hash == g_input.touches[j].uid) {
             return j;
         }
     }
     return -1;
 }
 
-- (void) touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
 
+- (void) touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    if(g_input.count >= MAX_TOUCHES) {
+        ios_touch_reset();
+    }
+    
     for(i32 i = 0; i < touches.count; i++) {
-        if(touches_count >= MAX_TOUCHES) {
+        i32 free_index = touches_free_list;
+        if(free_index == -1) {
             return;
         }
-        
-        i32 free_index = touches_free_list;
         touches_free_list = touches_index_array[free_index];
-        touches_count++;
+        g_input.locations[g_input.count] = free_index;
         
-        Touch touch = {0};
         f32 w = self.view.bounds.size.width;
         f32 h = self.view.bounds.size.height;
         UITouch *uitouch = touches.allObjects[i];
         CGPoint location = [uitouch locationInView:self.view];
+        Touch touch = {0};
+        touch.location = g_input.count;
+        touch.event = TOUCH_EVENT_DOWN;
         touch.pos.x = (i32)(((f32)location.x / w) * g_view_width);
         touch.pos.y = (i32)(((f32)location.y / h) * g_view_height);
-        touch.uid = uitouch.hash;
+        touch.uid = (u64)uitouch.hash;
 
         touches_index_array[free_index] = -1;
-        touches_array[free_index] = touch;
-        NSLog(@"[%d]: down", free_index);
+        g_input.touches[free_index] = touch;
+        
+        g_input.count++;
+        
     }
-    
-    /*
-    assert(touches.count <= MAX_TOUCHES);
-    Input input;
-    input.touches_count = (u32)touches.count;
-    for(i32 i = 0; i < input.touches_count; i++) {
-        UITouch *uitouch = touches.allObjects[i]; 
-        CGPoint location = [uitouch locationInView:self.view];
-        Touch *touch = input.touches + i;
-        f32 w = self.view.bounds.size.width;
-        f32 h = self.view.bounds.size.height;
-        touch->pos.x = (i32)(((f32)location.x / w) * g_view_width);
-        touch->pos.y = (i32)(((f32)location.y / h) * g_view_height);
-    } 
-    game_touches_down(&g_memory, &input);
-    */
 }
 
 - (void) touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    if(g_input.count == 0) {
+        return;
+    }
     for (i32 i = 0; i < touches.count; i++) {
         UITouch *uitouch = touches.allObjects[i];
-        i32 index_to_free = [self find_touch_index:uitouch.hash];
-        if(index_to_free >= 0) {
-            NSLog(@"[%d]: move", index_to_free);
+        i32 index_to_update = [self find_touch_index:uitouch.hash];
+        if(index_to_update >= 0) {
+            f32 w = self.view.bounds.size.width;
+            f32 h = self.view.bounds.size.height;
+            UITouch *uitouch = touches.allObjects[i];
+            CGPoint location = [uitouch locationInView:self.view];
+            Touch touch = g_input.touches[index_to_update];
+            touch.event = TOUCH_EVENT_MOVE;
+            touch.pos.x = (i32)(((f32)location.x / w) * g_view_width);
+            touch.pos.y = (i32)(((f32)location.y / h) * g_view_height);
+            g_input.touches[index_to_update] = touch;
         }
     }
-    
-    
-    /*
-    assert(touches.count <= MAX_TOUCHES);
-    Input input;
-    input.touches_count = (u32)touches.count;
-    for(i32 i = 0; i < input.touches_count; i++) {
-        UITouch *uitouch = touches.allObjects[i]; 
-        CGPoint location = [uitouch locationInView:self.view];
-        Touch *touch = input.touches + i; 
-        f32 w = self.view.bounds.size.width;
-        f32 h = self.view.bounds.size.height;
-        touch->pos.x = (i32)(((f32)location.x / w) * g_view_width);
-        touch->pos.y = (i32)(((f32)location.y / h) * g_view_height);
-    } 
-    game_touches_move(&g_memory, &input);
-    */
 }
 
 - (void) touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    if(g_input.count == 0) {
+        return;
+    }
     for (i32 i = 0; i < touches.count; i++) {
-        UITouch *uitouch = touches.allObjects[i];
         
-        // find and free the touch
+        UITouch *uitouch = touches.allObjects[i];
         i32 index_to_free = [self find_touch_index:uitouch.hash];
         if(index_to_free >= 0) {
-            NSLog(@"[%d]: up", index_to_free);
-            touches_index_array[index_to_free] = touches_free_list;
-            touches_free_list = index_to_free;
-            touches_count--;
+            f32 w = self.view.bounds.size.width;
+            f32 h = self.view.bounds.size.height;
+            UITouch *uitouch = touches.allObjects[i];
+            CGPoint location = [uitouch locationInView:self.view];
+            Touch touch = g_input.touches[index_to_free];
+            touch.event = TOUCH_EVENT_UP;
+            touch.pos.x = (i32)(((f32)location.x / w) * g_view_width);
+            touch.pos.y = (i32)(((f32)location.y / h) * g_view_height);
+            g_input.touches[index_to_free] = touch;
         }
+         
     }
-    /*
-    assert(touches.count <= MAX_TOUCHES);
-    Input input;
-    input.touches_count = (u32)touches.count;
-    for(i32 i = 0; i < input.touches_count; i++) {
-        UITouch *uitouch = touches.allObjects[i]; 
-        CGPoint location = [uitouch locationInView:self.view];
-        Touch *touch = input.touches + i; 
-        f32 w = self.view.bounds.size.width;
-        f32 h = self.view.bounds.size.height;
-        touch->pos.x = (i32)(((f32)location.x / w) * g_view_width);
-        touch->pos.y = (i32)(((f32)location.y / h) * g_view_height);
-    } 
-    game_touches_up(&g_memory, &input);
-    */
 }
 
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations {

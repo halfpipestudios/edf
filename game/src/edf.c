@@ -1,5 +1,26 @@
 #include "edf.h"
 
+V2 input_to_game_coords(V2i in_pos) {
+    f32 width  = os_display_width();
+    f32 height = os_display_height();
+    V2 pos = v2(in_pos.x, in_pos.y);
+    pos.x /= width;
+    pos.y /= height;
+    pos.x -= 0.5f;
+    pos.y -= 0.5f;
+    pos.x *= width;
+    pos.y *= -height;
+    return pos;
+}
+
+bool point_in_circle(V2 point, V2 c, f32 r) {
+    f32 len = v2_len(v2_sub(point, c));
+    if(len > r) {
+        return false;
+    }
+    return true;
+}
+
 void game_init(Memory *memory) {
     game_state_init(memory);
     GameState *gs = game_state(memory);
@@ -46,11 +67,58 @@ void game_init(Memory *memory) {
     gs->button_radii   = 100;
 
     gs->boost_tint = v3(1, 1, 1);
+
+    gs->joystick_location = -1;
+    gs->button_location = -1;
+
 }
 
-void game_update(Memory *memory, f32 dt) {
+void game_update(Memory *memory, Input *input, f32 dt) {
     GameState *gs             = game_state(memory);
     gs->joystick_max_distance = ((f32)gs->move_outer_bitmap.w * 0.5f) * gs->joystick_scale;
+
+    bool joystick_found = false;
+    bool button_found = false;
+    for(u32 i = 0; i < input->count; ++i) {
+        Touch *touch = input->touches + input->locations[i];
+        if(touch->event == TOUCH_EVENT_DOWN || touch->event == TOUCH_EVENT_MOVE) {
+            V2 pos = input_to_game_coords(touch->pos);
+            if(gs->button_location == -1 && point_in_circle(pos, gs->button_center, gs->button_radii)) {
+                gs->button_location = input->locations[i];
+                gs->button_is_down[0] = true;
+            }
+            else if(gs->joystick_location == -1 && !point_in_circle(pos, gs->button_center, gs->button_radii)) {
+                gs->joystick_location = input->locations[i];
+                gs->joystick_is_down = true;
+                gs->s_pos = pos;
+                gs->c_pos   = gs->s_pos;
+            }
+        }
+
+        if(gs->joystick_location == input->locations[i]) {
+            joystick_found = true;
+        }
+        if(gs->button_location == input->locations[i]) {
+            button_found = true;
+        }
+    }
+    if(joystick_found == false) {
+        gs->joystick_location = -1;
+        gs->joystick_is_down = false;
+    }
+    if(button_found == false) {
+        gs->button_location = -1;
+        gs->button_is_down[0] = false;
+        gs->c_pos = gs->s_pos;
+    }
+
+    if(gs->joystick_is_down) {
+        Touch *touch = input->touches + gs->joystick_location;
+        V2 pos = input_to_game_coords(touch->pos);
+        if(touch->event == TOUCH_EVENT_DOWN || touch->event == TOUCH_EVENT_MOVE) {
+            gs->c_pos = pos;
+        }
+    }
 
     V2 diff = v2_sub(gs->s_pos, gs->c_pos);
     f32 len = v2_len(diff);
@@ -131,22 +199,8 @@ void game_resize(Memory *memory, u32 w, u32 h) {
     gpu_resize(gs->gpu, w, h);
 }
 
-bool point_in_circle(V2 point, V2 c, f32 r) {
-    f32 len = v2_len(v2_sub(point, c));
-    if(len > r) {
-        return false;
-    }
-    return true;
-}
-
+/*
 void game_touches_down(struct Memory *memory, struct Input *input) {
-
-    for(u32 i = 0; i < input->touches_count; i++) {
-        V2 pos = v2(input->touches[i].pos.x, input->touches[i].pos.y);
-        os_print("[%d] x: %f, y: %f\n", i, pos.x, pos.y);
-    }
-    
-    /*
     if(input->touches_count > 2) {
         return;
     }
@@ -189,16 +243,9 @@ void game_touches_down(struct Memory *memory, struct Input *input) {
             gs->joystick_is_down = true;
         }
     }
-    */
 }
 
 void game_touches_up(struct Memory *memory, struct Input *input) {
-
-    for(u32 i = 0; i < input->touches_count; i++) {
-        V2 pos = v2(input->touches[i].pos.x, input->touches[i].pos.y);
-        os_print("[%d] x: %f, y: %f\n", i, pos.x, pos.y);
-    }
-    /*
     if(input->touches_count > 2) {
         return;
     }
@@ -224,16 +271,9 @@ void game_touches_up(struct Memory *memory, struct Input *input) {
             gs->c_pos            = gs->s_pos;
         }
     }
-    */
 }
 
 void game_touches_move(struct Memory *memory, struct Input *input) {
-
-    for(u32 i = 0; i < input->touches_count; i++) {
-        V2 pos = v2(input->touches[i].pos.x, input->touches[i].pos.y);
-        os_print("[%d] x: %f, y: %f\n", i, pos.x, pos.y);
-    }
-    /*
     if(input->touches_count > 2) {
         return;
     }
@@ -269,5 +309,5 @@ void game_touches_move(struct Memory *memory, struct Input *input) {
             gs->c_pos.y *= -height;
         }
     }
-     */
 }
+*/
