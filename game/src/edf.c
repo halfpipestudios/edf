@@ -76,6 +76,13 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     GameState *gs             = game_state(memory);
     gs->joystick_max_distance = ((f32)gs->move_outer_bitmap.w * 0.5f) * gs->joystick_scale;
     
+    os_print("[%d]: %d\n", 0, input->locations[0]);
+    os_print("[%d]: %d\n", 1, input->locations[1]);
+    os_print("[%d]: %d\n", 2, input->locations[2]);
+    os_print("[%d]: %d\n", 3, input->locations[3]);
+    os_print("[%d]: %d\n", 4, input->locations[4]);
+
+    
     bool joystick_found = false;
     bool button_found = false;
     for(u32 i = 0; i < input->count; ++i) {

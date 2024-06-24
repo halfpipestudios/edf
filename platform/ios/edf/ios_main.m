@@ -803,12 +803,13 @@ void spu_sound_restart(Spu spu, Sound sound) {
 - (UIInterfaceOrientationMask)application:(UIApplication *)application supportedInterfaceOrientationsForWindow:(UIWindow *)window {
     return UIInterfaceOrientationMaskLandscape;
 }
-
+/*
 - (void)applicationDidBecomeActive:(UIApplication *)application {
 }
 
 - (void)applicationDidEnterBackground:(UIApplication *)application {
 }
+ */
 
 @end
 //=====================================================================
