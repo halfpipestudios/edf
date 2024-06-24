@@ -63,9 +63,7 @@ void game_update(Memory *memory, Input *input, f32 dt) {
 
     mt_update(&gs->mt, input);
 
-    if(gs->button_location == -1) {
-        mt_touch_in_circle(&gs->mt, &gs->button_location, gs->button_center, gs->button_radii);
-    }
+    mt_touch_in_circle(&gs->mt, &gs->button_location, gs->button_center, gs->button_radii);
     
     if(gs->button_location != -1) {
         gs->button_is_down[0] = true;
@@ -82,13 +80,11 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     window_rect.min.y = -hh;
     window_rect.max.y = hh;
 
-    if(gs->joystick_location == -1) {
-        if(mt_touch_in_rect(&gs->mt, &gs->joystick_location, window_rect)) {
-            gs->s_pos = mt_touch_pos(&gs->mt, gs->joystick_location);
-            gs->c_pos   = gs->s_pos;
-        }
+    if(mt_touch_in_rect(&gs->mt, &gs->joystick_location, window_rect)) {
+        gs->s_pos = mt_touch_pos(&gs->mt, gs->joystick_location);
+        gs->c_pos   = gs->s_pos;
     }
-
+    
     if(gs->joystick_location != -1) {
         gs->joystick_is_down = true;
     } else {
