@@ -76,6 +76,7 @@ typedef struct IosRenderer {
     // TODO(manu): create a struct for this
     id<MTLBuffer> ubuffer[2][IOS_MAX_FRAMES_IN_FLIGHT][IOS_MAX_UBUFFER_COUNT];
     u32 quad_count[2];
+    u32 quad_offset[2];
     u32 buffer_index[2];
 
     matrix_float4x4 proj_m4;
@@ -168,6 +169,30 @@ matrix_float4x4 matrix_ortho(float l, float r, float b, float t, float n, float 
         {(l + r) / (l - r), (t + b) / (b - t), n / (n - f), 1}
     }};
 }
+
+
+matrix_float4x4 matrix_lookat(V3 pos, V3 tar, V3 up)
+{
+    V3 z = v3_sub(tar, pos);
+    z.x *= -1.0f;
+    z.y *= -1.0f;
+    z.z *= -1.0f;
+    z = v3_normalized(z);
+
+    V3 x = v3_cross(up, z);
+    x = v3_normalized(x);
+
+    V3 y = v3_cross(z, x);
+    y = v3_normalized(y);
+
+    return (matrix_float4x4) {{
+        {x.x, x.y, x.z, -v3_dot(x, pos)},
+        {y.x, y.y, y.z, -v3_dot(y, pos)},
+        {z.x, z.y, z.z, -v3_dot(z, pos)},
+        {0,   0,   0, 1}
+    }};
+}
+
 
 
 static void ios_texture_array_init(IosRenderer *renderer, IosTextureArray *texture_array, i32 width, i32 height) {
@@ -369,6 +394,9 @@ Gpu gpu_load(struct Arena *arena) {
     renderer->buffer_index[1] = 0;
     renderer->quad_count[0] = 0;
     renderer->quad_count[1] = 0;
+    renderer->quad_offset[0] = 0;
+    renderer->quad_offset[1] = 0;
+
     renderer->vbuffer = [renderer->device newBufferWithBytes:&quad_vertices
                                                       length:(sizeof(Vertex) * 6)
                                                      options:MTLResourceStorageModeShared];
@@ -419,6 +447,8 @@ void gpu_frame_begin(Gpu gpu) {
     renderer->buffer_index[1] = 0;
     renderer->quad_count[0] = 0;
     renderer->quad_count[1] = 0;
+    renderer->quad_offset[0] = 0;
+    renderer->quad_offset[1] = 0;
 
 
     MTLRenderPassDescriptor *render_pass_descriptor = renderer->view.currentRenderPassDescriptor;
@@ -445,19 +475,21 @@ void gpu_frame_end(Gpu gpu) {
     if(renderer->quad_count[0] > 0) {
         [renderer->command_encoder setRenderPipelineState: renderer->alpha_blend_state];
         [renderer->command_encoder setVertexBuffer:renderer->ubuffer[0][renderer->current_buffer][renderer->buffer_index[0]]
-                                            offset:0
+                                            offset:renderer->quad_offset[0] * sizeof(Uniform)
                                            atIndex:VertexInputIndexWorld];
-        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count[0]];
+        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count[0] - renderer->quad_offset[0]];
         renderer->quad_count[0] = 0;
+        renderer->quad_offset[0] = 0;
     }
     
     if(renderer->quad_count[1] > 0) {
         [renderer->command_encoder setRenderPipelineState: renderer->additive_blend_state];
         [renderer->command_encoder setVertexBuffer:renderer->ubuffer[1][renderer->current_buffer][renderer->buffer_index[1]]
-                                            offset:0
+                                            offset:renderer->quad_offset[1] * sizeof(Uniform)
                                            atIndex:VertexInputIndexWorld];
-        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count[1]];
+        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count[1] - renderer->quad_offset[1]];
         renderer->quad_count[1] = 0;
+        renderer->quad_offset[1] = 0;
     }
 
     [renderer->command_encoder endEncoding];
@@ -587,10 +619,11 @@ void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Textu
             [renderer->command_encoder setRenderPipelineState: renderer->additive_blend_state];
         }
         [renderer->command_encoder setVertexBuffer:renderer->ubuffer[i][renderer->current_buffer][renderer->buffer_index[i]]
-                                            offset:0
+                                            offset:renderer->quad_offset[i] * sizeof(Uniform)
                                            atIndex:VertexInputIndexWorld];
-        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count[i]];
+        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count[i] - renderer->quad_offset[i]];
         renderer->quad_count[i] = 0;
+        renderer->quad_offset[i] = 0;
         renderer->buffer_index[i]++;
     }
 }
@@ -630,10 +663,11 @@ void gpu_draw_quad_texture_tinted(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle
             [renderer->command_encoder setRenderPipelineState: renderer->additive_blend_state];
         }
         [renderer->command_encoder setVertexBuffer:renderer->ubuffer[i][renderer->current_buffer][renderer->buffer_index[i]]
-                                            offset:0
+                                            offset:renderer->quad_offset[i] * sizeof(Uniform)
                                            atIndex:VertexInputIndexWorld];
-        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count[i]];
+        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count[i] - renderer->quad_offset[i]];
         renderer->quad_count[i] = 0;
+        renderer->quad_offset[i] = 0;
         renderer->buffer_index[i]++;
     }
 }
@@ -668,17 +702,36 @@ void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V3 colo
             [renderer->command_encoder setRenderPipelineState: renderer->additive_blend_state];
         }
         [renderer->command_encoder setVertexBuffer:renderer->ubuffer[i][renderer->current_buffer][renderer->buffer_index[i]]
-                                            offset:0
+                                            offset:renderer->quad_offset[i] * sizeof(Uniform)
                                            atIndex:VertexInputIndexWorld];
-        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count[i]];
+        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count[i] - renderer->quad_offset[i]];
         renderer->quad_count[i] = 0;
+        renderer->quad_offset[i] = 0;
         renderer->buffer_index[i]++;
     }
 }
 
 void gpu_camera_set(Gpu gpu, V3 pos, f32 angle) {
     IosRenderer *renderer = (IosRenderer *)gpu;
+    if(renderer->quad_count[0] > 0) {
+        [renderer->command_encoder setRenderPipelineState: renderer->alpha_blend_state];
+        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[0][renderer->current_buffer][renderer->buffer_index[0]]
+                                            offset:renderer->quad_offset[0] * sizeof(Uniform)
+                                           atIndex:VertexInputIndexWorld];
+        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count[0] - renderer->quad_offset[0]];
+        renderer->quad_offset[0] = renderer->quad_count[0];
+    }
+    
+    if(renderer->quad_count[1] > 0) {
+        [renderer->command_encoder setRenderPipelineState: renderer->additive_blend_state];
+        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[1][renderer->current_buffer][renderer->buffer_index[1]]
+                                            offset:renderer->quad_offset[1] * sizeof(Uniform)
+                                           atIndex:VertexInputIndexWorld];
+        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count[1] - renderer->quad_offset[1]];
+        renderer->quad_offset[1] = renderer->quad_count[1];
+    }
     renderer->view_m4 = matrix4x4_translation(-pos.x, -pos.y, -pos.z);
+    [renderer->command_encoder setVertexBytes:&renderer->view_m4 length:sizeof(matrix_float4x4) atIndex:VertexInputIndexView];
 }
 
 
@@ -879,7 +932,7 @@ void spu_sound_restart(Spu spu, Sound sound) {
     g_memory.size = mb(256);
     g_memory.used = 0;
     g_memory.data = malloc(g_memory.size);
-    
+
     game_init(&g_memory);
 
     [_metal_view_delegate mtkView:tmp_view drawableSizeWillChange:tmp_view.drawableSize];

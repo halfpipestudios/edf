@@ -78,6 +78,15 @@ static inline V3 v3(f32 x, f32 y, f32 z) {
     return (V3){ x, y, z };
 }
 
+static inline V3 hex_to_v3(u32 hex) {
+    f32 scale = 1.0f / 255.0f;
+    f32 r = (f32)((hex >> 16) & 0xff) * scale;
+    f32 g = (f32)((hex >> 8)  & 0xff) * scale;
+    f32 b = (f32)((hex >> 0)  & 0xff) * scale;
+    V3 result = v3(r, g, b);
+    return result;
+}
+
 static inline V3 v3_lerp(V3 a, V3 b, f32 t) {
     V3 result;
     result.x = lerp(a.x, b.x, t);

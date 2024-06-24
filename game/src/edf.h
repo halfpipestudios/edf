@@ -9,6 +9,9 @@
 #define GAME_MEMORY_SIZE mb(256)
 struct Memory;
 
+#define MAX_STARS 1000
+
+
 typedef struct GameState {
     Gpu gpu;
     Spu spu;
@@ -24,11 +27,13 @@ typedef struct GameState {
     Bitmap move_outer_bitmap;
     Bitmap move_inner_bitmap;
     Bitmap boost_bitmap;
+    Bitmap star_bitmap;
 
     Texture ship_texture;
     Texture move_outer_texture;
     Texture move_inner_texture;
     Texture boost_texture;
+    Texture star_texture;
 
     V3 boost_tint;
 
@@ -47,6 +52,9 @@ typedef struct GameState {
     i32 button_touch;
     V2 button_center;
     f32 button_radii;
+
+    Sprite stars[MAX_STARS];
+
 
 } GameState;
 
