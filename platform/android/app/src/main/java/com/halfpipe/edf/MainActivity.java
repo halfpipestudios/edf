@@ -98,19 +98,12 @@ class GameView extends GLSurfaceView {
 
     }
 
-    private void updateTouch(MotionEvent event, int eventType, int index, int action_index) {
-        input.touches[index].x = event.getX(action_index);
-        input.touches[index].y = event.getY(action_index);
-        input.touches[index].index = index;
-    }
-
     private void printInput(GameInput input) {
         Log.d("Game", "----------------\n");
         for(int i = 0; i < GameInput.MAX_TOUCHES; ++i) {
             Log.d("Game", "location: " + input.indices[i]);
         }
     }
-
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -120,7 +113,7 @@ class GameView extends GLSurfaceView {
         int action_index = event.getActionIndex();
         int index = event.getPointerId(action_index);
 
-        if(index >= 5) return false;
+        if(index >= input.touches.length) return false;
 
         switch (action) {
 

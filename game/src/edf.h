@@ -39,14 +39,12 @@ typedef struct GameState {
 
     f32 s_inner;
 
-    i32 joystick_location;
-    bool joystick_is_down;
+    i32 joystick_touch;
     f32 joystick_max_distance;
     f32 joystick_scale;
     V2 s_pos, c_pos;
 
-    i32 button_location;
-    bool button_is_down[2];
+    i32 button_touch;
     V2 button_center;
     f32 button_radii;
 
