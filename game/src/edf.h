@@ -4,6 +4,7 @@
 #include "edf_font.h"
 #include "edf_memory.h"
 #include "edf_platform.h"
+#include "edf_input.h"
 
 #define GAME_MEMORY_SIZE mb(256)
 struct Memory;
@@ -11,6 +12,7 @@ struct Memory;
 typedef struct GameState {
     Gpu gpu;
     Spu spu;
+    Multitouch mt;
 
     Arena platform_arena;
     Arena game_arena;
