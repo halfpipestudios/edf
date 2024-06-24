@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <string.h>
 
 typedef uint64_t u64;
 typedef uint32_t u32;

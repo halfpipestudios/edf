@@ -1,33 +1,14 @@
 #ifndef EDF_PLATFORM_H
 #define EDF_PLATFORM_H
 
-#define MAX_TOUCHES 5
-
 #include "edf_common.h"
 #include "edf_math.h"
 #include "edf_graphics.h"
 #include "edf_sound.h"
+#include "edf_input.h"
 
 struct Arena;
 
-typedef enum TouchEvent {
-    TOUCH_EVENT_DOWN,
-    TOUCH_EVENT_MOVE,
-    TOUCH_EVENT_UP
-} TouchEvent;
-
-typedef struct Touch {
-    TouchEvent event;
-    V2i pos;
-    u64 uid;
-    i32 location;
-} Touch;
-
-typedef struct Input {
-    Touch touches[MAX_TOUCHES];
-    i32 locations[MAX_TOUCHES];
-    u32 count;
-} Input;
 
 typedef struct File {
     void *data;

@@ -1,26 +1,5 @@
 #include "edf.h"
 
-V2 input_to_game_coords(V2i in_pos) {
-    f32 width  = os_display_width();
-    f32 height = os_display_height();
-    V2 pos = v2(in_pos.x, in_pos.y);
-    pos.x /= width;
-    pos.y /= height;
-    pos.x -= 0.5f;
-    pos.y -= 0.5f;
-    pos.x *= width;
-    pos.y *= -height;
-    return pos;
-}
-
-bool point_in_circle(V2 point, V2 c, f32 r) {
-    f32 len = v2_len(v2_sub(point, c));
-    if(len > r) {
-        return false;
-    }
-    return true;
-}
-
 void game_init(Memory *memory) {
     game_state_init(memory);
     GameState *gs = game_state(memory);
@@ -75,49 +54,48 @@ void game_init(Memory *memory) {
 void game_update(Memory *memory, Input *input, f32 dt) {
     GameState *gs             = game_state(memory);
     gs->joystick_max_distance = ((f32)gs->move_outer_bitmap.w * 0.5f) * gs->joystick_scale;
-    
-    bool joystick_found = false;
-    bool button_found = false;
-    for(u32 i = 0; i < input->count; ++i) {
-        Touch *touch = input->touches + input->locations[i];
-        if(touch->event == TOUCH_EVENT_DOWN || touch->event == TOUCH_EVENT_MOVE) {
-            V2 pos = input_to_game_coords(touch->pos);
-            if(gs->button_location == -1 && point_in_circle(pos, gs->button_center, gs->button_radii)) {
-                gs->button_location = input->locations[i];
-                gs->button_is_down[0] = true;
-            }
-            else if(gs->joystick_location == -1 && !point_in_circle(pos, gs->button_center, gs->button_radii)) {
-                gs->joystick_location = input->locations[i];
-                gs->joystick_is_down = true;
-                gs->s_pos = pos;
-                gs->c_pos   = gs->s_pos;
-            }
-        }
 
-        if(gs->joystick_location == input->locations[i]) {
-            joystick_found = true;
-        }
-        if(gs->button_location == input->locations[i]) {
-            button_found = true;
-        }
+    mt_update(&gs->mt, input);
+
+    if(gs->button_location == -1) {
+        mt_touch_in_circle(&gs->mt, &gs->button_location, gs->button_center, gs->button_radii);
     }
-    if(joystick_found == false) {
-        gs->joystick_location = -1;
-        gs->joystick_is_down = false;
-        gs->c_pos = gs->s_pos;
-    }
-    if(button_found == false) {
-        gs->button_location = -1;
+    
+    if(gs->button_location != -1) {
+        gs->button_is_down[0] = true;
+    } else {
         gs->button_is_down[0] = false;
     }
 
-    if(gs->joystick_is_down) {
-        Touch *touch = input->touches + gs->joystick_location;
-        V2 pos = input_to_game_coords(touch->pos);
-        if(touch->event == TOUCH_EVENT_DOWN || touch->event == TOUCH_EVENT_MOVE) {
-            gs->c_pos = pos;
+    u32 hw = os_display_width() * 0.5f;
+    u32 hh = os_display_height() * 0.5f;
+
+    R2 window_rect;
+    window_rect.min.x = -hw;
+    window_rect.max.x = 0;
+    window_rect.min.y = -hh;
+    window_rect.max.y = hh;
+
+    if(gs->joystick_location == -1) {
+        if(mt_touch_in_rect(&gs->mt, &gs->joystick_location, window_rect)) {
+            gs->s_pos = mt_touch_pos(&gs->mt, gs->joystick_location);
+            gs->c_pos   = gs->s_pos;
         }
     }
+
+    if(gs->joystick_location != -1) {
+        gs->joystick_is_down = true;
+    } else {
+        gs->joystick_is_down = false;
+    }
+
+    if(gs->joystick_is_down) {
+        V2 pos = mt_touch_pos(&gs->mt, gs->joystick_location);
+        gs->c_pos = pos;
+    } else {
+        gs->c_pos = gs->s_pos;
+    }
+
 
     V2 diff = v2_sub(gs->s_pos, gs->c_pos);
     f32 len = v2_len(diff);
