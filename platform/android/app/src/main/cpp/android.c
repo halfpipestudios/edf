@@ -260,17 +260,16 @@ Input input_from_java(JNIEnv *env, jint touches_count, jintArray  indices, jobje
 
     input.count = min(touches_count, MAX_TOUCHES);
     int *indices_arr = (*env)->GetIntArrayElements(env, indices, false);
+    int len = MAX_TOUCHES;
 
-    for(u32 i = 0; i < input.count; ++i) {
+    for(u32 i = 0; i < len; ++i) {
         jobject touch = (*env)->GetObjectArrayElement(env, touches, (jsize)i);
 
         jclass touch_class = (*env)->GetObjectClass(env, touch);
-        jfieldID event_id = (*env)->GetFieldID(env, touch_class, "event", "I");
         jfieldID index_id = (*env)->GetFieldID(env, touch_class, "index", "I");
         jfieldID x_id  = (*env)->GetFieldID(env, touch_class, "x", "F");
         jfieldID y_id  = (*env)->GetFieldID(env, touch_class, "y", "F");
 
-        input.touches[i].event = (*env)->GetIntField(env, touch, event_id);
         input.touches[i].uid = (u64)(*env)->GetIntField(env, touch, index_id);
         input.touches[i].pos.x = (i32)(*env)->GetFloatField(env, touch, x_id);
         input.touches[i].pos.y = (i32)(*env)->GetFloatField(env, touch, y_id);
