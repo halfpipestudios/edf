@@ -1,5 +1,11 @@
 #include "edf.h"
 
+#include <stdlib.h> 
+
+i32 rand_range(i32 min, i32 max) {
+    return (rand() % (max - min + 1)) + min;
+}
+
 void game_init(Memory *memory) {
     game_state_init(memory);
     GameState *gs = game_state(memory);
@@ -18,11 +24,13 @@ void game_init(Memory *memory) {
     gs->move_outer_bitmap = bitmap_load(&gs->game_arena, "move_outer.png");
     gs->move_inner_bitmap = bitmap_load(&gs->game_arena, "move_inner.png");
     gs->boost_bitmap      = bitmap_load(&gs->game_arena, "boost.png");
+    gs->star_bitmap       = bitmap_load(&gs->game_arena, "star.png");
 
     gs->ship_texture       = gpu_texture_load(gs->gpu, &gs->ship_bitmap);
     gs->move_outer_texture = gpu_texture_load(gs->gpu, &gs->move_outer_bitmap);
     gs->move_inner_texture = gpu_texture_load(gs->gpu, &gs->move_inner_bitmap);
     gs->boost_texture      = gpu_texture_load(gs->gpu, &gs->boost_bitmap);
+    gs->star_texture       = gpu_texture_load(gs->gpu, &gs->star_bitmap);
 
     f32 size = 32.0f * 3.0f;
     gs->ship = sprite_load(&gs->game_arena, v2(0, 0), v2(size, size), v3(1, 1, 1), 0, gs->ship_texture);
@@ -45,6 +53,32 @@ void game_init(Memory *memory) {
     gs->joystick_touch = -1;
     gs->button_touch = -1;
 
+    u32 star_colors[4] = {
+        0xFDF4F5,
+        0xE8A0BF,
+        0xBA90C6,
+        0xC0DBEA
+    };
+
+    i32 hw = os_display_width() * 0.5f;
+    i32 hh = os_display_height() * 0.5f;
+
+    // Init star sprites
+    i32 color_index = 0;
+    for(i32 i = 0; i < MAX_STARS; i++) {
+        Sprite *star = gs->stars + i;
+        star->texture = gs->star_texture;
+        star->pos.x = rand_range(-hw, hw);
+        star->pos.y = rand_range(-hh, hh);
+        star->z = (f32)rand_range(1, 10);
+        star->scale.x = 20/star->z;
+        star->scale.y = 20/star->z;
+        star->tint = hex_to_v3(star_colors[color_index]);
+        star->angle = 0;
+        
+        color_index = (color_index + 1) % array_len(star_colors);
+    }
+
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {
@@ -61,8 +95,8 @@ void game_update(Memory *memory, Input *input, f32 dt) {
 
     mt_touch_just_in_circle(&gs->mt, &gs->button_touch, gs->button_center, gs->button_radii);
     
-    u32 hw = os_display_width() * 0.5f;
-    u32 hh = os_display_height() * 0.5f;
+    i32 hw = os_display_width() * 0.5f;
+    i32 hh = os_display_height() * 0.5f;
 
     R2 window_rect;
     window_rect.min.x = -hw;
@@ -131,9 +165,23 @@ void game_render(Memory *memory) {
 
     gpu_frame_begin(gs->gpu);
 
+    gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
+
     gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v3(0.05f, 0.05f, 0.1f));
 
+    // Entities draw
+    gpu_camera_set(gs->gpu, v3(gs->ship->pos.x, gs->ship->pos.y, 0), 0);
+
+    // draw the stars
+    for(i32 i = 0; i < MAX_STARS; i++) {
+        Sprite *star = gs->stars + i;
+        sprite_draw(gs->gpu, star);
+    }
     sprite_draw(gs->gpu, gs->ship);
+
+    
+    // UI draw
+    gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
 
     f32 s       = gs->joystick_scale;
     f32 s_inner = gs->s_inner;
@@ -144,7 +192,7 @@ void game_render(Memory *memory) {
                           gs->move_inner_bitmap.h * s * s_inner, 0, gs->move_inner_texture);
     gpu_draw_quad_texture_tinted(gs->gpu, gs->button_center.x, gs->button_center.y, gs->button_radii * 2,
                           gs->button_radii * 2, 0, gs->boost_texture, gs->boost_tint);
-
+    
     gpu_frame_end(gs->gpu);
 }
 

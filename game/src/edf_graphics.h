@@ -23,6 +23,7 @@ void bitmap_copy_u8_u32(struct Arena *arena, Bitmap *bitmap8, Bitmap *bitmap32);
 typedef struct Sprite {
     Texture texture;
     V2 pos;
+    f32 z;
     V2 scale;
     V3 tint;
     f32 angle;
