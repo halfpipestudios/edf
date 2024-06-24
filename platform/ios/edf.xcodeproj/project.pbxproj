@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		6E01829C2C23D8180054384C /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 6E01829B2C23D8180054384C /* assets */; };
+		6E01D0B42C2A10960024ED66 /* edf_entity.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E01D0B32C2A10960024ED66 /* edf_entity.c */; };
 		6E0F64B62C232DC400FC0EC0 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6E0F64B52C232DC400FC0EC0 /* MetalKit.framework */; };
 		6E0F64BB2C23687100FC0EC0 /* edf_memory.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E0F64BA2C23687100FC0EC0 /* edf_memory.c */; };
 		6E0F64BE2C23837600FC0EC0 /* ios_shader.metal in Sources */ = {isa = PBXBuildFile; fileRef = 6E0F64BD2C23837600FC0EC0 /* ios_shader.metal */; };
@@ -26,6 +27,8 @@
 /* Begin PBXFileReference section */
 		6E01829B2C23D8180054384C /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = assets; path = ../../game/assets; sourceTree = "<group>"; };
 		6E0182A22C23E08E0054384C /* stb_image.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stb_image.h; sourceTree = "<group>"; };
+		6E01D0B22C2A10960024ED66 /* edf_entity.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = edf_entity.h; sourceTree = "<group>"; };
+		6E01D0B32C2A10960024ED66 /* edf_entity.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = edf_entity.c; sourceTree = "<group>"; };
 		6E0F64B32C23295D00FC0EC0 /* edf_platform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = edf_platform.h; sourceTree = "<group>"; };
 		6E0F64B52C232DC400FC0EC0 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
 		6E0F64B72C2359A000FC0EC0 /* edf_memory.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = edf_memory.h; sourceTree = "<group>"; };
@@ -139,6 +142,8 @@
 				6ED799402C276888005E0FDF /* edf_graphics.c */,
 				6ED799422C276899005E0FDF /* edf_sound.h */,
 				6ED799432C276899005E0FDF /* edf_sound.c */,
+				6E01D0B22C2A10960024ED66 /* edf_entity.h */,
+				6E01D0B32C2A10960024ED66 /* edf_entity.c */,
 			);
 			name = src;
 			path = ../../game/src;
@@ -221,6 +226,7 @@
 				6ED799442C276899005E0FDF /* edf_sound.c in Sources */,
 				6E1420822C23196300C8BB04 /* edf.c in Sources */,
 				6E0F64BE2C23837600FC0EC0 /* ios_shader.metal in Sources */,
+				6E01D0B42C2A10960024ED66 /* edf_entity.c in Sources */,
 				6E8AAE9D2C29EED600009430 /* edf_input.c in Sources */,
 				6E1420812C23192100C8BB04 /* ios_main.m in Sources */,
 				6ED097D82C266CEE005630FB /* edf_font.c in Sources */,

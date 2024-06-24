@@ -925,7 +925,7 @@ void spu_sound_restart(Spu spu, Sound sound) {
         CGPoint location = [uitouch locationInView:self.view];
         Touch touch = {0};
         touch.location = g_input.count;
-        touch.event = TOUCH_EVENT_DOWN;
+        //touch.event = TOUCH_EVENT_DOWN;
         touch.pos.x = (i32)(((f32)location.x / w) * g_view_width);
         touch.pos.y = (i32)(((f32)location.y / h) * g_view_height);
         touch.uid = (u64)uitouch.hash;
@@ -953,7 +953,7 @@ void spu_sound_restart(Spu spu, Sound sound) {
             UITouch *uitouch = touches.allObjects[i];
             CGPoint location = [uitouch locationInView:self.view];
             Touch *touch = g_input.touches + index_to_update;
-            touch->event = TOUCH_EVENT_MOVE;
+            //touch->event = TOUCH_EVENT_MOVE;
             touch->pos.x = (i32)(((f32)location.x / w) * g_view_width);
             touch->pos.y = (i32)(((f32)location.y / h) * g_view_height);
         }
