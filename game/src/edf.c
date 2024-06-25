@@ -7,6 +7,59 @@ i32 rand_range(i32 min, i32 max) {
     return (rand() % (max - min + 1)) + min;
 }
 
+void stars_init(GameState *gs) {
+    static u32 star_colors[4] = {
+        0xFDF4F5,
+        0xE8A0BF,
+        0xBA90C6,
+        0xC0DBEA
+    };
+
+    i32 hw = (os_display_width() * 0.5f) * 1.25f;
+    i32 hh = (os_display_height() * 0.5f) * 1.25f;
+    
+    Texture planet_textures[MAX_GALAXY] = {
+        gs->galaxy_texture,
+        gs->planet1_texture,
+        gs->planet2_texture,
+        gs->satelite_texture,
+        gs->meteorito_texture,
+        gs->deathstar_texture
+    };
+
+
+    i32 color_index = 0;
+    srand(123);
+    for(i32 i = 0; i < MAX_GALAXY; i++) {
+        Sprite *galaxy = gs->galaxy + i;
+        galaxy->texture = planet_textures[color_index];
+        galaxy->pos.x = rand_range(-hw, hw);
+        galaxy->pos.y = rand_range(-hh, hh);
+        galaxy->z = rand_range(2, 10);
+        f32 ratio = ((f32)rand_range(50, 100) / 100.0f);
+        galaxy->scale = v2(200*ratio, 200*ratio);
+        galaxy->tint = v3(0.4f, 0.4f, 0.4f);
+        galaxy->angle = 0;
+        color_index++;
+    }
+
+    // Init star sprites
+    color_index = 0;
+    for(i32 i = 0; i < MAX_STARS; i++) {
+        Sprite *star = gs->stars + i;
+        star->texture = gs->star_texture;
+        star->pos.x = rand_range(-hw, hw);
+        star->pos.y = rand_range(-hh, hh);
+        star->z = (f32)rand_range(1, 10);
+        star->scale.x = 10/star->z;
+        star->scale.y = 10/star->z;
+        star->tint = hex_to_v3(star_colors[color_index]);
+        star->angle = 0;
+        
+        color_index = (color_index + 1) % array_len(star_colors);
+    }
+}
+
 void game_init(Memory *memory) {
     game_state_init(memory);
     GameState *gs = game_state(memory);
@@ -55,137 +108,48 @@ void game_init(Memory *memory) {
     gs->ship_acc = v2(0, 0);
     gs->ship_damping = 0.4f;
 
-    gs->s_pos_saved = v2(-740, -250);
-    gs->s_pos = gs->s_pos_saved;
-    gs->c_pos = gs->s_pos;
-    gs->joystick_scale   = 4;
-    
-    gs->s_inner      = 1.5f;
-
-    gs->button_center  = v2(740, -250);
-    gs->button_radii   = 135;
-
-    gs->boost_tint = v3(1, 1, 1);
-
-    gs->joystick_touch = -1;
-    gs->button_touch = -1;
-
-    gs->stars_init = false;
-
+    gs->game_init = false;
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {
     GameState *gs             = game_state(memory);
     
-    if(gs->stars_init == false) {
+    
+    if(gs->game_init == false) {
 
-        static u32 star_colors[4] = {
-            0xFDF4F5,
-            0xE8A0BF,
-            0xBA90C6,
-            0xC0DBEA
-        };
+        i32 hw = os_display_width() * 0.5f;
+        i32 hh = os_display_height() * 0.5f;
 
-        i32 hw = (os_display_width() * 0.5f) * 1.25f;
-        i32 hh = (os_display_height() * 0.5f) * 1.25f;
+        R2 window_rect;
+        window_rect.min.x = -hw;
+        window_rect.max.x = 0;
+        window_rect.min.y = -hh;
+        window_rect.max.y = hh;
+
+        gs->joystick = ui_joystick_alloc(&gs->ui, &gs->game_arena, v2(-740, -250), window_rect, 
+                                        200, 205, gs->move_inner_texture, gs->move_outer_texture);
         
-        Texture planet_textures[MAX_GALAXY] = {
-            gs->galaxy_texture,
-            gs->planet1_texture,
-            gs->planet2_texture,
-            gs->satelite_texture,
-            gs->meteorito_texture,
-            gs->deathstar_texture
-        };
+        gs->button = ui_button_alloc(&gs->ui, &gs->game_arena, v2(740, -250), 135, gs->boost_texture);
 
+        stars_init(gs);
 
-        i32 color_index = 0;
-        srand(123);
-        for(i32 i = 0; i < MAX_GALAXY; i++) {
-            Sprite *galaxy = gs->galaxy + i;
-            galaxy->texture = planet_textures[color_index];
-            galaxy->pos.x = rand_range(-hw, hw);
-            galaxy->pos.y = rand_range(-hh, hh);
-            galaxy->z = rand_range(2, 10);
-            f32 ratio = ((f32)rand_range(50, 100) / 100.0f);
-            galaxy->scale = v2(200*ratio, 200*ratio);
-            galaxy->tint = v3(0.4f, 0.4f, 0.4f);
-            galaxy->angle = 0;
-            color_index++;
-        }
-
-        // Init star sprites
-        color_index = 0;
-        for(i32 i = 0; i < MAX_STARS; i++) {
-            Sprite *star = gs->stars + i;
-            star->texture = gs->star_texture;
-            star->pos.x = rand_range(-hw, hw);
-            star->pos.y = rand_range(-hh, hh);
-            star->z = (f32)rand_range(1, 10);
-            star->scale.x = 10/star->z;
-            star->scale.y = 10/star->z;
-            star->tint = hex_to_v3(star_colors[color_index]);
-            star->angle = 0;
-            
-            color_index = (color_index + 1) % array_len(star_colors);
-        }
-        gs->stars_init = true;
+        gs->game_init = true;
     }
-
-
-
-    gs->joystick_max_distance = ((f32)gs->move_outer_bitmap.w * 0.5f) * gs->joystick_scale;
-
-#if 0
-    os_print("[%d]: %d\n", 0, input->locations[0]);
-    os_print("[%d]: %d\n", 1, input->locations[1]);
-    os_print("[%d]: %d\n", 2, input->locations[2]);
-    os_print("[%d]: %d\n", 3, input->locations[3]);
-    os_print("[%d]: %d\n", 4, input->locations[4]);
-#endif
 
     mt_begin(&gs->mt, input);
 
-    mt_touch_just_in_circle(&gs->mt, &gs->button_touch, gs->button_center, gs->button_radii);
-    
-    i32 hw = os_display_width() * 0.5f;
-    i32 hh = os_display_height() * 0.5f;
+    ui_update(&gs->ui, &gs->mt, dt);
 
-    R2 window_rect;
-    window_rect.min.x = -hw;
-    window_rect.max.x = 0;
-    window_rect.min.y = -hh;
-    window_rect.max.y = hh;
-
-    if(mt_touch_in_rect(&gs->mt, &gs->joystick_touch, window_rect)) {
-        gs->s_pos = mt_touch_pos(&gs->mt, gs->joystick_touch);
-        gs->c_pos   = gs->s_pos;
-    }
-
-    V2 diff = v2_sub(gs->s_pos, gs->c_pos);
-    f32 len = v2_len(diff);
-    if(len > gs->joystick_max_distance) {
-        V2 dir      = v2_normalized(diff);
-        gs->s_pos.x = gs->c_pos.x + dir.x * gs->joystick_max_distance;
-        gs->s_pos.y = gs->c_pos.y + dir.y * gs->joystick_max_distance;
-    }
-
-
-    if(mt_touch_down(&gs->mt, gs->joystick_touch)) {
-        V2 pos = mt_touch_pos(&gs->mt, gs->joystick_touch);
-        gs->c_pos = pos;
-        if(len > (gs->joystick_max_distance * 0.2f)) {
+    if(ui_widget_is_active(&gs->mt, gs->joystick)) {
+        V2 diff = v2_sub(gs->joystick->pos, gs->joystick->c_pos);
+        f32 len = v2_len(diff);
+        if(len > (gs->joystick->max_distance * 0.2f)) {
             V2 dir          = v2_normalized(diff);
             gs->ship->angle = atan2f(dir.y, dir.x) + (PI / 2.0f);
         }
-    } else {
-        gs->s_pos = gs->s_pos_saved;
-        gs->c_pos = gs->s_pos;
     }
 
-    gs->boost_tint = v3(1, 1, 1);
-    if(mt_touch_down(&gs->mt, gs->button_touch)) {
-        gs->boost_tint = v3(0.5f, 0.5f, 0.5f);
+    if(ui_widget_is_active(&gs->mt, gs->button)) {
         V2 dir = {0};
         dir.x = cosf(gs->ship->angle + (PI / 2.0f));
         dir.y = sinf(gs->ship->angle + (PI / 2.0f));
@@ -207,6 +171,10 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     gs->ship_vel.y *= powf(gs->ship_damping, dt);
 
     gs->ship_acc = v2(0, 0);
+
+
+    i32 hw = os_display_width() * 0.5f;
+    i32 hh = os_display_height() * 0.5f;
 
     R2 bounds = {0};
     bounds.min.x = gs->ship->pos.x - (hw * 1.25f);
@@ -294,16 +262,7 @@ void game_render(Memory *memory) {
     // UI draw
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
 
-    
-    f32 s       = gs->joystick_scale;
-    f32 s_inner = gs->s_inner;
-
-    gpu_draw_quad_texture(gs->gpu, gs->s_pos.x, gs->s_pos.y, gs->move_outer_bitmap.w * s,
-                          gs->move_outer_bitmap.h * s, 0, gs->move_outer_texture);
-    gpu_draw_quad_texture(gs->gpu, gs->c_pos.x, gs->c_pos.y, gs->move_inner_bitmap.w * s * s_inner,
-                          gs->move_inner_bitmap.h * s * s_inner, 0, gs->move_inner_texture);
-    gpu_draw_quad_texture_tinted(gs->gpu, gs->button_center.x, gs->button_center.y, gs->button_radii * 2,
-                          gs->button_radii * 2, 0, gs->boost_texture, gs->boost_tint);
+    ui_render(gs->gpu, &gs->ui);
     
     gpu_frame_end(gs->gpu);
 }

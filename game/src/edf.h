@@ -13,15 +13,22 @@ struct Memory;
 #define MAX_GALAXY 6
 
 typedef struct GameState {
+    
     Gpu gpu;
     Spu spu;
     Multitouch mt;
+    Ui ui;
+
+    bool game_init;
 
     Arena platform_arena;
     Arena game_arena;
 
     Font *arial;
     Font *times;
+
+    Joystick *joystick;
+    Button *button;
 
     Bitmap ship_bitmap[2];
     Bitmap move_outer_bitmap;
@@ -47,30 +54,13 @@ typedef struct GameState {
     Texture meteorito_texture;
     Texture deathstar_texture;
 
-    V3 boost_tint;
-
     Sprite *ship;
     V2 ship_vel;
     V2 ship_acc;
     f32 ship_damping;
 
-    f32 s_inner;
-
-    i32 joystick_touch;
-    f32 joystick_max_distance;
-    f32 joystick_scale;
-    V2 s_pos, c_pos;
-    V2 s_pos_saved;
-
-    i32 button_touch;
-    V2 button_center;
-    f32 button_radii;
-
-    bool stars_init;
     Sprite stars[MAX_STARS];
     Sprite galaxy[MAX_GALAXY];
-    
-    
 
 } GameState;
 
