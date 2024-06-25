@@ -26,6 +26,8 @@ void game_init(Memory *memory) {
     gs->boost_bitmap      = bitmap_load(&gs->game_arena, "boost.png");
     gs->star_bitmap       = bitmap_load(&gs->game_arena, "star.png");
     gs->galaxy_bitmap     = bitmap_load(&gs->game_arena, "stb_image.png");
+    gs->planet1_bitmap    = bitmap_load(&gs->game_arena, "planet1.png");
+    gs->planet2_bitmap    = bitmap_load(&gs->game_arena, "planet2.png");
 
     gs->ship_texture       = gpu_texture_load(gs->gpu, &gs->ship_bitmap);
     gs->move_outer_texture = gpu_texture_load(gs->gpu, &gs->move_outer_bitmap);
@@ -33,6 +35,8 @@ void game_init(Memory *memory) {
     gs->boost_texture      = gpu_texture_load(gs->gpu, &gs->boost_bitmap);
     gs->star_texture       = gpu_texture_load(gs->gpu, &gs->star_bitmap);
     gs->galaxy_texture     = gpu_texture_load(gs->gpu, &gs->galaxy_bitmap);
+    gs->planet1_texture    = gpu_texture_load(gs->gpu, &gs->planet1_bitmap);
+    gs->planet2_texture    = gpu_texture_load(gs->gpu, &gs->planet2_bitmap);
 
     f32 size = 32.0f * 3.0f;
     gs->ship = sprite_load(&gs->game_arena, v2(0, 0), v2(size, size), v3(1, 1, 1), 0, gs->ship_texture);
@@ -73,21 +77,30 @@ void game_update(Memory *memory, Input *input, f32 dt) {
 
         i32 hw = (os_display_width() * 0.5f) * 1.25f;
         i32 hh = (os_display_height() * 0.5f) * 1.25f;
+        
+        Texture planet_textures[3] = {
+            gs->galaxy_texture,
+            gs->planet1_texture,
+            gs->planet2_texture
+        };
 
 
+        i32 color_index = 0;
         for(i32 i = 0; i < MAX_GALAXY; i++) {
             Sprite *galaxy = gs->galaxy + i;
-            galaxy->texture = gs->galaxy_texture;
+            galaxy->texture = planet_textures[color_index];
             galaxy->pos.x = rand_range(-hw, hw);
             galaxy->pos.y = rand_range(-hh, hh);
             galaxy->z = 10;
-            galaxy->scale = v2(100, 100);
+            f32 ratio = ((f32)rand_range(50, 100) / 100.0f);
+            galaxy->scale = v2(200*ratio, 200*ratio);
             galaxy->tint = v3(0.4f, 0.4f, 0.4f);
             galaxy->angle = 0;
+            color_index++;
         }
 
         // Init star sprites
-        i32 color_index = 0;
+        color_index = 0;
         for(i32 i = 0; i < MAX_STARS; i++) {
             Sprite *star = gs->stars + i;
             star->texture = gs->star_texture;
