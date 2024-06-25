@@ -10,6 +10,8 @@
 struct Memory;
 
 #define MAX_STARS 75
+#define MAX_GALAXY 1
+
 
 
 typedef struct GameState {
@@ -28,12 +30,14 @@ typedef struct GameState {
     Bitmap move_inner_bitmap;
     Bitmap boost_bitmap;
     Bitmap star_bitmap;
+    Bitmap galaxy_bitmap;
 
     Texture ship_texture;
     Texture move_outer_texture;
     Texture move_inner_texture;
     Texture boost_texture;
     Texture star_texture;
+    Texture galaxy_texture;
 
     V3 boost_tint;
 
@@ -55,7 +59,9 @@ typedef struct GameState {
 
     bool stars_init;
     Sprite stars[MAX_STARS];
-
+    Sprite galaxy[MAX_GALAXY];
+    
+    
 
 } GameState;
 
