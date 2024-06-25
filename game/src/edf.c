@@ -22,7 +22,7 @@ void game_init(Memory *memory) {
     gs->times = font_load(gs->gpu, &gs->platform_arena, "times.ttf", 64);
 
     gs->ship_bitmap[0]    = bitmap_load(&gs->game_arena, "Player.png");
-    gs->ship_bitmap[1]    = bitmap_load(&gs->game_arena, "OG Eng.png");
+    gs->ship_bitmap[1]    = bitmap_load(&gs->game_arena, "OG Es.png");
     gs->move_outer_bitmap = bitmap_load(&gs->game_arena, "move_outer.png");
     gs->move_inner_bitmap = bitmap_load(&gs->game_arena, "move_inner.png");
     gs->boost_bitmap      = bitmap_load(&gs->game_arena, "boost.png");
