@@ -91,7 +91,7 @@ void game_update(Memory *memory, Input *input, f32 dt) {
             galaxy->texture = planet_textures[color_index];
             galaxy->pos.x = rand_range(-hw, hw);
             galaxy->pos.y = rand_range(-hh, hh);
-            galaxy->z = 10;
+            galaxy->z = rand_range(2, 10);
             f32 ratio = ((f32)rand_range(50, 100) / 100.0f);
             galaxy->scale = v2(200*ratio, 200*ratio);
             galaxy->tint = v3(0.4f, 0.4f, 0.4f);
