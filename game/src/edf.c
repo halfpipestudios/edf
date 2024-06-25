@@ -86,6 +86,7 @@ void game_update(Memory *memory, Input *input, f32 dt) {
 
 
         i32 color_index = 0;
+        srand(123);
         for(i32 i = 0; i < MAX_GALAXY; i++) {
             Sprite *galaxy = gs->galaxy + i;
             galaxy->texture = planet_textures[color_index];
