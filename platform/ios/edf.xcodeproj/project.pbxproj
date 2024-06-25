@@ -14,6 +14,9 @@
 		6E0F64BE2C23837600FC0EC0 /* ios_shader.metal in Sources */ = {isa = PBXBuildFile; fileRef = 6E0F64BD2C23837600FC0EC0 /* ios_shader.metal */; };
 		6E1420812C23192100C8BB04 /* ios_main.m in Sources */ = {isa = PBXBuildFile; fileRef = 6E1420802C23192100C8BB04 /* ios_main.m */; };
 		6E1420822C23196300C8BB04 /* edf.c in Sources */ = {isa = PBXBuildFile; fileRef = 6EE114D82C222A030018B7E1 /* edf.c */; };
+		6E1A35392C2B662F007CB85B /* edf_physics_sys.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E1A35382C2B662F007CB85B /* edf_physics_sys.c */; };
+		6E1A353C2C2B73D5007CB85B /* edf_render_sys.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E1A353B2C2B73D5007CB85B /* edf_render_sys.c */; };
+		6E1A353F2C2B77A4007CB85B /* edf_input_sys.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E1A353E2C2B77A4007CB85B /* edf_input_sys.c */; };
 		6E8AAE9D2C29EED600009430 /* edf_input.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E8AAE9C2C29EED600009430 /* edf_input.c */; };
 		6ED097D82C266CEE005630FB /* edf_font.c in Sources */ = {isa = PBXBuildFile; fileRef = 6ED097D62C266CEE005630FB /* edf_font.c */; };
 		6ED7993E2C2708EE005E0FDF /* ios_sound.c in Sources */ = {isa = PBXBuildFile; fileRef = 6ED7993D2C2708EE005E0FDF /* ios_sound.c */; };
@@ -38,6 +41,12 @@
 		6E0F64BC2C237E3D00FC0EC0 /* ios_shader_types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ios_shader_types.h; sourceTree = "<group>"; };
 		6E0F64BD2C23837600FC0EC0 /* ios_shader.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ios_shader.metal; sourceTree = "<group>"; };
 		6E1420802C23192100C8BB04 /* ios_main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ios_main.m; sourceTree = "<group>"; };
+		6E1A35372C2B662F007CB85B /* edf_physics_sys.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = edf_physics_sys.h; sourceTree = "<group>"; };
+		6E1A35382C2B662F007CB85B /* edf_physics_sys.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = edf_physics_sys.c; sourceTree = "<group>"; };
+		6E1A353A2C2B73D5007CB85B /* edf_render_sys.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = edf_render_sys.h; sourceTree = "<group>"; };
+		6E1A353B2C2B73D5007CB85B /* edf_render_sys.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = edf_render_sys.c; sourceTree = "<group>"; };
+		6E1A353D2C2B77A4007CB85B /* edf_input_sys.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = edf_input_sys.h; sourceTree = "<group>"; };
+		6E1A353E2C2B77A4007CB85B /* edf_input_sys.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = edf_input_sys.c; sourceTree = "<group>"; };
 		6E8AAE9C2C29EED600009430 /* edf_input.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = edf_input.c; sourceTree = "<group>"; };
 		6E8AAE9E2C29EEE000009430 /* edf_input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = edf_input.h; sourceTree = "<group>"; };
 		6ED097D52C266CCE005630FB /* stb_truetype.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stb_truetype.h; sourceTree = "<group>"; };
@@ -88,6 +97,19 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		6E1A35362C2B660A007CB85B /* sys */ = {
+			isa = PBXGroup;
+			children = (
+				6E1A35372C2B662F007CB85B /* edf_physics_sys.h */,
+				6E1A35382C2B662F007CB85B /* edf_physics_sys.c */,
+				6E1A353A2C2B73D5007CB85B /* edf_render_sys.h */,
+				6E1A353B2C2B73D5007CB85B /* edf_render_sys.c */,
+				6E1A353D2C2B77A4007CB85B /* edf_input_sys.h */,
+				6E1A353E2C2B77A4007CB85B /* edf_input_sys.c */,
+			);
+			path = sys;
+			sourceTree = "<group>";
+		};
 		6EE114B22C22285C0018B7E1 = {
 			isa = PBXGroup;
 			children = (
@@ -127,6 +149,7 @@
 		6EE114D72C222A030018B7E1 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				6E1A35362C2B660A007CB85B /* sys */,
 				6E8AAE9E2C29EEE000009430 /* edf_input.h */,
 				6E8AAE9C2C29EED600009430 /* edf_input.c */,
 				6ED097D62C266CEE005630FB /* edf_font.c */,
@@ -224,8 +247,11 @@
 				6ED799412C276888005E0FDF /* edf_graphics.c in Sources */,
 				6ED7993E2C2708EE005E0FDF /* ios_sound.c in Sources */,
 				6ED799442C276899005E0FDF /* edf_sound.c in Sources */,
+				6E1A35392C2B662F007CB85B /* edf_physics_sys.c in Sources */,
 				6E1420822C23196300C8BB04 /* edf.c in Sources */,
 				6E0F64BE2C23837600FC0EC0 /* ios_shader.metal in Sources */,
+				6E1A353C2C2B73D5007CB85B /* edf_render_sys.c in Sources */,
+				6E1A353F2C2B77A4007CB85B /* edf_input_sys.c in Sources */,
 				6E01D0B42C2A10960024ED66 /* edf_entity.c in Sources */,
 				6E8AAE9D2C29EED600009430 /* edf_input.c in Sources */,
 				6E1420812C23192100C8BB04 /* ios_main.m in Sources */,
@@ -372,7 +398,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = A6P3V576RF;
+				DEVELOPMENT_TEAM = 7M5QZ49D37;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = edf/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -388,7 +414,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "halfpipestudios-jose.edf";
+				PRODUCT_BUNDLE_IDENTIFIER = "halfpipestudios-manu.edf";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -402,7 +428,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = A6P3V576RF;
+				DEVELOPMENT_TEAM = 7M5QZ49D37;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = edf/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -418,7 +444,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "halfpipestudios-jose.edf";
+				PRODUCT_BUNDLE_IDENTIFIER = "halfpipestudios-manu.edf";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";

@@ -8,6 +8,8 @@
 
 #define GAME_MEMORY_SIZE mb(256)
 struct Memory;
+struct Entity;
+struct EntityManager;
 
 #define MAX_STARS 75
 #define MAX_GALAXY 6
@@ -54,13 +56,11 @@ typedef struct GameState {
     Texture meteorito_texture;
     Texture deathstar_texture;
 
-    Sprite *ship;
-    V2 ship_vel;
-    V2 ship_acc;
-    f32 ship_damping;
-
     Sprite stars[MAX_STARS];
     Sprite galaxy[MAX_GALAXY];
+
+    struct Entity *hero;
+    struct EntityManager *em;
 
 } GameState;
 

@@ -1,4 +1,8 @@
 #include "edf.h"
+#include "edf_entity.h"
+#include "sys/edf_render_sys.h"
+#include "sys/edf_input_sys.h"
+#include "sys/edf_physics_sys.h"
 
 #include <stdlib.h> 
 #include <time.h>
@@ -60,6 +64,71 @@ void stars_init(GameState *gs) {
     }
 }
 
+void stars_update(GameState *gs, f32 dt) {
+    i32 hw = os_display_width() * 0.5f;
+    i32 hh = os_display_height() * 0.5f;
+
+    R2 bounds = {0};
+    bounds.min.x = gs->hero->pos.x - (hw * 1.25f);
+    bounds.min.y = gs->hero->pos.y - (hh * 1.25f);
+    bounds.max.x = gs->hero->pos.x + (hw * 1.25f);
+    bounds.max.y = gs->hero->pos.y + (hh * 1.25f);
+    for(i32 i = 0; i < MAX_GALAXY; i++) {
+        Sprite *galaxy = gs->galaxy + i;
+        galaxy->pos.x -= (gs->hero->vel.x / galaxy->z) * dt;
+        galaxy->pos.y -= (gs->hero->vel.y / galaxy->z) * dt;
+        
+        if(galaxy->pos.x > bounds.max.x) {
+            galaxy->pos.x = bounds.min.x;
+        }
+        if(galaxy->pos.x < bounds.min.x) {
+            galaxy->pos.x = bounds.max.x;
+        }
+
+        if(galaxy->pos.y > bounds.max.y) {
+            galaxy->pos.y = bounds.min.y;
+        }
+        if(galaxy->pos.y < bounds.min.y) {
+            galaxy->pos.y = bounds.max.y;
+        }
+    }
+
+
+    for(i32 i = 0; i < MAX_STARS; i++) {
+        Sprite *star = gs->stars + i;
+        star->pos.x -= (gs->hero->vel.x / star->z) * dt;
+        star->pos.y -= (gs->hero->vel.y / star->z) * dt;
+        
+        if(star->pos.x > bounds.max.x) {
+            star->pos.x = bounds.min.x;
+        }
+        if(star->pos.x < bounds.min.x) {
+            star->pos.x = bounds.max.x;
+        }
+
+        if(star->pos.y > bounds.max.y) {
+            star->pos.y = bounds.min.y;
+        }
+        if(star->pos.y < bounds.min.y) {
+            star->pos.y = bounds.max.y;
+        }
+    }
+}
+
+void stars_render(GameState *gs) {
+    // draw the planets
+    for(i32 i = 0; i < MAX_GALAXY; i++) {
+        Sprite *galaxy = gs->galaxy + i;
+        sprite_draw(gs->gpu, galaxy);
+    }
+
+    // draw the stars
+    for(i32 i = 0; i < MAX_STARS; i++) {
+        Sprite *star = gs->stars + i;
+        sprite_draw(gs->gpu, star);
+    }
+}
+
 void game_init(Memory *memory) {
     game_state_init(memory);
     GameState *gs = game_state(memory);
@@ -100,166 +169,61 @@ void game_init(Memory *memory) {
     gs->meteorito_texture  = gpu_texture_load(gs->gpu, &gs->meteorito_bitmap);
     gs->deathstar_texture  = gpu_texture_load(gs->gpu, &gs->deathstar_bitmap);
 
+    gs->em = entity_manager_load(&gs->game_arena, 100);
+
+    // hero initialization
     f32 size = 32.0f * 3.0f;
     srand(time(0));
     u32 ship_rand_texture = rand_range(0, 1);
-    gs->ship = sprite_load(&gs->game_arena, v2(0, 0), v2(size, size), v3(1, 1, 1), 0, gs->ship_texture[ship_rand_texture]);
-    gs->ship_vel = v2(0, 0);
-    gs->ship_acc = v2(0, 0);
-    gs->ship_damping = 0.4f;
+    gs->hero = entity_manager_add_entity(gs->em);
+    entity_add_input_component(gs->hero);
+    entity_add_render_component(gs->hero, v3(0, 0, 0), v2(size, size), gs->ship_texture[ship_rand_texture], v3(1, 1, 1));
+    entity_add_physics_component(gs->hero, v2(0, 0), v2(0, 0), 0.4f);
 
     gs->game_init = false;
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {
-    GameState *gs             = game_state(memory);
-    
-    
+    GameState *gs = game_state(memory);
+     
     if(gs->game_init == false) {
-
         i32 hw = os_display_width() * 0.5f;
         i32 hh = os_display_height() * 0.5f;
-
         R2 window_rect;
         window_rect.min.x = -hw;
         window_rect.max.x = 0;
         window_rect.min.y = -hh;
         window_rect.max.y = hh;
-
         gs->joystick = ui_joystick_alloc(&gs->ui, &gs->game_arena, v2(-740, -250), window_rect, 
                                         140, 220, gs->move_inner_texture, gs->move_outer_texture);
-        
         gs->button = ui_button_alloc(&gs->ui, &gs->game_arena, v2(740, -250), 135, gs->boost_texture);
-
         stars_init(gs);
-
         gs->game_init = true;
     }
-
-    mt_begin(&gs->mt, input);
-
-    ui_update(&gs->ui, &gs->mt, dt);
-
-    if(ui_widget_is_active(&gs->mt, gs->joystick)) {
-        V2 diff = v2_sub(gs->joystick->pos, gs->joystick->c_pos);
-        f32 len = v2_len(diff);
-        if(len > (gs->joystick->max_distance * 0.2f)) {
-            V2 dir          = v2_normalized(diff);
-            gs->ship->angle = atan2f(dir.y, dir.x) + (PI / 2.0f);
-        }
-    }
-
-    if(ui_widget_is_active(&gs->mt, gs->button)) {
-        V2 dir = {0};
-        dir.x = cosf(gs->ship->angle + (PI / 2.0f));
-        dir.y = sinf(gs->ship->angle + (PI / 2.0f));
-        if(v2_len(dir) > 0) {
-            dir = v2_normalized(dir);
-            gs->ship_acc.x += dir.x * 800.0f;
-            gs->ship_acc.y += dir.y * 800.0f;
-        }
-    }
-
-    mt_end(&gs->mt, input);
-
-    gs->ship->pos.x += gs->ship_vel.x * dt;
-    gs->ship->pos.y += gs->ship_vel.y * dt;
-
-    gs->ship_vel.x += gs->ship_acc.x * dt;
-    gs->ship_vel.y += gs->ship_acc.y * dt;
-
-    gs->ship_vel.x *= powf(gs->ship_damping, dt);
-    gs->ship_vel.y *= powf(gs->ship_damping, dt);
-
-    gs->ship_acc = v2(0, 0);
-
-
-    i32 hw = os_display_width() * 0.5f;
-    i32 hh = os_display_height() * 0.5f;
-
-    R2 bounds = {0};
-    bounds.min.x = gs->ship->pos.x - (hw * 1.25f);
-    bounds.min.y = gs->ship->pos.y - (hh * 1.25f);
-    bounds.max.x = gs->ship->pos.x + (hw * 1.25f);
-    bounds.max.y = gs->ship->pos.y + (hh * 1.25f);
-
-
-    for(i32 i = 0; i < MAX_GALAXY; i++) {
-        Sprite *galaxy = gs->galaxy + i;
-        galaxy->pos.x -= (gs->ship_vel.x / galaxy->z) * dt;
-        galaxy->pos.y -= (gs->ship_vel.y / galaxy->z) * dt;
-        
-        if(galaxy->pos.x > bounds.max.x) {
-            galaxy->pos.x = bounds.min.x;
-        }
-        if(galaxy->pos.x < bounds.min.x) {
-            galaxy->pos.x = bounds.max.x;
-        }
-
-        if(galaxy->pos.y > bounds.max.y) {
-            galaxy->pos.y = bounds.min.y;
-        }
-        if(galaxy->pos.y < bounds.min.y) {
-            galaxy->pos.y = bounds.max.y;
-        }
-    }
-
-
-    for(i32 i = 0; i < MAX_STARS; i++) {
-        Sprite *star = gs->stars + i;
-        star->pos.x -= (gs->ship_vel.x / star->z) * dt;
-        star->pos.y -= (gs->ship_vel.y / star->z) * dt;
-        
-        if(star->pos.x > bounds.max.x) {
-            star->pos.x = bounds.min.x;
-        }
-        if(star->pos.x < bounds.min.x) {
-            star->pos.x = bounds.max.x;
-        }
-
-        if(star->pos.y > bounds.max.y) {
-            star->pos.y = bounds.min.y;
-        }
-        if(star->pos.y < bounds.min.y) {
-            star->pos.y = bounds.max.y;
-        }
-    }
+    input_system_update(gs, input, gs->em, dt);
+    physics_system_update(gs->em, dt);
+    stars_update(gs, dt);
 }
+
 
 void game_render(Memory *memory) {
     GameState *gs = game_state(memory);
 
-    u32 w = os_display_width();
-    u32 h = os_display_height();
-
     gpu_frame_begin(gs->gpu);
 
+    // render the back ground
+    u32 w = os_display_width();
+    u32 h = os_display_height();
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
-
     gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v3(0.05f, 0.05f, 0.1f));
 
     // Entities draw
-    gpu_camera_set(gs->gpu, v3(gs->ship->pos.x, gs->ship->pos.y, 0), 0);
-
-    gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ALPHA);
-    // draw the stars
-    for(i32 i = 0; i < MAX_GALAXY; i++) {
-        Sprite *galaxy = gs->galaxy + i;
-        sprite_draw(gs->gpu, galaxy);
-    }
-
-    // draw the stars
-    for(i32 i = 0; i < MAX_STARS; i++) {
-        Sprite *star = gs->stars + i;
-        sprite_draw(gs->gpu, star);
-    }
-    gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ALPHA);
-    
-    sprite_draw(gs->gpu, gs->ship);
+    gpu_camera_set(gs->gpu, v3(gs->hero->pos.x, gs->hero->pos.y, 0), 0);
+    stars_render(gs);
+    render_system_update(gs, gs->em);
 
     // UI draw
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
-
     ui_render(gs->gpu, &gs->ui);
     
     gpu_frame_end(gs->gpu);
