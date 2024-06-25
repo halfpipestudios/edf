@@ -221,6 +221,7 @@ typedef struct R2 {
     V2i min, max;
 } R2;
 
+
 static inline R2 r2_from_wh(i32 x, i32 y, i32 w, i32 h) {
     R2 result;
     result.min.x = x;

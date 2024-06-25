@@ -80,8 +80,8 @@ void game_update(Memory *memory, Input *input, f32 dt) {
             star->pos.x = rand_range(-hw, hw);
             star->pos.y = rand_range(-hh, hh);
             star->z = (f32)rand_range(1, 10);
-            star->scale.x = 20/star->z;
-            star->scale.y = 20/star->z;
+            star->scale.x = 10/star->z;
+            star->scale.y = 10/star->z;
             star->tint = hex_to_v3(star_colors[color_index]);
             star->angle = 0;
             
@@ -89,8 +89,6 @@ void game_update(Memory *memory, Input *input, f32 dt) {
         }
         gs->stars_init = true;
     }
-
-
 
 
 
@@ -166,6 +164,33 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     gs->ship_vel.y *= powf(gs->ship_damping, dt);
 
     gs->ship_acc = v2(0, 0);
+
+    R2 bounds = {0};
+    bounds.min.x = gs->ship->pos.x - (hw * 1.25f);
+    bounds.min.y = gs->ship->pos.y - (hh * 1.25f);
+    bounds.max.x = gs->ship->pos.x + (hw * 1.25f);
+    bounds.max.y = gs->ship->pos.y + (hh * 1.25f);
+
+    for(i32 i = 0; i < MAX_STARS; i++) {
+        Sprite *star = gs->stars + i;
+        star->pos.x -= (gs->ship_vel.x * 1.0f/star->z) * dt;
+        star->pos.y -= (gs->ship_vel.y * 1.0f/star->z) * dt;
+        
+        if(star->pos.x > bounds.max.x) {
+            star->pos.x = bounds.min.x;
+        }
+        if(star->pos.x < bounds.min.x) {
+            star->pos.x = bounds.max.x;
+        }
+
+        if(star->pos.y > bounds.max.y) {
+            star->pos.y = bounds.min.y;
+        }
+        if(star->pos.y < bounds.min.y) {
+            star->pos.y = bounds.max.y;
+        }
+    }
+
 
     mt_end(&gs->mt, input);
 }

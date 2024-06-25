@@ -847,8 +847,6 @@ void spu_sound_restart(Spu spu, Sound sound) {
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    [[UIDevice currentDevice] setValue:@(UIInterfaceOrientationLandscapeLeft) forKey:@"orientation"];
-    
     return YES;
 }
 
@@ -1042,12 +1040,6 @@ void spu_sound_restart(Spu spu, Sound sound) {
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations {
     return UIInterfaceOrientationMaskLandscape;
 }
-
-
-- (BOOL)shouldAutorotate {
-    return YES;
-}
-
 
 @end
 //=====================================================================
