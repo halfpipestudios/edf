@@ -9,7 +9,7 @@
 #define GAME_MEMORY_SIZE mb(256)
 struct Memory;
 
-#define MAX_STARS 1000
+#define MAX_STARS 500
 
 
 typedef struct GameState {
