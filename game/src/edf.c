@@ -1,6 +1,7 @@
 #include "edf.h"
 
 #include <stdlib.h> 
+#include <time.h>
 
 i32 rand_range(i32 min, i32 max) {
     return (rand() % (max - min + 1)) + min;
@@ -20,7 +21,8 @@ void game_init(Memory *memory) {
     gs->arial = font_load(gs->gpu, &gs->platform_arena, "arial.ttf", 128);
     gs->times = font_load(gs->gpu, &gs->platform_arena, "times.ttf", 64);
 
-    gs->ship_bitmap       = bitmap_load(&gs->game_arena, "Player.png");
+    gs->ship_bitmap[0]    = bitmap_load(&gs->game_arena, "Player.png");
+    gs->ship_bitmap[1]    = bitmap_load(&gs->game_arena, "OG Eng.png");
     gs->move_outer_bitmap = bitmap_load(&gs->game_arena, "move_outer.png");
     gs->move_inner_bitmap = bitmap_load(&gs->game_arena, "move_inner.png");
     gs->boost_bitmap      = bitmap_load(&gs->game_arena, "boost.png");
@@ -28,8 +30,11 @@ void game_init(Memory *memory) {
     gs->galaxy_bitmap     = bitmap_load(&gs->game_arena, "stb_image.png");
     gs->planet1_bitmap    = bitmap_load(&gs->game_arena, "planet1.png");
     gs->planet2_bitmap    = bitmap_load(&gs->game_arena, "planet2.png");
+    gs->satelite_bitmap   = bitmap_load(&gs->game_arena, "Satelite.png");
+    gs->meteorito_bitmap   = bitmap_load(&gs->game_arena, "Meteorito.png");
 
-    gs->ship_texture       = gpu_texture_load(gs->gpu, &gs->ship_bitmap);
+    gs->ship_texture[0]    = gpu_texture_load(gs->gpu, &gs->ship_bitmap[0]);
+    gs->ship_texture[1]    = gpu_texture_load(gs->gpu, &gs->ship_bitmap[1]);
     gs->move_outer_texture = gpu_texture_load(gs->gpu, &gs->move_outer_bitmap);
     gs->move_inner_texture = gpu_texture_load(gs->gpu, &gs->move_inner_bitmap);
     gs->boost_texture      = gpu_texture_load(gs->gpu, &gs->boost_bitmap);
@@ -37,9 +42,13 @@ void game_init(Memory *memory) {
     gs->galaxy_texture     = gpu_texture_load(gs->gpu, &gs->galaxy_bitmap);
     gs->planet1_texture    = gpu_texture_load(gs->gpu, &gs->planet1_bitmap);
     gs->planet2_texture    = gpu_texture_load(gs->gpu, &gs->planet2_bitmap);
+    gs->satelite_texture   = gpu_texture_load(gs->gpu, &gs->satelite_bitmap);
+    gs->meteorito_texture  = gpu_texture_load(gs->gpu, &gs->meteorito_bitmap);
 
     f32 size = 32.0f * 3.0f;
-    gs->ship = sprite_load(&gs->game_arena, v2(0, 0), v2(size, size), v3(1, 1, 1), 0, gs->ship_texture);
+    srand(time(0));
+    u32 ship_rand_texture = rand_range(0, 1);
+    gs->ship = sprite_load(&gs->game_arena, v2(0, 0), v2(size, size), v3(1, 1, 1), 0, gs->ship_texture[ship_rand_texture]);
     gs->ship_vel = v2(0, 0);
     gs->ship_acc = v2(0, 0);
     gs->ship_damping = 0.4f;
@@ -78,10 +87,12 @@ void game_update(Memory *memory, Input *input, f32 dt) {
         i32 hw = (os_display_width() * 0.5f) * 1.25f;
         i32 hh = (os_display_height() * 0.5f) * 1.25f;
         
-        Texture planet_textures[3] = {
+        Texture planet_textures[MAX_GALAXY] = {
             gs->galaxy_texture,
             gs->planet1_texture,
-            gs->planet2_texture
+            gs->planet2_texture,
+            gs->satelite_texture,
+            gs->meteorito_texture
         };
 
 
