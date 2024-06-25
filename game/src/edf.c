@@ -55,7 +55,6 @@ void game_init(Memory *memory) {
     gs->joystick_touch = -1;
     gs->button_touch = -1;
 
-
     gs->stars_init = false;
 
 }
@@ -64,7 +63,8 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     GameState *gs             = game_state(memory);
     
     if(gs->stars_init == false) {
-        u32 star_colors[4] = {
+
+        static u32 star_colors[4] = {
             0xFDF4F5,
             0xE8A0BF,
             0xBA90C6,
@@ -73,6 +73,18 @@ void game_update(Memory *memory, Input *input, f32 dt) {
 
         i32 hw = (os_display_width() * 0.5f) * 1.25f;
         i32 hh = (os_display_height() * 0.5f) * 1.25f;
+
+
+        for(i32 i = 0; i < MAX_GALAXY; i++) {
+            Sprite *galaxy = gs->galaxy + i;
+            galaxy->texture = gs->galaxy_texture;
+            galaxy->pos.x = rand_range(-hw, hw);
+            galaxy->pos.y = rand_range(-hh, hh);
+            galaxy->z = 10;
+            galaxy->scale = v2(100, 100);
+            galaxy->tint = v3(0.4f, 0.4f, 0.4f);
+            galaxy->angle = 0;
+        }
 
         // Init star sprites
         i32 color_index = 0;
@@ -173,10 +185,32 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     bounds.max.x = gs->ship->pos.x + (hw * 1.25f);
     bounds.max.y = gs->ship->pos.y + (hh * 1.25f);
 
+
+    for(i32 i = 0; i < MAX_GALAXY; i++) {
+        Sprite *galaxy = gs->galaxy + i;
+        galaxy->pos.x -= (gs->ship_vel.x / galaxy->z) * dt;
+        galaxy->pos.y -= (gs->ship_vel.y / galaxy->z) * dt;
+        
+        if(galaxy->pos.x > bounds.max.x) {
+            galaxy->pos.x = bounds.min.x;
+        }
+        if(galaxy->pos.x < bounds.min.x) {
+            galaxy->pos.x = bounds.max.x;
+        }
+
+        if(galaxy->pos.y > bounds.max.y) {
+            galaxy->pos.y = bounds.min.y;
+        }
+        if(galaxy->pos.y < bounds.min.y) {
+            galaxy->pos.y = bounds.max.y;
+        }
+    }
+
+
     for(i32 i = 0; i < MAX_STARS; i++) {
         Sprite *star = gs->stars + i;
-        star->pos.x -= (gs->ship_vel.x * 1.0f/star->z) * dt;
-        star->pos.y -= (gs->ship_vel.y * 1.0f/star->z) * dt;
+        star->pos.x -= (gs->ship_vel.x / star->z) * dt;
+        star->pos.y -= (gs->ship_vel.y / star->z) * dt;
         
         if(star->pos.x > bounds.max.x) {
             star->pos.x = bounds.min.x;
@@ -212,7 +246,13 @@ void game_render(Memory *memory) {
     // Entities draw
     gpu_camera_set(gs->gpu, v3(gs->ship->pos.x, gs->ship->pos.y, 0), 0);
 
-    gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ADDITIVE);
+    gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ALPHA);
+    // draw the stars
+    for(i32 i = 0; i < MAX_GALAXY; i++) {
+        Sprite *galaxy = gs->galaxy + i;
+        sprite_draw(gs->gpu, galaxy);
+    }
+
     // draw the stars
     for(i32 i = 0; i < MAX_STARS; i++) {
         Sprite *star = gs->stars + i;
