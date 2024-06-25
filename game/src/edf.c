@@ -32,6 +32,7 @@ void game_init(Memory *memory) {
     gs->planet2_bitmap    = bitmap_load(&gs->game_arena, "planet2.png");
     gs->satelite_bitmap   = bitmap_load(&gs->game_arena, "Satelite.png");
     gs->meteorito_bitmap   = bitmap_load(&gs->game_arena, "Meteorito.png");
+    gs->deathstar_bitmap   = bitmap_load(&gs->game_arena, "deathstar.png");
 
     gs->ship_texture[0]    = gpu_texture_load(gs->gpu, &gs->ship_bitmap[0]);
     gs->ship_texture[1]    = gpu_texture_load(gs->gpu, &gs->ship_bitmap[1]);
@@ -44,6 +45,7 @@ void game_init(Memory *memory) {
     gs->planet2_texture    = gpu_texture_load(gs->gpu, &gs->planet2_bitmap);
     gs->satelite_texture   = gpu_texture_load(gs->gpu, &gs->satelite_bitmap);
     gs->meteorito_texture  = gpu_texture_load(gs->gpu, &gs->meteorito_bitmap);
+    gs->deathstar_texture  = gpu_texture_load(gs->gpu, &gs->deathstar_bitmap);
 
     f32 size = 32.0f * 3.0f;
     srand(time(0));
@@ -92,7 +94,8 @@ void game_update(Memory *memory, Input *input, f32 dt) {
             gs->planet1_texture,
             gs->planet2_texture,
             gs->satelite_texture,
-            gs->meteorito_texture
+            gs->meteorito_texture,
+            gs->deathstar_texture
         };
 
 

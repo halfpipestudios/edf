@@ -10,7 +10,7 @@
 struct Memory;
 
 #define MAX_STARS 75
-#define MAX_GALAXY 5
+#define MAX_GALAXY 6
 
 typedef struct GameState {
     Gpu gpu;
@@ -33,6 +33,7 @@ typedef struct GameState {
     Bitmap planet2_bitmap;
     Bitmap satelite_bitmap;
     Bitmap meteorito_bitmap;
+    Bitmap deathstar_bitmap;
 
     Texture ship_texture[2];
     Texture move_outer_texture;
@@ -44,6 +45,7 @@ typedef struct GameState {
     Texture planet2_texture;
     Texture satelite_texture;
     Texture meteorito_texture;
+    Texture deathstar_texture;
 
     V3 boost_tint;
 
