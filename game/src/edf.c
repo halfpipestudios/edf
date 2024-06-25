@@ -127,7 +127,7 @@ void game_update(Memory *memory, Input *input, f32 dt) {
         window_rect.max.y = hh;
 
         gs->joystick = ui_joystick_alloc(&gs->ui, &gs->game_arena, v2(-740, -250), window_rect, 
-                                        200, 205, gs->move_inner_texture, gs->move_outer_texture);
+                                        140, 220, gs->move_inner_texture, gs->move_outer_texture);
         
         gs->button = ui_button_alloc(&gs->ui, &gs->game_arena, v2(740, -250), 135, gs->boost_texture);
 
@@ -158,8 +158,9 @@ void game_update(Memory *memory, Input *input, f32 dt) {
             gs->ship_acc.x += dir.x * 800.0f;
             gs->ship_acc.y += dir.y * 800.0f;
         }
-
     }
+
+    mt_end(&gs->mt, input);
 
     gs->ship->pos.x += gs->ship_vel.x * dt;
     gs->ship->pos.y += gs->ship_vel.y * dt;
@@ -223,9 +224,6 @@ void game_update(Memory *memory, Input *input, f32 dt) {
             star->pos.y = bounds.max.y;
         }
     }
-
-
-    mt_end(&gs->mt, input);
 }
 
 void game_render(Memory *memory) {

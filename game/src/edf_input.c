@@ -295,7 +295,7 @@ void ui_render(Gpu gpu, Ui *ui) {
                                       0, joystick->outer_texture);
 
                 gpu_draw_quad_texture(gpu, joystick->c_pos.x, joystick->c_pos.y, 
-                                      joystick->inner_radii, joystick->inner_radii,
+                                      joystick->inner_radii * 2, joystick->inner_radii * 2,
                                       0, joystick->inner_texture);
 
             } break;
