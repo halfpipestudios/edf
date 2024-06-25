@@ -27,5 +27,5 @@ SYSTEM_UPDATE(physics_system) {
 
 void physics_system_update(struct EntityManager *em, f32 dt) {
     u64 components = ENTITY_RENDER_COMPONENT|ENTITY_PHYSICS_COMPONENT;
-    entity_manager_forall(0, 0, em, physics_system, components, dt);
+    entity_manager_forall(0, em, physics_system, components, dt);
 }

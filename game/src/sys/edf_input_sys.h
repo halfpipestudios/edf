@@ -14,6 +14,6 @@ struct GameState;
 struct EntityManager;
 struct Input;
 
-void input_system_update(struct GameState *gs, struct Input *input, struct EntityManager *em, f32 dt);
+void input_system_update(struct GameState *gs, struct EntityManager *em, f32 dt);
 
 #endif /* EDF_INPUT_SYS_H */

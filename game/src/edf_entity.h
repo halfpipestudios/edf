@@ -22,7 +22,6 @@
 #define ENTITY_MANAGER_MAX_ENTITIES 1000
 
 struct GameState;
-struct Input;
 
 typedef struct Entity {
     u64 components;
@@ -46,7 +45,7 @@ void entity_add_physics_component(Entity *entity, V2 vel, V2 acc, f32 damping);
 void entity_add_ai_component(Entity *entity);
 void entity_remove_components(Entity *entity, u64 components);
 
-#define SYSTEM_UPDATE(name) void name(struct GameState *gs, struct Input *input, Entity *entity, Entity **others, i32 others_count, f32 dt)
+#define SYSTEM_UPDATE(name) void name(struct GameState *gs, Entity *entity, Entity **others, i32 others_count, f32 dt)
 typedef SYSTEM_UPDATE(SystemUpdateFunc);
 
 typedef struct EntityManager {
@@ -61,6 +60,6 @@ EntityManager *entity_manager_load(struct Arena *arena, i32 entity_max_count);
 Entity *entity_manager_add_entity(EntityManager *em);
 void entity_manager_remove_entity(EntityManager *em, Entity *entity);
 void entity_manager_clear(EntityManager *em);
-void entity_manager_forall(struct GameState *gs, struct Input *input, EntityManager *em, SystemUpdateFunc system_update, u64 components, f32 dt);
+void entity_manager_forall(struct GameState *gs, EntityManager *em, SystemUpdateFunc system_update, u64 components, f32 dt);
 
 #endif /* EDF_ENTITY_H */

@@ -18,5 +18,5 @@ SYSTEM_UPDATE(render_system) {
 
 void render_system_update(struct GameState *gs, struct EntityManager *em) {
     u64 components = ENTITY_RENDER_COMPONENT;
-    entity_manager_forall(gs, 0, em, render_system, components, 0);
+    entity_manager_forall(gs, em, render_system, components, 0);
 }

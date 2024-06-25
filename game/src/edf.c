@@ -200,7 +200,11 @@ void game_update(Memory *memory, Input *input, f32 dt) {
         stars_init(gs);
         gs->game_init = true;
     }
-    input_system_update(gs, input, gs->em, dt);
+    mt_begin(&gs->mt, input);
+    ui_update(&gs->ui, &gs->mt, dt);
+    input_system_update(gs, gs->em, dt);
+    mt_end(&gs->mt, input);
+
     physics_system_update(gs->em, dt);
     stars_update(gs, dt);
 }
