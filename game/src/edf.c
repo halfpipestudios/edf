@@ -60,10 +60,9 @@ void game_init(Memory *memory) {
     gs->joystick_scale   = 4;
     
     gs->s_inner      = 1.5f;
-    gs->button_radii = (gs->boost_bitmap.w * gs->joystick_scale * gs->s_inner) * 0.5f;
 
     gs->button_center  = v2(740, -250);
-    gs->button_radii   = 100;
+    gs->button_radii   = 135;
 
     gs->boost_tint = v3(1, 1, 1);
 
