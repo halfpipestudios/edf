@@ -60,6 +60,7 @@ typedef struct GameState {
     f32 joystick_max_distance;
     f32 joystick_scale;
     V2 s_pos, c_pos;
+    V2 s_pos_saved;
 
     i32 button_touch;
     V2 button_center;

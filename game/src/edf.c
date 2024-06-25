@@ -55,7 +55,8 @@ void game_init(Memory *memory) {
     gs->ship_acc = v2(0, 0);
     gs->ship_damping = 0.4f;
 
-    gs->s_pos = v2(-740, -250);
+    gs->s_pos_saved = v2(-740, -250);
+    gs->s_pos = gs->s_pos_saved;
     gs->c_pos = gs->s_pos;
     gs->joystick_scale   = 4;
     
@@ -178,6 +179,7 @@ void game_update(Memory *memory, Input *input, f32 dt) {
             gs->ship->angle = atan2f(dir.y, dir.x) + (PI / 2.0f);
         }
     } else {
+        gs->s_pos = gs->s_pos_saved;
         gs->c_pos = gs->s_pos;
     }
 
