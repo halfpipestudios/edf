@@ -82,6 +82,12 @@ Entity *entity_manager_add_entity(EntityManager *em) {
 
 void entity_manager_remove_entity(EntityManager *em, Entity *entity) {
     if(entity) {
+        if(entity->prev) {
+            entity->prev->next = entity->next;
+        }
+        if(entity->next) {
+            entity->next->prev = entity->prev;
+        }
         entity->next = em->free_list;
         entity->prev = 0;
         em->free_list = entity;
