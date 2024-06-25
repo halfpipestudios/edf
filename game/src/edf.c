@@ -210,17 +210,20 @@ void game_render(Memory *memory) {
     // Entities draw
     gpu_camera_set(gs->gpu, v3(gs->ship->pos.x, gs->ship->pos.y, 0), 0);
 
+    gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ADDITIVE);
     // draw the stars
     for(i32 i = 0; i < MAX_STARS; i++) {
         Sprite *star = gs->stars + i;
         sprite_draw(gs->gpu, star);
     }
+    gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ALPHA);
+    
     sprite_draw(gs->gpu, gs->ship);
 
-    
     // UI draw
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
 
+    
     f32 s       = gs->joystick_scale;
     f32 s_inner = gs->s_inner;
 
