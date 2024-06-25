@@ -25,12 +25,14 @@ void game_init(Memory *memory) {
     gs->move_inner_bitmap = bitmap_load(&gs->game_arena, "move_inner.png");
     gs->boost_bitmap      = bitmap_load(&gs->game_arena, "boost.png");
     gs->star_bitmap       = bitmap_load(&gs->game_arena, "star.png");
+    gs->galaxy_bitmap     = bitmap_load(&gs->game_arena, "stb_image.png");
 
     gs->ship_texture       = gpu_texture_load(gs->gpu, &gs->ship_bitmap);
     gs->move_outer_texture = gpu_texture_load(gs->gpu, &gs->move_outer_bitmap);
     gs->move_inner_texture = gpu_texture_load(gs->gpu, &gs->move_inner_bitmap);
     gs->boost_texture      = gpu_texture_load(gs->gpu, &gs->boost_bitmap);
     gs->star_texture       = gpu_texture_load(gs->gpu, &gs->star_bitmap);
+    gs->galaxy_texture     = gpu_texture_load(gs->gpu, &gs->galaxy_bitmap);
 
     f32 size = 32.0f * 3.0f;
     gs->ship = sprite_load(&gs->game_arena, v2(0, 0), v2(size, size), v3(1, 1, 1), 0, gs->ship_texture);
