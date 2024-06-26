@@ -823,7 +823,7 @@ void spu_sound_restart(Spu spu, Sound sound) {
     f64 delta_time = current_time - last_time;
     last_time = current_time;
     
-    game_update(&g_memory, &g_input, delta_time);
+    game_update(&g_memory, &g_input, 1.0f/60.0f);
     game_render(&g_memory);
 }
 

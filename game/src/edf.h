@@ -38,10 +38,6 @@ typedef struct GameState {
 
     struct ParticleSystem *ps;
 
-
-    f32 accumulator;
-    f32 phy_dt;
-    
     f32 time_per_frame;
     i32 fps_counter;
     i32 FPS;
