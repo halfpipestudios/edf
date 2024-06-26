@@ -849,6 +849,7 @@ void spu_sound_restart(Spu spu, Sound sound) {
 
     tmp_view.device = MTLCreateSystemDefaultDevice();
     tmp_view.clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 1.0);
+    tmp_view.preferredFramesPerSecond = 120;
     
     // init the view delegate
     _metal_view_delegate = [[MetalViewDelegate alloc] initWithMetalKitView:tmp_view];
