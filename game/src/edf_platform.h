@@ -27,8 +27,8 @@ typedef void *Spu;
 
 File os_file_read(struct Arena *arena, char *path);
 bool os_file_write(u8 *data, sz size, char *path);
-u32 os_display_width(void);
-u32 os_display_height(void);
+R2 os_display_rect(void);
+R2 os_device_rect(void);
 void os_print(char *message, ...);
 
 Gpu gpu_load(struct Arena *arena);

@@ -38,6 +38,7 @@ typedef struct GameState {
     f32 time_per_frame;
     i32 fps_counter;
     i32 FPS;
+    V2 DEBUG_touch;
 
     Font *arial;
     Font *times;

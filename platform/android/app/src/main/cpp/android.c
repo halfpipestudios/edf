@@ -14,8 +14,9 @@
 static jobject *asset_manager_ref   = 0;
 static AAssetManager *asset_manager = 0;
 static Memory global_memory;
-static u32 global_display_width;
-static u32 global_display_height;
+
+static R2 global_display_rect;
+static R2 global_device_rect;
 
 void os_print(char *message, ...) {
     va_list args;
@@ -24,12 +25,12 @@ void os_print(char *message, ...) {
     va_end(args);
 }
 
-u32 os_display_width() {
-    return global_display_width;
+R2 os_display_rect(void) {
+    return global_display_rect;
 }
 
-u32 os_display_height() {
-    return global_display_height;
+R2 os_device_rect(void) {
+    return global_device_rect;
 }
 
 File os_file_read(struct Arena *arena, char *path) {
@@ -114,7 +115,7 @@ void gpu_frame_begin(Gpu gpu) {
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glClear(GL_COLOR_BUFFER_BIT);
-    glClearColor(0, 0.5f, 1, 1.0f);
+    glClearColor(0, 0, 0, 1.0f);
 
     glUseProgram(renderer->program);
     glBindVertexArray(renderer->vao);
@@ -321,17 +322,31 @@ JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameRender(JNIEnv *env
 }
 
 JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameResize(JNIEnv *env, jobject thiz, jint x, jint y, jint w, jint h) {
-    global_display_width  = w;
-    global_display_height = h;
-    game_resize(&global_memory, w, h);
+
+    f32 ratio = ((f32)VIRTUAL_RES_Y / (f32)VIRTUAL_RES_X);
+    i32 virtual_w = w;
+    i32 virtual_h = (i32)((f32)w * ratio);
+
+    if(virtual_h > h) {
+        ratio = ((f32)VIRTUAL_RES_X / (f32)VIRTUAL_RES_Y);
+        virtual_h = h;
+        virtual_w = (i32)((f32)h * ratio);
+
+    }
+
+    i32 pos_y = (i32)((f32)h*0.5f-(f32)virtual_h*0.5f);
+    i32 pos_x = (i32)((f32)w*0.5f-(f32)virtual_w*0.5f);
+
+    global_display_rect = r2_from_wh(pos_x, pos_y, virtual_w, virtual_h);
+    global_device_rect = r2_from_wh(0, 0, w, h);
+
+    glViewport(pos_x, pos_y, virtual_w, virtual_h);
+    game_resize(&global_memory, virtual_w, virtual_h);
 }
 
 
 JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gpuSetViewport(JNIEnv *env, jobject thiz, jint x, jint y, jint w, jint h) {
     (void) env;
     (void) thiz;
-    global_display_width  = w;
-    global_display_height = h;
-    
-    glViewport(0, 0, w, h);
+
 }
