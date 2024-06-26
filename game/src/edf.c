@@ -137,8 +137,12 @@ PARTICLE_SYSTEM_UPDATE(ship_ps_update) {
         particle->vel.x = dir.x * 180.0f + gs->hero->vel.x;
         particle->vel.y = dir.y * 180.0f + gs->hero->vel.y;
     }
-    particle->scale = min(max(0.4f,((0.5f - particle->lifetime)/0.5f)), 0.6f) * 100;
-    particle->tint.w = particle->lifetime/particle->save_lifetime;
+    
+    float x = particle->lifetime;
+    particle->scale =  clamp((1.0f-(2*x-1)*(2*x-1)) * 100, 5, 80);
+    
+    x = particle->lifetime/particle->save_lifetime;
+    particle->tint.w = x*x;
     
     particle->pos.x += particle->vel.x * dt;
     particle->pos.y += particle->vel.y * dt;
