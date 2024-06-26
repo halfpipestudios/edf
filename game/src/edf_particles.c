@@ -32,28 +32,28 @@ ParticleSystem *particle_system_create(struct Arena *arena,
 }
 
 void particle_system_update(struct GameState* gs, ParticleSystem *ps, f32 dt) {
-    if(ps->pause) {
-        return;
-    } 
+    if(ps->pause == false) {
     
-    // spawn particles
-    if(ps->current_spawn_time <= 0.0f) {
-        i32 start = ps->current_particle;
-        i32 end = min(ps->current_particle + ps->emision_count, ps->particle_count);
-        for(i32 i = start; i < end; i++) {
-            Particle *particle = ps->particles + i;
-            particle->lifetime = 0.5f;
-            particle->pos = ps->pos;
-            particle->scale = 60;
-            particle->vel = v2(0, 0);
-            particle->tex = ps->tex;
-            particle->angle = 0;
-            particle->tint = v3(1, 1, 1);
-            ps->current_particle = (ps->current_particle + 1) % ps->particle_count;
+        // spawn particles
+        if(ps->current_spawn_time <= 0.0f) {
+            i32 start = ps->current_particle;
+            i32 end = min(ps->current_particle + ps->emision_count, ps->particle_count);
+            for(i32 i = start; i < end; i++) {
+                Particle *particle = ps->particles + i;
+                particle->lifetime = (f32)rand_range(25, 80) / 100.f;
+                particle->pos = ps->pos;
+                particle->scale = 60;
+                particle->vel = v2(0, 0);
+                particle->tex = ps->tex;
+                particle->angle = 0;
+                particle->tint = v3(1, 1, 1);
+                ps->current_particle = (ps->current_particle + 1) % ps->particle_count;
+            }
+            ps->current_spawn_time = ps->spawn_time;
         }
-        ps->current_spawn_time = ps->spawn_time;
-    }
-    ps->current_spawn_time -= dt;
+        ps->current_spawn_time -= dt;
+
+    } 
 
     // update alive particles
     for(i32 i = 0; i < ps->particle_count; i++) {
@@ -67,10 +67,6 @@ void particle_system_update(struct GameState* gs, ParticleSystem *ps, f32 dt) {
 }
 
 void particle_system_render(Gpu gpu, ParticleSystem *ps) {
-    if(ps->pause) {
-        return;
-    } 
-
     // render alive particles
     for(i32 i = 0; i < ps->particle_count; i++) {
         Particle *particle = ps->particles + i;
@@ -89,13 +85,6 @@ void particle_system_start(ParticleSystem *ps) {
 }
 
 void particle_system_stop(ParticleSystem *ps) {
-    for(i32 i = 0; i < ps->particle_count; i++) {
-        Particle *particle = ps->particles + i;
-        particle->lifetime = 0.0f;
-    }
-
-    ps->current_particle = 0;
-    ps->current_spawn_time = 0;
     ps->pause =  true;
 }
 

@@ -5,15 +5,8 @@
 #include "sys/edf_physics_sys.h"
 #include "edf_particles.h"
 
-#include <stdlib.h> 
 #include <stdarg.h>
 #include <stdio.h>
-#include <time.h>
-
-
-i32 rand_range(i32 min, i32 max) {
-    return (rand() % (max - min + 1)) + min;
-}
 
 void stars_init(GameState *gs) {
     static u32 star_colors[4] = {
@@ -134,16 +127,18 @@ void stars_render(GameState *gs) {
 }
 
 PARTICLE_SYSTEM_UPDATE(ship_ps_update) {
+
     if(v2_len(particle->vel) == 0.0f) {
-        f32 rand = ((f32)rand_range(-45, 45)/ 180.0f) * PI;
+        f32 rand = ((f32)rand_range(-20, 20)/ 180.0f) * PI;
         f32 offset = (PI*0.5f) + rand;
         V2 dir;
         dir.x = -cosf(gs->hero->angle + offset);
         dir.y = -sinf(gs->hero->angle + offset);
-        f32 vel_len = v2_len(gs->hero->vel);
-        particle->vel.x = dir.x * 100.0f + gs->hero->vel.x;
-        particle->vel.y = dir.y * 100.0f + gs->hero->vel.y;
+        particle->vel.x = dir.x * 180.0f + gs->hero->vel.x;
+        particle->vel.y = dir.y * 180.0f + gs->hero->vel.y;
     }
+    particle->scale = min(max(0.4f,((0.5f - particle->lifetime)/0.5f)), 0.6f) * 100;
+    
     particle->pos.x += particle->vel.x * dt;
     particle->pos.y += particle->vel.y * dt;
 }
@@ -223,7 +218,7 @@ void game_init(Memory *memory) {
     stars_init(gs);
 
     gs->ps = particle_system_create(&gs->game_arena, 
-                                    20, 3, 
+                                    100, 10, 
                                     0.05f, v2(0, 0), gs->orbe_texture,
                                     ship_ps_update);
     particle_system_start(gs->ps);

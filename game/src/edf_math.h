@@ -9,9 +9,15 @@
 #define EDF_MATH_H
 
 #include <math.h>
+#include <stdlib.h>
+#include <time.h>
 #include "edf_common.h"
 
 #define PI 3.14159265359f
+
+static inline i32 rand_range(i32 min, i32 max) {
+    return (rand() % (max - min + 1)) + min;
+}
 
 static inline f32 lerp(f32 a, f32 b, f32 t) {
     return a * (1.0f - t) * b * t;
