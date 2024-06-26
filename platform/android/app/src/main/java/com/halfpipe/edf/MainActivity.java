@@ -161,7 +161,7 @@ class GameView extends GLSurfaceView {
 
 class GameRenderer implements GLSurfaceView.Renderer {
 
-    public native void gameInit(AssetManager assetManager);
+    public native void gameInit(AssetManager manager);
 
     public native void gameUpdate(int count, int[] indices, Touch[] touches, float dt);
 
@@ -169,11 +169,10 @@ class GameRenderer implements GLSurfaceView.Renderer {
 
     public native void gameResize(int x, int y, int w, int h);
 
-
     private static final double NANOS_PER_SECOND = 1000000000.0;
     private long lastTime;
-    AssetManager assetManager;
-    private GameInput input;
+    private final AssetManager assetManager;
+    private final GameInput input;
 
     public GameRenderer(AssetManager assetManager, GameInput input) {
         this.assetManager = assetManager;
@@ -183,7 +182,7 @@ class GameRenderer implements GLSurfaceView.Renderer {
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         lastTime = System.nanoTime();
-        gameInit(assetManager);
+        gameInit(this.assetManager);
     }
 
     @Override

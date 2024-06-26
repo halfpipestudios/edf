@@ -19,7 +19,6 @@ V2 input_to_game_coords(V2i in_pos) {
     pos.y -= 0.5f;
     pos.x *= VIRTUAL_RES_X;
     pos.y *= -VIRTUAL_RES_Y;
-
     return pos;
 }
 

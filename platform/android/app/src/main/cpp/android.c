@@ -131,8 +131,8 @@ void gpu_frame_end(Gpu gpu) {
 
     float angle = 0;
 
-    float window_w = (f32)os_display_width();
-    float window_h = (f32)os_display_height();
+    float window_w = (f32)r2_width(os_display_rect());
+    float window_h = (f32) r2_height(os_display_rect());
 
     float ratio = (f32)renderer->atlas.bitmap.h / (f32)renderer->atlas.bitmap.w;
     float render_scale = 1;
@@ -295,7 +295,7 @@ Input input_from_java(JNIEnv *env, jint touches_count, jintArray  indices, jobje
     return input;
 }
 
-JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameInit(JNIEnv *env, jobject thiz, jobject manager) {
+JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameInit(JNIEnv *env, jobject thiz,  jobject manager) {
     (void)thiz;
     asset_manager_ref = (*env)->NewGlobalRef(env, manager);
     asset_manager     = AAssetManager_fromJava(env, asset_manager_ref);
@@ -333,6 +333,15 @@ JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameResize(JNIEnv *env
         virtual_w = (i32)((f32)h * ratio);
 
     }
+
+#if 0
+    if(virtual_w > w) {
+        f32 ratio_w = ((f32)VIRTUAL_RES_Y / (f32)VIRTUAL_RES_X);
+        f32 ratio_h = ((f32)VIRTUAL_RES_X / (f32)VIRTUAL_RES_Y);
+        virtual_h = (i32)((f32)w * ratio);
+        virtual_w = (i32)((f32)h * ratio);
+    }
+#endif
 
     i32 pos_y = (i32)((f32)h*0.5f-(f32)virtual_h*0.5f);
     i32 pos_x = (i32)((f32)w*0.5f-(f32)virtual_w*0.5f);

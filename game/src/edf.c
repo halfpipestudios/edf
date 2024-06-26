@@ -183,26 +183,26 @@ void game_init(Memory *memory) {
     entity_add_render_component(gs->hero, v3(0, 0, 0), v2(size, size), gs->ship_texture[ship_rand_texture], v3(1, 1, 1));
     entity_add_physics_component(gs->hero, v2(0, 0), v2(0, 0), 0.4f);
 
-        i32 hw = VIRTUAL_RES_X * 0.5f;
-        i32 hh = VIRTUAL_RES_Y * 0.5f;
-        R2 window_rect;
-        
-        window_rect.min.x = -hw;
-        window_rect.max.x = 0;
-        window_rect.min.y = -hh;
-        window_rect.max.y = hh;
-        gs->joystick = ui_joystick_alloc(&gs->ui, &gs->game_arena, v2(-740, -250), window_rect, 
-                                        140, 220, gs->move_inner_texture, gs->move_outer_texture);
-        gs->button = ui_button_alloc(&gs->ui, &gs->game_arena, v2(740, -250), 135, gs->boost_texture);
-        
-        f32 radio = 80;
-        R2 rect = { {740-radio, 250-radio}, {740+radio, 250+radio} };
-        gs->joystick2 = ui_joystick_alloc(&gs->ui, &gs->game_arena, v2(740, 250), rect, 
-                                radio, radio*1.6f, gs->move_inner_texture, gs->move_outer_texture);
+    i32 hw = VIRTUAL_RES_X * 0.5f;
+    i32 hh = VIRTUAL_RES_Y * 0.5f;
+    R2 window_rect;
+    
+    window_rect.min.x = -hw;
+    window_rect.max.x = 0;
+    window_rect.min.y = -hh;
+    window_rect.max.y = hh;
+    gs->joystick = ui_joystick_alloc(&gs->ui, &gs->game_arena, v2(-740, -250), window_rect, 
+                                    140, 220, gs->move_inner_texture, gs->move_outer_texture);
+    gs->button = ui_button_alloc(&gs->ui, &gs->game_arena, v2(740, -250), 135, gs->boost_texture);
+    
+    f32 radio = 80;
+    R2 rect = { {740-radio, 250-radio}, {740+radio, 250+radio} };
+    gs->joystick2 = ui_joystick_alloc(&gs->ui, &gs->game_arena, v2(740, 250), rect, 
+                            radio, radio*1.6f, gs->move_inner_texture, gs->move_outer_texture);
 
-        gs->button2 = ui_button_alloc(&gs->ui, &gs->game_arena, v2(340, -250), 100, gs->deathstar_texture);
+    gs->button2 = ui_button_alloc(&gs->ui, &gs->game_arena, v2(340, -250), 100, gs->deathstar_texture);
 
-        stars_init(gs);
+    stars_init(gs);
 
 }
 
