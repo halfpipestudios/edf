@@ -148,7 +148,7 @@ PARTICLE_SYSTEM_UPDATE(ship_ps_update) {
     }
     
     float x = particle->lifetime;
-    particle->scale =  clamp((1.0f-(2*x-1)*(2*x-1)) * 100, 5, 80);
+    particle->scale =  clamp((1.0f-(2*x-1)*(2*x-1)) * 60, 5, 60);
     
     x = particle->lifetime/particle->save_lifetime;
     particle->tint.w = x*x;

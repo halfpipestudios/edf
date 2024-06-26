@@ -38,7 +38,7 @@ void particle_system_update(struct GameState* gs, ParticleSystem *ps, f32 dt) {
             i32 end = min(ps->current_particle + ps->emision_count, ps->particle_count);
             for(i32 i = start; i < end; i++) {
                 Particle *particle = ps->particles + i;
-                particle->save_lifetime = (f32)rand_range(25, 80) / 100.f;
+                particle->save_lifetime = 0.5f;//(f32)rand_range(25, 80) / 100.f;
                 particle->lifetime = particle->save_lifetime;
                 particle->pos = ps->pos;
                 particle->scale = 60;
