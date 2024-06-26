@@ -42,7 +42,7 @@ Bitmap bitmap_copy(struct Arena *arena, Bitmap *bitmap, sz pixel_size) {
     return result;
 }
 
-Sprite *sprite_load(struct Arena *arena, V2 pos, V2 scale, V3 tint, f32 anlge, Texture texture) {
+Sprite *sprite_load(struct Arena *arena, V2 pos, V2 scale, V4 tint, f32 anlge, Texture texture) {
     Sprite *sprite  = (Sprite *)arena_push(arena, sizeof(Sprite), 8);
     sprite->pos     = pos;
     sprite->scale   = scale;

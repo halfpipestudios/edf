@@ -83,7 +83,7 @@ typedef struct Button {
     WIDGET_HEADER
 
     f32 radii;
-    V3 tint;
+    V4 tint;
     Texture texture;
 } Button;
 

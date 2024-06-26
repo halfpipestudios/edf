@@ -10,10 +10,10 @@
 
 void stars_init(GameState *gs) {
     static u32 star_colors[4] = {
-        0xFDF4F5,
-        0xE8A0BF,
-        0xBA90C6,
-        0xC0DBEA
+        0xFFFDF4F5,
+        0xFFE8A0BF,
+        0xFFBA90C6,
+        0xFFC0DBEA
     };
 
     i32 hw = (VIRTUAL_RES_X * 0.5f) * 1.25f;
@@ -39,7 +39,7 @@ void stars_init(GameState *gs) {
         galaxy->z = rand_range(2, 10);
         f32 ratio = ((f32)rand_range(50, 100) / 100.0f);
         galaxy->scale = v2(200*ratio, 200*ratio);
-        galaxy->tint = v3(0.4f, 0.4f, 0.4f);
+        galaxy->tint = v4(0.4f, 0.4f, 0.4f, 1);
         galaxy->angle = 0;
         color_index++;
     }
@@ -54,7 +54,7 @@ void stars_init(GameState *gs) {
         star->z = (f32)rand_range(1, 10);
         star->scale.x = 10/star->z;
         star->scale.y = 10/star->z;
-        star->tint = hex_to_v3(star_colors[color_index]);
+        star->tint = hex_to_v4(star_colors[color_index]);
         star->angle = 0;
         
         color_index = (color_index + 1) % array_len(star_colors);
@@ -193,7 +193,7 @@ void game_init(Memory *memory) {
     u32 ship_rand_texture = rand_range(0, 1);
     gs->hero = entity_manager_add_entity(gs->em);
     entity_add_input_component(gs->hero);
-    entity_add_render_component(gs->hero, v3(0, 0, 0), v2(size, size), gs->ship_texture[ship_rand_texture], v3(1, 1, 1));
+    entity_add_render_component(gs->hero, v3(0, 0, 0), v2(size, size), gs->ship_texture[ship_rand_texture], v4(1, 1, 1, 1));
     entity_add_physics_component(gs->hero, v2(0, 0), v2(0, 0), 0.4f);
 
     i32 hw = VIRTUAL_RES_X * 0.5f;
@@ -263,7 +263,7 @@ void game_render(Memory *memory) {
     i32 w = (i32)VIRTUAL_RES_X;
     i32 h = (i32)VIRTUAL_RES_Y;
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
-    gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v3(0.05f, 0.05f, 0.1f));
+    gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v4(0.05f, 0.05f, 0.1f, 1));
 
     gpu_camera_set(gs->gpu, v3(gs->hero->pos.x, gs->hero->pos.y, 0), 0);
     stars_render(gs);
@@ -283,7 +283,7 @@ void game_render(Memory *memory) {
 
     static char fps_text[1024];
     snprintf(fps_text, 1024, "FPS: %d", gs->FPS);
-    font_draw_text(gs->gpu, gs->times, fps_text, -w*0.5f + 150, h*0.5f-150, v3(1, 1, 1));
+    font_draw_text(gs->gpu, gs->times, fps_text, -w*0.5f + 150, h*0.5f-150, v4(1, 1, 1, 1));
 
 
     gpu_frame_end(gs->gpu);

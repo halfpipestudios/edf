@@ -99,7 +99,7 @@ R2 font_size_text(Font *font, const char *text, f32 x, f32 y) {
     return result;
 }
 
-void font_draw_text(Gpu gpu, Font *font, const char *text, f32 x, f32 y, V3 color) {
+void font_draw_text(Gpu gpu, Font *font, const char *text, f32 x, f32 y, V4 color) {
     
     f32 current_x = (f32)x;
     sz len        = strlen(text);

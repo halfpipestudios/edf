@@ -41,9 +41,8 @@ void gpu_blend_state_set(Gpu gpu, GpuBlendState blend_state);
 void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle,
                            Texture texture);
 void gpu_draw_quad_texture_tinted(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle,
-                           Texture texture, V3 color);
-void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle,
-                         V3 color);
+                           Texture texture, V4 color);
+void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V4 color);
 void gpu_camera_set(Gpu gpu, V3 pos, f32 angle);
 void gpu_resize(Gpu gpu, u32 w, u32 h);
 

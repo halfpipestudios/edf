@@ -8,8 +8,6 @@
 #include "edf_particles.h"
 #include "edf_memory.h"
 
-
-
 ParticleSystem *particle_system_create(struct Arena *arena, 
                                        i32 particle_count, i32 emision_count, 
                                        f32 spawn_time, V2 pos, Texture texture,
@@ -46,7 +44,7 @@ void particle_system_update(struct GameState* gs, ParticleSystem *ps, f32 dt) {
                 particle->vel = v2(0, 0);
                 particle->tex = ps->tex;
                 particle->angle = 0;
-                particle->tint = v3(1, 1, 1);
+                particle->tint = v4(1, 1, 1, 1);
                 ps->current_particle = (ps->current_particle + 1) % ps->particle_count;
             }
             ps->current_spawn_time = ps->spawn_time;

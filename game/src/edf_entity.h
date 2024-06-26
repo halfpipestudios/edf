@@ -32,14 +32,14 @@ typedef struct Entity {
     f32 angle;
     f32 damping;
     Texture tex;
-    V3 tint;
+    V4 tint;
 
 // internal data for the entity manager
     struct Entity *next;
     struct Entity *prev;
 } Entity;
 
-void entity_add_render_component(Entity *entity, V3 pos, V2 scale, Texture texture, V3 tint);
+void entity_add_render_component(Entity *entity, V3 pos, V2 scale, Texture texture, V4 tint);
 void entity_add_input_component(Entity *entity);
 void entity_add_physics_component(Entity *entity, V2 vel, V2 acc, f32 damping);
 void entity_add_ai_component(Entity *entity);

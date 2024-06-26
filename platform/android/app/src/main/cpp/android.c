@@ -86,7 +86,7 @@ Gpu gpu_load(struct Arena *arena) {
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(OpenglVertex), offset_of(OpenglVertex, uvs));
     glEnableVertexAttribArray(1);
 
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(OpenglVertex), offset_of(OpenglVertex, color));
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(OpenglVertex), offset_of(OpenglVertex, color));
     glEnableVertexAttribArray(2);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -183,7 +183,7 @@ void gpu_texture_unload(Gpu gpu, Texture texture) {
     (void)texture;
 }
 
-void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V3 color) {
+void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V4 color) {
     OpenglGPU *renderer = (OpenglGPU *)gpu;
 
     M4 translate = m4_translate(v3(x, y, 0));
@@ -201,7 +201,7 @@ void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V3 colo
     quad_batch_push(renderer, quad);
 }
 
-void gpu_draw_quad_texture_tinted(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Texture texture, V3 color) {
+void gpu_draw_quad_texture_tinted(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Texture texture, V4 color) {
     OpenglGPU *renderer = (OpenglGPU *)gpu;
 
     M4 translate = m4_translate(v3(x, y, 0));
@@ -230,7 +230,7 @@ void gpu_draw_quad_texture_tinted(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle
 }
 
 void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Texture texture) {
-    gpu_draw_quad_texture_tinted(gpu, x, y, w, h, angle, texture, v3(1, 1, 1));
+    gpu_draw_quad_texture_tinted(gpu, x, y, w, h, angle, texture, v4(1, 1, 1, 1));
 }
 
 void gpu_resize(Gpu gpu, u32 w, u32 h) {

@@ -25,11 +25,11 @@ typedef struct Sprite {
     V2 pos;
     f32 z;
     V2 scale;
-    V3 tint;
+    V4 tint;
     f32 angle;
 } Sprite;
 
-Sprite *sprite_load(struct Arena *arena, V2 pos, V2 scale, V3 tint, f32 anlge, Texture texture);
+Sprite *sprite_load(struct Arena *arena, V2 pos, V2 scale, V4 tint, f32 anlge, Texture texture);
 void sprite_draw(Gpu gpu, Sprite *sprite);
 
 #endif /* EDF_GRAPHICS_H */

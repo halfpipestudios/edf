@@ -159,8 +159,18 @@ typedef union V4 {
     f32 m[4];
 } V4;
 
-inline V4 v4(f32 x, f32 y, f32 z, f32 w) {
+static inline V4 v4(f32 x, f32 y, f32 z, f32 w) {
     return (V4){ x, y, z, w };
+}
+
+static inline V4 hex_to_v4(u32 hex) {
+    f32 scale = 1.0f / 255.0f;
+    f32 a = (f32)((hex >> 24) & 0xff) * scale;
+    f32 r = (f32)((hex >> 16) & 0xff) * scale;
+    f32 g = (f32)((hex >> 8)  & 0xff) * scale;
+    f32 b = (f32)((hex >> 0)  & 0xff) * scale;
+    V4 result = v4(r, g, b, a);
+    return result;
 }
 
 typedef struct M4 {

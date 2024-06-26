@@ -1,9 +1,9 @@
 #version 300 es
 layout (location = 0) in vec2 aPos;
 layout (location = 1) in vec2 aUvs;
-layout (location = 2) in vec3 aColor;
+layout (location = 2) in vec4 aColor;
 
-out vec3 Color;
+out vec4 Color;
 out vec2 Uvs;
 
 uniform mat4 projection;

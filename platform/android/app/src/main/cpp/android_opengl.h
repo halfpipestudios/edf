@@ -11,7 +11,7 @@
 typedef struct OpenglVertex {
     V2 pos;
     V2 uvs;
-    V3 color;
+    V4 color;
 } OpenglVertex;
 
 static V3 vertices[] = {

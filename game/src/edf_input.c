@@ -238,9 +238,9 @@ void ui_update(Ui *ui, Multitouch *mt, f32 dt) {
                 Button *button = &widget->button;
                 mt_touch_just_in_circle(mt, &button->touch, button->pos, button->radii);
                 if(mt_touch_down(mt, button->touch)) {
-                    button->tint = v3(0.5f, 0.5f, 0.5f);
+                    button->tint = v4(0.5f, 0.5f, 0.5f, 1);
                 } else {
-                    button->tint = v3(1, 1, 1);
+                    button->tint = v4(1, 1, 1, 1);
                 }
 
             } break;

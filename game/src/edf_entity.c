@@ -8,7 +8,7 @@
 #include "edf_entity.h"
 #include "edf_memory.h"
 
-void entity_add_render_component(Entity *entity, V3 pos, V2 scale, Texture texture, V3 tint) {
+void entity_add_render_component(Entity *entity, V3 pos, V2 scale, Texture texture, V4 tint) {
     entity->components |= ENTITY_RENDER_COMPONENT;
     entity->pos = pos;
     entity->scale = scale;

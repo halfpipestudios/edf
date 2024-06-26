@@ -22,7 +22,7 @@ typedef struct Particle {
     f32 angle;
     Texture tex;
     f32 lifetime;
-    V3 tint;
+    V4 tint;
 } Particle;
 
 #define PARTICLE_SYSTEM_UPDATE(name) void name(struct GameState *gs, Particle *particle, f32 dt)
