@@ -5,7 +5,10 @@
 #include "sys/edf_physics_sys.h"
 
 #include <stdlib.h> 
+#include <stdarg.h>
+#include <stdio.h>
 #include <time.h>
+
 
 i32 rand_range(i32 min, i32 max) {
     return (rand() % (max - min + 1)) + min;
@@ -185,11 +188,12 @@ void game_init(Memory *memory) {
 
 void game_update(Memory *memory, Input *input, f32 dt) {
     GameState *gs = game_state(memory);
-     
+
     if(gs->game_init == false) {
         i32 hw = os_display_width() * 0.5f;
         i32 hh = os_display_height() * 0.5f;
         R2 window_rect;
+        
         window_rect.min.x = -hw;
         window_rect.max.x = 0;
         window_rect.min.y = -hh;
@@ -197,9 +201,18 @@ void game_update(Memory *memory, Input *input, f32 dt) {
         gs->joystick = ui_joystick_alloc(&gs->ui, &gs->game_arena, v2(-740, -250), window_rect, 
                                         140, 220, gs->move_inner_texture, gs->move_outer_texture);
         gs->button = ui_button_alloc(&gs->ui, &gs->game_arena, v2(740, -250), 135, gs->boost_texture);
+        
+        f32 radio = 80;
+        R2 rect = { {740-radio, 250-radio}, {740+radio, 250+radio} };
+        gs->joystick2 = ui_joystick_alloc(&gs->ui, &gs->game_arena, v2(740, 250), rect, 
+                                radio, radio*1.6f, gs->move_inner_texture, gs->move_outer_texture);
+
+        gs->button2 = ui_button_alloc(&gs->ui, &gs->game_arena, v2(340, -250), 100, gs->deathstar_texture);
+
         stars_init(gs);
         gs->game_init = true;
     }
+
     mt_begin(&gs->mt, input);
     ui_update(&gs->ui, &gs->mt, dt);
     input_system_update(gs, gs->em, dt);
@@ -207,6 +220,15 @@ void game_update(Memory *memory, Input *input, f32 dt) {
 
     physics_system_update(gs->em, dt);
     stars_update(gs, dt);
+
+    // FPS Counter
+    gs->fps_counter += 1;
+    gs->time_per_frame += dt;
+    if(gs->time_per_frame >= 1) {
+        gs->FPS = gs->fps_counter;
+        gs->fps_counter = 0;
+        gs->time_per_frame = 0;
+    }
 }
 
 
@@ -216,8 +238,8 @@ void game_render(Memory *memory) {
     gpu_frame_begin(gs->gpu);
 
     // render the back ground
-    u32 w = os_display_width();
-    u32 h = os_display_height();
+    i32 w = (i32)os_display_width();
+    i32 h = (i32)os_display_height();
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
     gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v3(0.05f, 0.05f, 0.1f));
 
@@ -229,8 +251,13 @@ void game_render(Memory *memory) {
     // UI draw
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
     ui_render(gs->gpu, &gs->ui);
-    
+
+    static char fps_text[1024];
+    snprintf(fps_text, 1024, "FPS: %d", gs->FPS);
+    font_draw_text(gs->gpu, gs->times, fps_text, -w*0.5f + 150, h*0.5f-150, v3(1, 1, 1));
+
     gpu_frame_end(gs->gpu);
+
 }
 
 void game_shutdown(Memory *memory) {

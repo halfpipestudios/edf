@@ -87,7 +87,6 @@ typedef struct Button {
     Texture texture;
 } Button;
 
-
 typedef union Widget {
     WIDGET_HEADER
     Joystick joystick;

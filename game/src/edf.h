@@ -30,7 +30,16 @@ typedef struct GameState {
     Font *times;
 
     Joystick *joystick;
+    Joystick *joystick2;
     Button *button;
+    Button *button2;
+
+    struct Entity *hero;
+    struct EntityManager *em;
+
+    f32 time_per_frame;
+    i32 fps_counter;
+    i32 FPS;
 
     Bitmap ship_bitmap[2];
     Bitmap move_outer_bitmap;
@@ -58,9 +67,6 @@ typedef struct GameState {
 
     Sprite stars[MAX_STARS];
     Sprite galaxy[MAX_GALAXY];
-
-    struct Entity *hero;
-    struct EntityManager *em;
 
 } GameState;
 
