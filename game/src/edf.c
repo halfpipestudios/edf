@@ -3,6 +3,7 @@
 #include "sys/edf_render_sys.h"
 #include "sys/edf_input_sys.h"
 #include "sys/edf_physics_sys.h"
+#include "edf_particles.h"
 
 #include <stdlib.h> 
 #include <stdarg.h>
@@ -132,6 +133,21 @@ void stars_render(GameState *gs) {
     }
 }
 
+PARTICLE_SYSTEM_UPDATE(ship_ps_update) {
+    if(v2_len(particle->vel) == 0.0f) {
+        f32 rand = ((f32)rand_range(-45, 45)/ 180.0f) * PI;
+        f32 offset = (PI*0.5f) + rand;
+        V2 dir;
+        dir.x = -cosf(gs->hero->angle + offset);
+        dir.y = -sinf(gs->hero->angle + offset);
+        f32 vel_len = v2_len(gs->hero->vel);
+        particle->vel.x = dir.x * 100.0f + gs->hero->vel.x;
+        particle->vel.y = dir.y * 100.0f + gs->hero->vel.y;
+    }
+    particle->pos.x += particle->vel.x * dt;
+    particle->pos.y += particle->vel.y * dt;
+}
+
 void game_init(Memory *memory) {
     game_state_init(memory);
     GameState *gs = game_state(memory);
@@ -158,6 +174,7 @@ void game_init(Memory *memory) {
     gs->satelite_bitmap   = bitmap_load(&gs->game_arena, "Satelite.png");
     gs->meteorito_bitmap   = bitmap_load(&gs->game_arena, "Meteorito.png");
     gs->deathstar_bitmap   = bitmap_load(&gs->game_arena, "deathstar.png");
+    gs->orbe_bitmap   = bitmap_load(&gs->game_arena, "orbe.png");
 
     gs->ship_texture[0]    = gpu_texture_load(gs->gpu, &gs->ship_bitmap[0]);
     gs->ship_texture[1]    = gpu_texture_load(gs->gpu, &gs->ship_bitmap[1]);
@@ -171,6 +188,7 @@ void game_init(Memory *memory) {
     gs->satelite_texture   = gpu_texture_load(gs->gpu, &gs->satelite_bitmap);
     gs->meteorito_texture  = gpu_texture_load(gs->gpu, &gs->meteorito_bitmap);
     gs->deathstar_texture  = gpu_texture_load(gs->gpu, &gs->deathstar_bitmap);
+    gs->orbe_texture = gpu_texture_load(gs->gpu, &gs->orbe_bitmap);
 
     gs->em = entity_manager_load(&gs->game_arena, 100);
 
@@ -183,26 +201,32 @@ void game_init(Memory *memory) {
     entity_add_render_component(gs->hero, v3(0, 0, 0), v2(size, size), gs->ship_texture[ship_rand_texture], v3(1, 1, 1));
     entity_add_physics_component(gs->hero, v2(0, 0), v2(0, 0), 0.4f);
 
-        i32 hw = VIRTUAL_RES_X * 0.5f;
-        i32 hh = VIRTUAL_RES_Y * 0.5f;
-        R2 window_rect;
-        
-        window_rect.min.x = -hw;
-        window_rect.max.x = 0;
-        window_rect.min.y = -hh;
-        window_rect.max.y = hh;
-        gs->joystick = ui_joystick_alloc(&gs->ui, &gs->game_arena, v2(-740, -250), window_rect, 
-                                        140, 220, gs->move_inner_texture, gs->move_outer_texture);
-        gs->button = ui_button_alloc(&gs->ui, &gs->game_arena, v2(740, -250), 135, gs->boost_texture);
-        
-        f32 radio = 80;
-        R2 rect = { {740-radio, 250-radio}, {740+radio, 250+radio} };
-        gs->joystick2 = ui_joystick_alloc(&gs->ui, &gs->game_arena, v2(740, 250), rect, 
-                                radio, radio*1.6f, gs->move_inner_texture, gs->move_outer_texture);
+    i32 hw = VIRTUAL_RES_X * 0.5f;
+    i32 hh = VIRTUAL_RES_Y * 0.5f;
+    R2 window_rect;
+    
+    window_rect.min.x = -hw;
+    window_rect.max.x = 0;
+    window_rect.min.y = -hh;
+    window_rect.max.y = hh;
+    gs->joystick = ui_joystick_alloc(&gs->ui, &gs->game_arena, v2(-740, -250), window_rect, 
+                                    140, 220, gs->move_inner_texture, gs->move_outer_texture);
+    gs->button = ui_button_alloc(&gs->ui, &gs->game_arena, v2(740, -250), 135, gs->boost_texture);
+    
+    f32 radio = 80;
+    R2 rect = { {740-radio, 250-radio}, {740+radio, 250+radio} };
+    gs->joystick2 = ui_joystick_alloc(&gs->ui, &gs->game_arena, v2(740, 250), rect, 
+                            radio, radio*1.6f, gs->move_inner_texture, gs->move_outer_texture);
 
-        gs->button2 = ui_button_alloc(&gs->ui, &gs->game_arena, v2(340, -250), 100, gs->deathstar_texture);
+    gs->button2 = ui_button_alloc(&gs->ui, &gs->game_arena, v2(340, -250), 100, gs->deathstar_texture);
 
-        stars_init(gs);
+    stars_init(gs);
+
+    gs->ps = particle_system_create(&gs->game_arena, 
+                                    20, 3, 
+                                    0.05f, v2(0, 0), gs->orbe_texture,
+                                    ship_ps_update);
+    particle_system_start(gs->ps);
 
 }
 
@@ -225,6 +249,13 @@ void game_update(Memory *memory, Input *input, f32 dt) {
         gs->fps_counter = 0;
         gs->time_per_frame = gs->time_per_frame - 1.0f;
     }
+
+    V2 dir;
+    dir.x = cosf(gs->hero->angle + PI*0.5f);
+    dir.y = sinf(gs->hero->angle + PI*0.5f);
+    particle_system_set_position(gs->ps, v2_sub(v2(gs->hero->pos.x, gs->hero->pos.y), v2_scale(dir, gs->hero->scale.y*0.5f)));
+    
+    particle_system_update(gs, gs->ps, dt);
 }
 
 
@@ -239,19 +270,26 @@ void game_render(Memory *memory) {
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
     gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v3(0.05f, 0.05f, 0.1f));
 
-    // Entities draw
     gpu_camera_set(gs->gpu, v3(gs->hero->pos.x, gs->hero->pos.y, 0), 0);
     stars_render(gs);
+
+    gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ADDITIVE);
+    particle_system_render(gs->gpu, gs->ps);
+    gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ALPHA);
+
+    // Entities draw
     render_system_update(gs, gs->em);
+
+
 
     // UI draw
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
-    gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ADDITIVE);
     ui_render(gs->gpu, &gs->ui);
 
     static char fps_text[1024];
     snprintf(fps_text, 1024, "FPS: %d", gs->FPS);
     font_draw_text(gs->gpu, gs->times, fps_text, -w*0.5f + 150, h*0.5f-150, v3(1, 1, 1));
+
 
     gpu_frame_end(gs->gpu);
 

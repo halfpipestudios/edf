@@ -60,6 +60,6 @@ EntityManager *entity_manager_load(struct Arena *arena, i32 entity_max_count);
 Entity *entity_manager_add_entity(EntityManager *em);
 void entity_manager_remove_entity(EntityManager *em, Entity *entity);
 void entity_manager_clear(EntityManager *em);
-void entity_manager_forall(struct GameState *gs, EntityManager *em, SystemUpdateFunc system_update, u64 components, f32 dt);
+void entity_manager_forall(struct GameState *gs, EntityManager *em, SystemUpdateFunc *system_update, u64 components, f32 dt);
 
 #endif /* EDF_ENTITY_H */

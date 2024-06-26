@@ -17,6 +17,7 @@
 		6E1A35392C2B662F007CB85B /* edf_physics_sys.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E1A35382C2B662F007CB85B /* edf_physics_sys.c */; };
 		6E1A353C2C2B73D5007CB85B /* edf_render_sys.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E1A353B2C2B73D5007CB85B /* edf_render_sys.c */; };
 		6E1A353F2C2B77A4007CB85B /* edf_input_sys.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E1A353E2C2B77A4007CB85B /* edf_input_sys.c */; };
+		6E855BE52C2C6F0C004FDE97 /* edf_particles.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E855BE42C2C6F0C004FDE97 /* edf_particles.c */; };
 		6E8AAE9D2C29EED600009430 /* edf_input.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E8AAE9C2C29EED600009430 /* edf_input.c */; };
 		6ED097D82C266CEE005630FB /* edf_font.c in Sources */ = {isa = PBXBuildFile; fileRef = 6ED097D62C266CEE005630FB /* edf_font.c */; };
 		6ED7993E2C2708EE005E0FDF /* ios_sound.c in Sources */ = {isa = PBXBuildFile; fileRef = 6ED7993D2C2708EE005E0FDF /* ios_sound.c */; };
@@ -47,6 +48,8 @@
 		6E1A353B2C2B73D5007CB85B /* edf_render_sys.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = edf_render_sys.c; sourceTree = "<group>"; };
 		6E1A353D2C2B77A4007CB85B /* edf_input_sys.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = edf_input_sys.h; sourceTree = "<group>"; };
 		6E1A353E2C2B77A4007CB85B /* edf_input_sys.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = edf_input_sys.c; sourceTree = "<group>"; };
+		6E855BE32C2C6F0C004FDE97 /* edf_particles.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = edf_particles.h; sourceTree = "<group>"; };
+		6E855BE42C2C6F0C004FDE97 /* edf_particles.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = edf_particles.c; sourceTree = "<group>"; };
 		6E8AAE9C2C29EED600009430 /* edf_input.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = edf_input.c; sourceTree = "<group>"; };
 		6E8AAE9E2C29EEE000009430 /* edf_input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = edf_input.h; sourceTree = "<group>"; };
 		6ED097D52C266CCE005630FB /* stb_truetype.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stb_truetype.h; sourceTree = "<group>"; };
@@ -167,6 +170,8 @@
 				6ED799432C276899005E0FDF /* edf_sound.c */,
 				6E01D0B22C2A10960024ED66 /* edf_entity.h */,
 				6E01D0B32C2A10960024ED66 /* edf_entity.c */,
+				6E855BE32C2C6F0C004FDE97 /* edf_particles.h */,
+				6E855BE42C2C6F0C004FDE97 /* edf_particles.c */,
 			);
 			name = src;
 			path = ../../game/src;
@@ -250,6 +255,7 @@
 				6E1A35392C2B662F007CB85B /* edf_physics_sys.c in Sources */,
 				6E1420822C23196300C8BB04 /* edf.c in Sources */,
 				6E0F64BE2C23837600FC0EC0 /* ios_shader.metal in Sources */,
+				6E855BE52C2C6F0C004FDE97 /* edf_particles.c in Sources */,
 				6E1A353C2C2B73D5007CB85B /* edf_render_sys.c in Sources */,
 				6E1A353F2C2B77A4007CB85B /* edf_input_sys.c in Sources */,
 				6E01D0B42C2A10960024ED66 /* edf_entity.c in Sources */,

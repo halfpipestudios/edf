@@ -46,6 +46,13 @@ static inline V2 v2_sub(V2 a, V2 b) {
     return result;
 }
 
+static inline V2 v2_scale(V2 v, f32 scale) {
+    V2 result = { 0 };
+    result.x  = v.x * scale;
+    result.y  = v.y * scale;
+    return result;
+}
+
 static inline f32 v2_dot(V2 a, V2 b) {
     return a.x * b.x + a.y * b.y;
 }
