@@ -11,7 +11,7 @@ using namespace metal;
 
 struct RasterizerData {
     float4 position [[position]];
-    float3 color;
+    float4 color;
     float2 uvs;
     uint array_index;
     uint texture_index;
@@ -41,10 +41,7 @@ vertexShader(uint vertexID [[vertex_id]],
 fragment float4
 fragmentShader(RasterizerData in [[stage_in]],
               array<texture2d_array<float ,  access::sample>, 5> textures [[texture(0)]] ) {
-
     constexpr sampler defaultSampler;
     float4 texture_color = textures[in.array_index].sample(defaultSampler, in.uvs, in.texture_index);
-    float3 tint_color = texture_color.rgb * in.color;
-    
-    return float4(tint_color, texture_color.a);
+    return texture_color * in.color;
 }

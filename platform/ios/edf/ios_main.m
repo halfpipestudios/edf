@@ -590,11 +590,12 @@ void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Textu
     dst->color.x = 1.0;
     dst->color.y = 1.0;
     dst->color.z = 1.0;
+    dst->color.w = 1.0f;
     renderer->quad_count++;
 }
 
 void gpu_draw_quad_texture_tinted(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle,
-                           Texture texture, V3 color) {
+                           Texture texture, V4 color) {
     IosRenderer *renderer = (IosRenderer *)gpu;
     
     assert((renderer->quad_count + 1) <= IOS_MAX_QUAD_COUNT);
@@ -616,10 +617,11 @@ void gpu_draw_quad_texture_tinted(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle
     dst->color.x = color.x;
     dst->color.y = color.y;
     dst->color.z = color.z;
+    dst->color.w = color.w;
     renderer->quad_count++;
 }
 
-void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V3 color) {
+void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V4 color) {
     IosRenderer *renderer = (IosRenderer *)gpu;
     
     assert((renderer->quad_count + 1) <= IOS_MAX_QUAD_COUNT);
@@ -638,6 +640,7 @@ void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V3 colo
     dst->color.x = color.x;
     dst->color.y = color.y;
     dst->color.z = color.z;
+    dst->color.w = color.w;
     renderer->quad_count++;
 }
 

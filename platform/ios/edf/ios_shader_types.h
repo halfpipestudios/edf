@@ -24,7 +24,7 @@ typedef struct {
 
 typedef struct Uniform {
     matrix_float4x4 world;
-    vector_float3 color;
+    vector_float4 color;
     float u_ratio;
     float v_ratio;
     uint32_t array_index;

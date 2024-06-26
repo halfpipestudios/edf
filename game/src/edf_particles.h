@@ -22,6 +22,7 @@ typedef struct Particle {
     f32 angle;
     Texture tex;
     f32 lifetime;
+    f32 save_lifetime;
     V4 tint;
 } Particle;
 
