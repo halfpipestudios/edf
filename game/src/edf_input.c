@@ -2,6 +2,7 @@
 // Created by tomas on 24/6/2024.
 //
 
+#include "edf.h"
 #include "edf_input.h"
 #include "edf_memory.h"
 #include "edf_platform.h"
@@ -14,8 +15,8 @@ V2 input_to_game_coords(V2i in_pos) {
     pos.y /= height;
     pos.x -= 0.5f;
     pos.y -= 0.5f;
-    pos.x *= width;
-    pos.y *= -height;
+    pos.x *= VIRTUAL_RES_X;
+    pos.y *= -VIRTUAL_RES_Y;
     return pos;
 }
 

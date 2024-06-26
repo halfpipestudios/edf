@@ -33,7 +33,9 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         ${GAME_DIR}/src/edf.c
         ${GAME_DIR}/src/edf_memory.c ${GAME_DIR}/src/edf_font.c
         ${GAME_DIR}/src/edf_graphics.c ${GAME_DIR}/src/edf_sound.c
-        ${GAME_DIR}/src/edf_input.c ${GAME_DIR}/src/edf_entity.c)
+        ${GAME_DIR}/src/edf_input.c ${GAME_DIR}/src/edf_entity.c
+        ${GAME_DIR}/src/sys/edf_input_sys.c ${GAME_DIR}/src/sys/edf_render_sys.c
+        ${GAME_DIR}/src/sys/edf_physics_sys.c)
 
 # Specifies libraries CMake should link to your target library. You
 # can link libraries from various origins, such as libraries defined in this

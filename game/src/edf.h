@@ -6,6 +6,9 @@
 #include "edf_platform.h"
 #include "edf_input.h"
 
+#define VIRTUAL_RES_X 1920
+#define VIRTUAL_RES_Y 1080
+
 #define GAME_MEMORY_SIZE mb(256)
 struct Memory;
 struct Entity;
@@ -21,13 +24,8 @@ typedef struct GameState {
     Multitouch mt;
     Ui ui;
 
-    bool game_init;
-
     Arena platform_arena;
     Arena game_arena;
-
-    Font *arial;
-    Font *times;
 
     Joystick *joystick;
     Joystick *joystick2;
@@ -40,6 +38,9 @@ typedef struct GameState {
     f32 time_per_frame;
     i32 fps_counter;
     i32 FPS;
+
+    Font *arial;
+    Font *times;
 
     Bitmap ship_bitmap[2];
     Bitmap move_outer_bitmap;

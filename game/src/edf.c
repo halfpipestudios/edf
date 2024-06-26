@@ -22,8 +22,8 @@ void stars_init(GameState *gs) {
         0xC0DBEA
     };
 
-    i32 hw = (os_display_width() * 0.5f) * 1.25f;
-    i32 hh = (os_display_height() * 0.5f) * 1.25f;
+    i32 hw = (VIRTUAL_RES_X * 0.5f) * 1.25f;
+    i32 hh = (VIRTUAL_RES_Y * 0.5f) * 1.25f;
     
     Texture planet_textures[MAX_GALAXY] = {
         gs->galaxy_texture,
@@ -68,8 +68,8 @@ void stars_init(GameState *gs) {
 }
 
 void stars_update(GameState *gs, f32 dt) {
-    i32 hw = os_display_width() * 0.5f;
-    i32 hh = os_display_height() * 0.5f;
+    i32 hw = VIRTUAL_RES_X * 0.5f;
+    i32 hh = VIRTUAL_RES_Y * 0.5f;
 
     R2 bounds = {0};
     bounds.min.x = gs->hero->pos.x - (hw * 1.25f);
@@ -183,15 +183,8 @@ void game_init(Memory *memory) {
     entity_add_render_component(gs->hero, v3(0, 0, 0), v2(size, size), gs->ship_texture[ship_rand_texture], v3(1, 1, 1));
     entity_add_physics_component(gs->hero, v2(0, 0), v2(0, 0), 0.4f);
 
-    gs->game_init = false;
-}
-
-void game_update(Memory *memory, Input *input, f32 dt) {
-    GameState *gs = game_state(memory);
-
-    if(gs->game_init == false) {
-        i32 hw = os_display_width() * 0.5f;
-        i32 hh = os_display_height() * 0.5f;
+        i32 hw = VIRTUAL_RES_X * 0.5f;
+        i32 hh = VIRTUAL_RES_Y * 0.5f;
         R2 window_rect;
         
         window_rect.min.x = -hw;
@@ -210,8 +203,11 @@ void game_update(Memory *memory, Input *input, f32 dt) {
         gs->button2 = ui_button_alloc(&gs->ui, &gs->game_arena, v2(340, -250), 100, gs->deathstar_texture);
 
         stars_init(gs);
-        gs->game_init = true;
-    }
+
+}
+
+void game_update(Memory *memory, Input *input, f32 dt) {
+    GameState *gs = game_state(memory);
 
     mt_begin(&gs->mt, input);
     ui_update(&gs->ui, &gs->mt, dt);
@@ -238,8 +234,8 @@ void game_render(Memory *memory) {
     gpu_frame_begin(gs->gpu);
 
     // render the back ground
-    i32 w = (i32)os_display_width();
-    i32 h = (i32)os_display_height();
+    i32 w = (i32)VIRTUAL_RES_X;
+    i32 h = (i32)VIRTUAL_RES_Y;
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
     gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v3(0.05f, 0.05f, 0.1f));
 
@@ -267,5 +263,6 @@ void game_shutdown(Memory *memory) {
 
 void game_resize(Memory *memory, u32 w, u32 h) {
     GameState *gs = game_state(memory);
-    gpu_resize(gs->gpu, w, h);
+    unused(w); unused(h);
+    gpu_resize(gs->gpu, VIRTUAL_RES_X, VIRTUAL_RES_Y);
 }

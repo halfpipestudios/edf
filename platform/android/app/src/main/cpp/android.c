@@ -332,5 +332,6 @@ JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gpuSetViewport(JNIEnv 
     (void) thiz;
     global_display_width  = w;
     global_display_height = h;
+    
     glViewport(0, 0, w, h);
 }
