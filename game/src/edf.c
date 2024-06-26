@@ -186,6 +186,9 @@ void game_init(Memory *memory) {
     gs->deathstar_texture  = gpu_texture_load(gs->gpu, &gs->deathstar_bitmap);
     gs->orbe_texture = gpu_texture_load(gs->gpu, &gs->orbe_bitmap);
 
+    gs->accumulator = 0.0f;
+    gs->phy_dt = 1.0f/60.0f;
+
     gs->em = entity_manager_load(&gs->game_arena, 100);
 
     // hero initialization
@@ -223,7 +226,6 @@ void game_init(Memory *memory) {
                                     0.05f, v2(0, 0), gs->orbe_texture,
                                     ship_ps_update);
     particle_system_start(gs->ps);
-
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {
@@ -234,8 +236,15 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     input_system_update(gs, gs->em, dt);
     mt_end(&gs->mt, input);
 
-    physics_system_update(gs->em, dt);
-    stars_update(gs, dt);
+    // Fix update for the physics
+    gs->accumulator += dt;
+    i32 counter = 0;
+    while(gs->accumulator >= gs->phy_dt) {
+        counter++;
+        physics_system_update(gs->em, gs->phy_dt);
+        stars_update(gs, gs->phy_dt);
+        gs->accumulator -= gs->phy_dt;
+    }
 
     // FPS Counter
     gs->fps_counter += 1;
