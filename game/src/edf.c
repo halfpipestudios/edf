@@ -227,7 +227,7 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     if(gs->time_per_frame >= 1) {
         gs->FPS = gs->fps_counter;
         gs->fps_counter = 0;
-        gs->time_per_frame = 1.0f - gs->time_per_frame;
+        gs->time_per_frame = gs->time_per_frame - 1.0f;
     }
 }
 
