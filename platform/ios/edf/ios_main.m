@@ -18,7 +18,6 @@
 #include "ios_sound.h"
 
 #define IOS_MAX_FRAMES_IN_FLIGHT 3
-#define IOS_MAX_UBUFFER_COUNT 1
 #define IOS_MAX_QUAD_COUNT 10000
 
 #define IOS_MAX_TEXTURE_COUNT 100
@@ -72,12 +71,9 @@ typedef struct IosRenderer {
     id<MTLRenderPipelineState> additive_blend_state;    
     id<MTLBuffer> vbuffer;
     
-    GpuBlendState blend_state;
-    // TODO(manu): create a struct for this
-    id<MTLBuffer> ubuffer[2][IOS_MAX_FRAMES_IN_FLIGHT][IOS_MAX_UBUFFER_COUNT];
-    u32 quad_count[2];
-    u32 quad_offset[2];
-    u32 buffer_index[2];
+    id<MTLBuffer> ubuffer[IOS_MAX_FRAMES_IN_FLIGHT];
+    u32 quad_count;
+    u32 quad_offset;
 
     matrix_float4x4 proj_m4;
     matrix_float4x4 view_m4;
@@ -89,28 +85,14 @@ typedef struct IosRenderer {
 
 // globals variables
 static Memory g_memory;
-static u32 g_view_width;
-static u32 g_view_height;
+static R2 g_device_rect;
+static R2 g_display_rect;
 static AUAudioUnit *g_audio_unit;
 
 static Input g_input;
-// TODO: remove the free list
 static i32 touches_index_array[MAX_TOUCHES];
 static i32 touches_free_list;
 
-/*
-TOUCH_IOS:[X X X X X]
-TOUCH_EDF:[Y Y Y Y Y]
-
-add() {
-    for(uitouches_count) {
-        UITouch *uitouch = uitouches + i;
-        Touch *touch = touches + count;
-        touch->uid = uitouches->hash
-        count++;
-    }
-}
-*/
 
 // temporal globals (after the gpu_load this variables are set to nil)
 static MTKView *tmp_view;
@@ -300,12 +282,12 @@ bool os_file_write(u8 *data, sz size, char *path) {
     return true;
 }
 
-u32 os_display_width(void) {
-    return g_view_width;
+R2 os_display_rect(void) {
+    return g_display_rect;
 }
 
-u32 os_display_height(void) {
-    return g_view_height;
+R2 os_device_rect(void) {
+    return g_device_rect;
 }
 
 
@@ -389,25 +371,18 @@ Gpu gpu_load(struct Arena *arena) {
         return nil;
     }
 
-    renderer->blend_state = GPU_BLEND_STATE_ALPHA;
-    renderer->buffer_index[0] = 0;
-    renderer->buffer_index[1] = 0;
-    renderer->quad_count[0] = 0;
-    renderer->quad_count[1] = 0;
-    renderer->quad_offset[0] = 0;
-    renderer->quad_offset[1] = 0;
+    renderer->quad_count = 0;
+    renderer->quad_offset = 0;
 
     renderer->vbuffer = [renderer->device newBufferWithBytes:&quad_vertices
                                                       length:(sizeof(Vertex) * 6)
                                                      options:MTLResourceStorageModeShared];
     
     for(int i = 0; i < IOS_MAX_FRAMES_IN_FLIGHT; i++) {
-        for(int j = 0; j < IOS_MAX_UBUFFER_COUNT; j++) {
-            renderer->ubuffer[0][i][j] = [renderer->device newBufferWithLength:IOS_MAX_QUAD_COUNT * sizeof(Uniform)
-                                                                       options:MTLResourceCPUCacheModeDefaultCache];
-            renderer->ubuffer[1][i][j] = [renderer->device newBufferWithLength:IOS_MAX_QUAD_COUNT * sizeof(Uniform)
-                                                                       options:MTLResourceCPUCacheModeDefaultCache];
-        }
+        renderer->ubuffer[i] = [renderer->device newBufferWithLength:IOS_MAX_QUAD_COUNT * sizeof(Uniform)
+                                                                   options:MTLResourceCPUCacheModeDefaultCache];
+        renderer->ubuffer[i] = [renderer->device newBufferWithLength:IOS_MAX_QUAD_COUNT * sizeof(Uniform)
+                                                                   options:MTLResourceCPUCacheModeDefaultCache];
     }
 
     ios_texture_array_init(renderer, &renderer->texture_arrays[IOS_TEXTURE_SIZE_8x8], 8, 8);
@@ -438,17 +413,11 @@ void gpu_unload(Gpu gpu) {
 
 void gpu_frame_begin(Gpu gpu) {
     IosRenderer *renderer = (IosRenderer *)gpu;
-    
-    renderer->blend_state = GPU_BLEND_STATE_ALPHA;
-    
+        
     dispatch_semaphore_wait(renderer->in_flight_semaphore, DISPATCH_TIME_FOREVER);
     renderer->current_buffer = (renderer->current_buffer + 1) % IOS_MAX_FRAMES_IN_FLIGHT;
-    renderer->buffer_index[0] = 0;
-    renderer->buffer_index[1] = 0;
-    renderer->quad_count[0] = 0;
-    renderer->quad_count[1] = 0;
-    renderer->quad_offset[0] = 0;
-    renderer->quad_offset[1] = 0;
+    renderer->quad_count = 0;
+    renderer->quad_offset = 0;
 
 
     MTLRenderPassDescriptor *render_pass_descriptor = renderer->view.currentRenderPassDescriptor;
@@ -458,6 +427,31 @@ void gpu_frame_begin(Gpu gpu) {
     renderer->command_buffer = [renderer->command_queue commandBuffer];
     renderer->command_encoder = [renderer->command_buffer renderCommandEncoderWithDescriptor:render_pass_descriptor];
 
+    f32 vw = VIRTUAL_RES_X;
+    f32 vh = VIRTUAL_RES_Y;
+    f32 w = (f32)r2_width(g_device_rect);
+    f32 h = (f32)r2_height(g_device_rect);
+    f32 wvr = vw/vh;
+    f32 hvr = vh/vw;
+    vw = w;
+    vh = w * hvr;
+    if(vh > h) {
+        vw = h * wvr;
+        vh = h;
+    }
+    f32 x = w*0.5f - vw*0.5f;
+    f32 y = h*0.5f - vh*0.5f;
+
+    g_display_rect = r2_from_wh(x, y, vw, vh);
+        
+    MTLViewport viewport;
+    viewport.originX = x;
+    viewport.originY = y;
+    viewport.width = vw;
+    viewport.height = vh;
+    viewport.znear = 0;
+    viewport.zfar = 1.0f;
+    [renderer->command_encoder setViewport:viewport];
     [renderer->command_encoder setRenderPipelineState: renderer->alpha_blend_state];
     [renderer->command_encoder setVertexBuffer: renderer->vbuffer offset:0 atIndex:VertexInputIndexVertices];
     [renderer->command_encoder setVertexBytes:&renderer->view_m4 length:sizeof(matrix_float4x4) atIndex:VertexInputIndexView];
@@ -470,29 +464,21 @@ void gpu_frame_begin(Gpu gpu) {
 
 }
 
-void gpu_frame_end(Gpu gpu) {
-    IosRenderer *renderer = (IosRenderer *)gpu;
-    if((renderer->quad_count[0] - renderer->quad_offset[0]) > 0) {
-        [renderer->command_encoder setRenderPipelineState: renderer->alpha_blend_state];
-        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[0][renderer->current_buffer][renderer->buffer_index[0]]
-                                            offset:renderer->quad_offset[0] * sizeof(Uniform)
+static void gpu_draw_call(IosRenderer *renderer) {
+    if((renderer->quad_count - renderer->quad_offset) > 0) {
+        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[renderer->current_buffer]
+                                            offset:renderer->quad_offset * sizeof(Uniform)
                                            atIndex:VertexInputIndexWorld];
         [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6
-                                    instanceCount:renderer->quad_count[0] - renderer->quad_offset[0]];
-        renderer->quad_count[0] = 0;
-        renderer->quad_offset[0] = 0;
+                                    instanceCount:renderer->quad_count - renderer->quad_offset];
+        renderer->quad_offset = renderer->quad_count;
     }
-    
-    if((renderer->quad_count[1] - renderer->quad_offset[1]) > 0) {
-        [renderer->command_encoder setRenderPipelineState: renderer->additive_blend_state];
-        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[1][renderer->current_buffer][renderer->buffer_index[1]]
-                                            offset:renderer->quad_offset[1] * sizeof(Uniform)
-                                           atIndex:VertexInputIndexWorld];
-        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6 instanceCount:renderer->quad_count[1] - renderer->quad_offset[1]];
-        renderer->quad_count[1] = 0;
-        renderer->quad_offset[1] = 0;
-    }
+}
 
+void gpu_frame_end(Gpu gpu) {
+    IosRenderer *renderer = (IosRenderer *)gpu;
+    gpu_draw_call(renderer);
+    
     [renderer->command_encoder endEncoding];
     id<MTLDrawable> drawable = renderer->view.currentDrawable;
     [renderer->command_buffer presentDrawable:drawable]; 
@@ -582,26 +568,20 @@ void gpu_texture_unload(Gpu gpu, Texture texture) {
 }
 
 
-void gpu_blend_state_set(Gpu gpu, GpuBlendState blend_state) {
-    IosRenderer *renderer = (IosRenderer *)gpu;
-    renderer->blend_state = blend_state;
-}
-
 void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Texture texture) {
     IosRenderer *renderer = (IosRenderer *)gpu;
 
+    assert((renderer->quad_count + 1) <= IOS_MAX_QUAD_COUNT);
+
     IosTexture *ios_texture = (IosTexture *)texture;
+
 
     matrix_float4x4 trans = matrix4x4_translation(x, y, -20);
     matrix_float4x4 rot = matrix4x4_rotation_z(angle);
     matrix_float4x4 scale = matrix4x4_scale(w, h, 1);
     matrix_float4x4 world = matrix_multiply(trans, matrix_multiply(rot, scale));
-    
-    u32 i = renderer->blend_state;
-    if(renderer->buffer_index[i] == IOS_MAX_UBUFFER_COUNT) {
-        return;
-    }
-    Uniform *dst = renderer->ubuffer[i][renderer->current_buffer][renderer->buffer_index[i]].contents + (sizeof(Uniform) * renderer->quad_count[i]);
+        
+    Uniform *dst = renderer->ubuffer[renderer->current_buffer].contents + (sizeof(Uniform) * renderer->quad_count);
     memcpy(&dst->world, &world, sizeof(matrix_float4x4));
     dst->u_ratio = ios_texture->u_ratio;
     dst->v_ratio = ios_texture->v_ratio;
@@ -610,30 +590,14 @@ void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Textu
     dst->color.x = 1.0;
     dst->color.y = 1.0;
     dst->color.z = 1.0;
-    renderer->quad_count[i]++;
-
-    if(renderer->quad_count[i] == IOS_MAX_QUAD_COUNT) {
-        if(i == GPU_BLEND_STATE_ALPHA) {
-            [renderer->command_encoder setRenderPipelineState: renderer->alpha_blend_state];
-        }
-        else {
-            [renderer->command_encoder setRenderPipelineState: renderer->additive_blend_state];
-        }
-        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[i][renderer->current_buffer][renderer->buffer_index[i]]
-                                            offset:renderer->quad_offset[i] * sizeof(Uniform)
-                                           atIndex:VertexInputIndexWorld];
-        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6
-                                    instanceCount:renderer->quad_count[i] - renderer->quad_offset[i]];
-        renderer->quad_count[i] = 0;
-        renderer->quad_offset[i] = 0;
-        renderer->buffer_index[i]++;
-    }
+    renderer->quad_count++;
 }
 
 void gpu_draw_quad_texture_tinted(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle,
                            Texture texture, V3 color) {
-
     IosRenderer *renderer = (IosRenderer *)gpu;
+    
+    assert((renderer->quad_count + 1) <= IOS_MAX_QUAD_COUNT);
 
     IosTexture *ios_texture = (IosTexture *)texture;
 
@@ -642,11 +606,8 @@ void gpu_draw_quad_texture_tinted(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle
     matrix_float4x4 scale = matrix4x4_scale(w, h, 1);
     matrix_float4x4 world = matrix_multiply(trans, matrix_multiply(rot, scale));
     
-    u32 i = renderer->blend_state;
-    if(renderer->buffer_index[i] == IOS_MAX_UBUFFER_COUNT) {
-        return;
-    }
-    Uniform *dst = renderer->ubuffer[i][renderer->current_buffer][renderer->buffer_index[i]].contents + (sizeof(Uniform) * renderer->quad_count[i]);
+
+    Uniform *dst = renderer->ubuffer[renderer->current_buffer].contents + (sizeof(Uniform) * renderer->quad_count);
     memcpy(&dst->world, &world, sizeof(matrix_float4x4));
     dst->u_ratio = ios_texture->u_ratio;
     dst->v_ratio = ios_texture->v_ratio;
@@ -655,38 +616,20 @@ void gpu_draw_quad_texture_tinted(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle
     dst->color.x = color.x;
     dst->color.y = color.y;
     dst->color.z = color.z;
-    renderer->quad_count[i]++;
-
-    if(renderer->quad_count[i] == IOS_MAX_QUAD_COUNT) {
-        if(i == GPU_BLEND_STATE_ALPHA) {
-            [renderer->command_encoder setRenderPipelineState: renderer->alpha_blend_state];
-        }
-        else {
-            [renderer->command_encoder setRenderPipelineState: renderer->additive_blend_state];
-        }
-        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[i][renderer->current_buffer][renderer->buffer_index[i]]
-                                            offset:renderer->quad_offset[i] * sizeof(Uniform)
-                                           atIndex:VertexInputIndexWorld];
-        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6
-                                    instanceCount:renderer->quad_count[i] - renderer->quad_offset[i]];
-        renderer->quad_count[i] = 0;
-        renderer->quad_offset[i] = 0;
-        renderer->buffer_index[i]++;
-    }
+    renderer->quad_count++;
 }
 
 void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V3 color) {
     IosRenderer *renderer = (IosRenderer *)gpu;
+    
+    assert((renderer->quad_count + 1) <= IOS_MAX_QUAD_COUNT);
+    
     matrix_float4x4 trans = matrix4x4_translation(x, y, -20);
     matrix_float4x4 rot = matrix4x4_rotation_z(angle);
     matrix_float4x4 scale = matrix4x4_scale(w, h, 1);
     matrix_float4x4 world = matrix_multiply(trans, matrix_multiply(rot, scale));
 
-    u32 i = renderer->blend_state;
-    if(renderer->buffer_index[i] == IOS_MAX_UBUFFER_COUNT) {
-        return;
-    }
-    Uniform *dst = renderer->ubuffer[i][renderer->current_buffer][renderer->buffer_index[i]].contents + (sizeof(Uniform) * renderer->quad_count[i]);
+    Uniform *dst = renderer->ubuffer[renderer->current_buffer].contents + (sizeof(Uniform) * renderer->quad_count);
     memcpy(&dst->world, &world, sizeof(matrix_float4x4));
     dst->u_ratio = 1.0;
     dst->v_ratio = 1.0;
@@ -695,47 +638,27 @@ void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V3 colo
     dst->color.x = color.x;
     dst->color.y = color.y;
     dst->color.z = color.z;
-    renderer->quad_count[i]++;
+    renderer->quad_count++;
+}
 
-    if(renderer->quad_count[i] == IOS_MAX_QUAD_COUNT) {
-        if(i == GPU_BLEND_STATE_ALPHA) {
+
+
+void gpu_blend_state_set(Gpu gpu, GpuBlendState blend_state) {
+    IosRenderer *renderer = (IosRenderer *)gpu;
+    gpu_draw_call(renderer);
+    switch(blend_state) {
+        case GPU_BLEND_STATE_ALPHA: {
             [renderer->command_encoder setRenderPipelineState: renderer->alpha_blend_state];
-        }
-        else {
+        } break;
+        case GPU_BLEND_STATE_ADDITIVE: {
             [renderer->command_encoder setRenderPipelineState: renderer->additive_blend_state];
-        }
-        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[i][renderer->current_buffer][renderer->buffer_index[i]]
-                                            offset:renderer->quad_offset[i] * sizeof(Uniform)
-                                           atIndex:VertexInputIndexWorld];
-        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6
-                                    instanceCount:renderer->quad_count[i] - renderer->quad_offset[i]];
-        renderer->quad_count[i] = 0;
-        renderer->quad_offset[i] = 0;
-        renderer->buffer_index[i]++;
+        } break;
     }
 }
 
 void gpu_camera_set(Gpu gpu, V3 pos, f32 angle) {
     IosRenderer *renderer = (IosRenderer *)gpu;
-    if((renderer->quad_count[0] - renderer->quad_offset[0]) > 0) {
-        [renderer->command_encoder setRenderPipelineState: renderer->alpha_blend_state];
-        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[0][renderer->current_buffer][renderer->buffer_index[0]]
-                                            offset:renderer->quad_offset[0] * sizeof(Uniform)
-                                           atIndex:VertexInputIndexWorld];
-        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6
-                                    instanceCount:renderer->quad_count[0] - renderer->quad_offset[0]];
-        renderer->quad_offset[0] = renderer->quad_count[0];
-    }
-    
-    if((renderer->quad_count[1] - renderer->quad_offset[1]) > 0) {
-        [renderer->command_encoder setRenderPipelineState: renderer->additive_blend_state];
-        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[1][renderer->current_buffer][renderer->buffer_index[1]]
-                                            offset:renderer->quad_offset[1] * sizeof(Uniform)
-                                           atIndex:VertexInputIndexWorld];
-        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6
-                                    instanceCount:renderer->quad_count[1] - renderer->quad_offset[1]];
-        renderer->quad_offset[1] = renderer->quad_count[1];
-    }
+    gpu_draw_call(renderer); 
     renderer->view_m4 = matrix4x4_translation(-pos.x, -pos.y, -pos.z);
     [renderer->command_encoder setVertexBytes:&renderer->view_m4 length:sizeof(matrix_float4x4) atIndex:VertexInputIndexView];
 }
@@ -902,8 +825,7 @@ void spu_sound_restart(Spu spu, Sound sound) {
 }
 
 - (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size {
-    g_view_width = size.width;
-    g_view_height = size.height;
+    g_device_rect = r2_from_wh(0, 0, size.width, size.height);
     game_resize(&g_memory, size.width, size.height);
 }
 @end
@@ -926,7 +848,7 @@ void spu_sound_restart(Spu spu, Sound sound) {
     tmp_view = (MTKView *)self.view;
 
     tmp_view.device = MTLCreateSystemDefaultDevice();
-    tmp_view.clearColor = MTLClearColorMake(0.2, 0.5, 0.7, 1.0);
+    tmp_view.clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 1.0);
     
     // init the view delegate
     _metal_view_delegate = [[MetalViewDelegate alloc] initWithMetalKitView:tmp_view];
@@ -988,8 +910,8 @@ void spu_sound_restart(Spu spu, Sound sound) {
         Touch touch = {0};
         touch.location = g_input.count;
         //touch.event = TOUCH_EVENT_DOWN;
-        touch.pos.x = (i32)(((f32)location.x / w) * g_view_width);
-        touch.pos.y = (i32)(((f32)location.y / h) * g_view_height);
+        touch.pos.x = (i32)(((f32)location.x / w) * r2_width(g_device_rect));
+        touch.pos.y = (i32)(((f32)location.y / h) * r2_height(g_device_rect));
         touch.uid = (u64)uitouch.hash;
 
         touches_index_array[free_index] = -1;
@@ -1016,8 +938,8 @@ void spu_sound_restart(Spu spu, Sound sound) {
             CGPoint location = [uitouch locationInView:self.view];
             Touch *touch = g_input.touches + index_to_update;
             //touch->event = TOUCH_EVENT_MOVE;
-            touch->pos.x = (i32)(((f32)location.x / w) * g_view_width);
-            touch->pos.y = (i32)(((f32)location.y / h) * g_view_height);
+            touch->pos.x = (i32)(((f32)location.x / w) * r2_width(g_device_rect));
+            touch->pos.y = (i32)(((f32)location.y / h) * r2_height(g_device_rect));
         }
     }
 }

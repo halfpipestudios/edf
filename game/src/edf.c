@@ -246,6 +246,7 @@ void game_render(Memory *memory) {
 
     // UI draw
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
+    gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ADDITIVE);
     ui_render(gs->gpu, &gs->ui);
 
     static char fps_text[1024];
