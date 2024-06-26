@@ -13,6 +13,7 @@
 struct Memory;
 struct Entity;
 struct EntityManager;
+struct ParticleSystem;
 
 #define MAX_STARS 75
 #define MAX_GALAXY 6
@@ -35,6 +36,8 @@ typedef struct GameState {
     struct Entity *hero;
     struct EntityManager *em;
 
+    struct ParticleSystem *ps;
+
     f32 time_per_frame;
     i32 fps_counter;
     i32 FPS;
@@ -54,6 +57,7 @@ typedef struct GameState {
     Bitmap satelite_bitmap;
     Bitmap meteorito_bitmap;
     Bitmap deathstar_bitmap;
+    Bitmap orbe_bitmap;
 
     Texture ship_texture[2];
     Texture move_outer_texture;
@@ -66,6 +70,7 @@ typedef struct GameState {
     Texture satelite_texture;
     Texture meteorito_texture;
     Texture deathstar_texture;
+    Texture orbe_texture;
 
     Sprite stars[MAX_STARS];
     Sprite galaxy[MAX_GALAXY];

@@ -35,7 +35,7 @@ void arena_clear(Arena *arena);
 TempArena temp_arena_begin(Arena *arena);
 void temp_arena_end(TempArena tmp);
 
-#define MAX_SCRATCH_ARENA_COUNT 16
+#define MAX_SCRATCH_ARENA_COUNT 3
 void init_scratch_arenas(Memory *memory, u32 count, u64 size);
 Arena *get_scratch_arena(i32 index);
 

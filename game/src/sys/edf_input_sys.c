@@ -8,6 +8,7 @@
 #include "edf_input_sys.h"
 #include "../edf_entity.h"
 #include "../edf.h"
+#include "../edf_particles.h"
 
 SYSTEM_UPDATE(input_system) {
     if(ui_widget_is_active(&gs->mt, gs->joystick)) {
@@ -27,6 +28,10 @@ SYSTEM_UPDATE(input_system) {
             entity->acc.x += dir.x * 800.0f;
             entity->acc.y += dir.y * 800.0f;
         }
+        particle_system_start(gs->ps);
+    }
+    else {
+        particle_system_stop(gs->ps);
     }
 }
 

@@ -118,7 +118,7 @@ void entity_manager_clear(EntityManager *em) {
 }
 
 
-void entity_manager_forall(struct GameState *gs, EntityManager *em, SystemUpdateFunc system_update, u64 components, f32 dt) {
+void entity_manager_forall(struct GameState *gs, EntityManager *em, SystemUpdateFunc *system_update, u64 components, f32 dt) {
     i32 entity_to_update_count = 0;
     Entity *entities_to_update[ENTITY_MANAGER_MAX_ENTITIES];
 
