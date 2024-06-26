@@ -240,12 +240,13 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     input_system_update(gs, gs->em, dt);
     mt_end(&gs->mt, input);
 
+    physics_system_update(gs->em, gs->phy_dt);
+
     // Fix update for the physics
     gs->accumulator += dt;
     i32 counter = 0;
     while(gs->accumulator >= gs->phy_dt) {
         counter++;
-        physics_system_update(gs->em, gs->phy_dt);
         stars_update(gs, gs->phy_dt);
         gs->accumulator -= gs->phy_dt;
     }
