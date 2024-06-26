@@ -230,15 +230,25 @@ void game_init(Memory *memory) {
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {
+
+    f32 fake_dt = 1.0f/60.0f;
+
     GameState *gs = game_state(memory);
 
     mt_begin(&gs->mt, input);
     ui_update(&gs->ui, &gs->mt, dt);
-    input_system_update(gs, gs->em, dt);
+    input_system_update(gs, gs->em, fake_dt);
     mt_end(&gs->mt, input);
 
-    physics_system_update(gs->em, dt);
-    stars_update(gs, dt);
+    physics_system_update(gs->em, fake_dt);
+    stars_update(gs, fake_dt);
+
+    V2 dir;
+    dir.x = cosf(gs->hero->angle + PI*0.5f);
+    dir.y = sinf(gs->hero->angle + PI*0.5f);
+    particle_system_set_position(gs->ps, v2_sub(v2(gs->hero->pos.x, gs->hero->pos.y), v2_scale(dir, gs->hero->scale.y*0.5f)));
+    
+    particle_system_update(gs, gs->ps, fake_dt);
 
     // FPS Counter
     gs->fps_counter += 1;
@@ -248,13 +258,6 @@ void game_update(Memory *memory, Input *input, f32 dt) {
         gs->fps_counter = 0;
         gs->time_per_frame = gs->time_per_frame - 1.0f;
     }
-
-    V2 dir;
-    dir.x = cosf(gs->hero->angle + PI*0.5f);
-    dir.y = sinf(gs->hero->angle + PI*0.5f);
-    particle_system_set_position(gs->ps, v2_sub(v2(gs->hero->pos.x, gs->hero->pos.y), v2_scale(dir, gs->hero->scale.y*0.5f)));
-    
-    particle_system_update(gs, gs->ps, dt);
 }
 
 

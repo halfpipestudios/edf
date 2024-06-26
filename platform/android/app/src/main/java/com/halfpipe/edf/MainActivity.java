@@ -195,7 +195,7 @@ class GameRenderer implements GLSurfaceView.Renderer {
         long currentTime = System.nanoTime();
         double dt = (currentTime - lastTime) / NANOS_PER_SECOND;
         lastTime = currentTime;
-        gameUpdate(input.indices_count, input.indices, input.touches, 1.0f/60.0f);
+        gameUpdate(input.indices_count, input.indices, input.touches, (float)dt);
         gameRender();
     }
 
