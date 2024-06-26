@@ -128,6 +128,13 @@ void stars_render(GameState *gs) {
 
 PARTICLE_SYSTEM_UPDATE(ship_ps_update) {
 
+    static u32 fire_tint_index = 0;
+    static u32 fire_tint[] = {
+        0xffff4200,
+        0xffffa700,
+        0xfffff796
+    };
+
     if(v2_len(particle->vel) == 0.0f) {
         f32 rand = ((f32)rand_range(-20, 20)/ 180.0f) * PI;
         f32 offset = (PI*0.5f) + rand;
@@ -136,6 +143,8 @@ PARTICLE_SYSTEM_UPDATE(ship_ps_update) {
         dir.y = -sinf(gs->hero->angle + offset);
         particle->vel.x = dir.x * 180.0f + gs->hero->vel.x;
         particle->vel.y = dir.y * 180.0f + gs->hero->vel.y;
+        particle->tint = hex_to_v4(fire_tint[fire_tint_index]);
+        fire_tint_index = (fire_tint_index + 1) % array_len(fire_tint);
     }
     
     float x = particle->lifetime;
