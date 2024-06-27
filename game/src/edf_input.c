@@ -179,6 +179,7 @@ Widget *ui_widget_alloc(Ui *ui, struct Arena *arena) {
 
     result->touch = -1;
     result->last_touch = -1;
+    result->widget_tint = v4(1, 1, 1, 1);
     
     if(!ui->widgets) {
         ui->widgets = result;
@@ -208,8 +209,8 @@ void ui_widget_free(Ui *ui, Widget *widget) {
     ui->first_free = widget;
 }
 
-Joystick *ui_joystick_alloc(Ui *ui, struct Arena *arena, V2 pos, R2 rect, 
-                            f32 inner_radii, f32 outer_raddi, Texture inner_texture, Texture outer_texture) {
+Joystick *ui_joystick_alloc(Ui *ui, struct Arena *arena, V2 pos, R2 rect, f32 inner_radii, f32 outer_raddi,
+                            Texture inner_texture, Texture outer_texture, V4 tint) {
     Widget *result = ui_widget_alloc(ui, arena);
     result->type = WIDGET_TYPE_JOYSTICK;
     result->pos = pos;
@@ -229,11 +230,12 @@ Joystick *ui_joystick_alloc(Ui *ui, struct Arena *arena, V2 pos, R2 rect,
     i32 pos_y = (i32)(pos.y - outer_raddi);
 
     joystick->widget_rect = r2_from_wh(pos_x, pos_y, (i32)outer_raddi*2, (i32)outer_raddi*2);
+    joystick->widget_tint = tint;
 
     return &result->joystick;
 }
 
-Button *ui_button_alloc(Ui *ui, struct Arena *arena, V2 pos, float radii, Texture texture) {
+Button *ui_button_alloc(Ui *ui, struct Arena *arena, V2 pos, float radii, Texture texture, V4 tint) {
     Widget *result = ui_widget_alloc(ui, arena);
     result->type = WIDGET_TYPE_BUTTON;
     result->pos = pos;
@@ -245,6 +247,7 @@ Button *ui_button_alloc(Ui *ui, struct Arena *arena, V2 pos, float radii, Textur
     i32 pos_x = (i32)(pos.x - radii);
     i32 pos_y = (i32)(pos.y - radii);
     button->widget_rect = r2_from_wh(pos_x, pos_y, (i32)button->radii*2, (i32)button->radii*2);
+    button->widget_tint = tint;
 
     return button;
 }
@@ -339,19 +342,19 @@ void ui_render(Gpu gpu, Ui *ui) {
 
                 gpu_draw_quad_texture_tinted(gpu, button->pos.x, button->pos.y,
                                              button->radii * 2, button->radii * 2,
-                                             0, button->texture, button->tint);
+                                             0, button->texture, v4_had(button->widget_tint, button->tint));
 
             } break;
             case WIDGET_TYPE_JOYSTICK: {
                 Joystick *joystick = &widget->joystick;
 
-                gpu_draw_quad_texture(gpu, joystick->pos.x, joystick->pos.y, 
-                                      joystick->outer_radii * 2, joystick->outer_radii * 2,
-                                      0, joystick->outer_texture);
+                gpu_draw_quad_texture_tinted(gpu, joystick->pos.x, joystick->pos.y, 
+                                             joystick->outer_radii * 2, joystick->outer_radii * 2,
+                                             0, joystick->outer_texture, joystick->widget_tint);
 
-                gpu_draw_quad_texture(gpu, joystick->c_pos.x, joystick->c_pos.y, 
-                                      joystick->inner_radii * 2, joystick->inner_radii * 2,
-                                      0, joystick->inner_texture);
+                gpu_draw_quad_texture_tinted(gpu, joystick->c_pos.x, joystick->c_pos.y, 
+                                             joystick->inner_radii * 2, joystick->inner_radii * 2,
+                                             0, joystick->inner_texture, joystick->widget_tint);
 
             } break;
         }

@@ -260,18 +260,18 @@ void game_init(Memory *memory) {
     f32 size = 32.0f * 3.0f;
     srand(time(0));
     
+    gs->fire = particle_system_create(&gs->game_arena, 100, 10,
+                                      0.05f, v2(0, 0), gs->orbe_texture,
+                                      ship_ps_update, GPU_BLEND_STATE_ADDITIVE);
+    gs->confeti = particle_system_create(&gs->game_arena, 1000, 10,
+                                         0.05f, v2(0, 0), 0,
+                                         confeti_ps_update, GPU_BLEND_STATE_ALPHA);
+
     u32 ps_rand = rand_range(0, 1);
     if(ps_rand == 1) {
-        gs->ps = particle_system_create(&gs->game_arena,
-                                        100, 10,
-                                        0.05f, v2(0, 0), gs->orbe_texture,
-                                        ship_ps_update, GPU_BLEND_STATE_ADDITIVE);
+        gs->ps = gs->fire;
     } else {
-        gs->ps = particle_system_create(&gs->game_arena,
-                                        1000, 10,
-                                        0.05f, v2(0, 0), 0,
-                                        confeti_ps_update, GPU_BLEND_STATE_ALPHA);
-        
+        gs->ps =   gs->confeti;
     }
     
     
@@ -289,14 +289,18 @@ void game_init(Memory *memory) {
     window_rect.min.y = -hh;
     window_rect.max.y = hh;
     gs->joystick = ui_joystick_alloc(&gs->ui, &gs->game_arena, v2(-740, -250), window_rect, 
-                                    140, 220, gs->move_inner_texture, gs->move_outer_texture);
+                                    140, 220, gs->move_inner_texture, gs->move_outer_texture, v4(1,1,1,1));
 
-    gs->boost_button = ui_button_alloc(&gs->ui, &gs->game_arena, v2(740, -250), 135, gs->boost_texture);
+    gs->boost_button = ui_button_alloc(&gs->ui, &gs->game_arena, v2(740, -250), 135, gs->boost_texture, v4(1,1,1,1));
 
-    f32 paddin_top = 20;
-    f32 pause_buttom_dim = 100;
+    f32 paddin_top = 80;
+    f32 pause_buttom_dim = 140;
     V2 pause_button_pos = v2(0, VIRTUAL_RES_Y*0.5f-pause_buttom_dim*0.5f-paddin_top);
-    gs->pause_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, gs->pause_texture);
+    gs->pause_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, gs->pause_texture, v4(1,0,0,1));
+    pause_button_pos.x += 220;
+    gs->next_ship_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, gs->pause_texture, v4(0,1,0,1));
+    pause_button_pos.x += 220;
+    gs->next_boost_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, gs->pause_texture, v4(0,0,1,1));
 
     stars_init(gs);
 }
@@ -304,11 +308,30 @@ void game_init(Memory *memory) {
 void game_update(Memory *memory, Input *input, f32 dt) {
     
     GameState *gs = game_state(memory);
-
+    
     ui_begin(&gs->ui, &gs->mt, input, dt);
 
     if(ui_button_just_up(&gs->mt, gs->pause_button)) {
         gs->paused = !gs->paused;
+    }
+
+    if(ui_button_just_up(&gs->mt, gs->next_ship_button)) {
+        static u32 next_ship = 0;
+        gs->hero->tex = gs->ship_texture[next_ship];
+        next_ship = (next_ship + 1) % array_len(gs->ship_texture);
+    }
+
+    if(ui_button_just_up(&gs->mt, gs->next_boost_button)) {        
+        particle_system_stop(gs->ps);
+        if(gs->ps == gs->fire) {
+            particle_system_reset(gs->confeti);
+            particle_system_start(gs->confeti);
+            gs->ps = gs->confeti;
+        } else {
+            particle_system_reset(gs->fire);
+            particle_system_start(gs->fire);
+            gs->ps = gs->fire;
+        }
     }
 
     if(!gs->paused) {

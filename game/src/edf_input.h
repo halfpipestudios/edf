@@ -64,9 +64,10 @@ typedef enum WidgetType {
 struct {                \
     WidgetType type;    \
     V2 pos;             \
-    R2 widget_rect;             \
     i32 touch;          \
     i32 last_touch;     \
+    V4 widget_tint;     \
+    R2 widget_rect;     \
     union Widget *next; \
     union Widget *prev; \
 };                      
@@ -122,11 +123,11 @@ b32 ui_widget_just_press_(Multitouch *mt, Widget *widget);
 #define ui_widget_just_up(mt, widget) ui_widget_just_up_((mt), (Widget *)(widget))
 b32 ui_widget_just_up_(Multitouch *mt, Widget *widget);
 
-Button *ui_button_alloc(Ui *ui, struct Arena *arena, V2 pos, float radii, Texture texture);
+Button *ui_button_alloc(Ui *ui, struct Arena *arena, V2 pos, float radii, Texture texture, V4 tint);
 b32 ui_button_just_up(Multitouch *mt, Button *button);
 
-Joystick *ui_joystick_alloc(Ui *ui, struct Arena *arena, V2 pos, R2 rect, 
-                            f32 inner_radii, f32 outer_raddi, Texture inner_texture, Texture outer_texture);
+Joystick *ui_joystick_alloc(Ui *ui, struct Arena *arena, V2 pos, R2 rect, f32 inner_radii, f32 outer_raddi,
+                            Texture inner_texture, Texture outer_texture, V4 tint);
 
 
 

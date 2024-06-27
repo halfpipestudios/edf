@@ -98,7 +98,7 @@ void particle_system_reset(ParticleSystem *ps) {
     ps->pause =  true;
     for(i32 i = 0; i < ps->particle_count; i++) {
         Particle *particle = ps->particles + i;
-        particles->lifetime = 0.0f;
+        particle->lifetime = 0.0f;
     }
 }
 

@@ -31,12 +31,16 @@ typedef struct GameState {
     Joystick *joystick;
     Button *boost_button;
     Button *pause_button;
+    Button *next_ship_button;
+    Button *next_boost_button;
 
     b32 paused;
 
     struct Entity *hero;
     struct EntityManager *em;
 
+    struct ParticleSystem *fire;
+    struct ParticleSystem *confeti;
     struct ParticleSystem *ps;
  
     f32 time_per_frame;

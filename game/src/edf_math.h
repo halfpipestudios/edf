@@ -163,6 +163,10 @@ static inline V4 v4(f32 x, f32 y, f32 z, f32 w) {
     return (V4){ x, y, z, w };
 }
 
+static inline V4 v4_had(V4 a, V4 b) {
+    return (V4){ a.x*b.x, a.y*b.y, a.z*b.z, a.w*b.w };
+}
+
 static inline V4 hex_to_v4(u32 hex) {
     f32 scale = 1.0f / 255.0f;
     f32 a = (f32)((hex >> 24) & 0xff) * scale;
