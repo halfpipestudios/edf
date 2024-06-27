@@ -88,6 +88,7 @@ static Memory g_memory;
 static R2 g_device_rect;
 static R2 g_display_rect;
 static AUAudioUnit *g_audio_unit;
+static CFAbsoluteTime g_last_time;
 
 static Input g_input;
 static i32 touches_index_array[MAX_TOUCHES];
@@ -789,14 +790,15 @@ void spu_sound_restart(Spu spu, Sound sound) {
 - (UIInterfaceOrientationMask)application:(UIApplication *)application supportedInterfaceOrientationsForWindow:(UIWindow *)window {
     return UIInterfaceOrientationMaskLandscape;
 }
+
+- (void)applicationWillEnterForeground:(UIApplication *)application {
+    g_last_time = CACurrentMediaTime();
+}
 /*
 - (void)applicationDidBecomeActive:(UIApplication *)application {
+    g_last_time = CACurrentMediaTime(); 
 }
-
-- (void)applicationDidEnterBackground:(UIApplication *)application {
-}
- */
-
+*/
 @end
 //=====================================================================
 //=====================================================================
@@ -808,20 +810,18 @@ void spu_sound_restart(Spu spu, Sound sound) {
 - (nonnull instancetype)initWithMetalKitView:(nonnull MTKView *)view;
 @end
 
-@implementation MetalViewDelegate {
-    CFAbsoluteTime last_time;
-}
+@implementation MetalViewDelegate
 
 - (nonnull instancetype) initWithMetalKitView:(nonnull MTKView *)view {
     self = [super init];
-    last_time = CACurrentMediaTime(); 
+    g_last_time = CACurrentMediaTime(); 
     return self;   
 }
 
 - (void)drawInMTKView:(nonnull MTKView *)view {
     CFAbsoluteTime current_time = CACurrentMediaTime();
-    f64 delta_time = current_time - last_time;
-    last_time = current_time;
+    f64 delta_time = current_time - g_last_time;
+    g_last_time = current_time;
     
     game_update(&g_memory, &g_input, delta_time);
     game_render(&g_memory);
@@ -912,7 +912,6 @@ void spu_sound_restart(Spu spu, Sound sound) {
         CGPoint location = [uitouch locationInView:self.view];
         Touch touch = {0};
         touch.location = g_input.count;
-        //touch.event = TOUCH_EVENT_DOWN;
         touch.pos.x = (i32)(((f32)location.x / w) * r2_width(g_device_rect));
         touch.pos.y = (i32)(((f32)location.y / h) * r2_height(g_device_rect));
         touch.uid = (u64)uitouch.hash;
@@ -940,7 +939,6 @@ void spu_sound_restart(Spu spu, Sound sound) {
             UITouch *uitouch = touches.allObjects[i];
             CGPoint location = [uitouch locationInView:self.view];
             Touch *touch = g_input.touches + index_to_update;
-            //touch->event = TOUCH_EVENT_MOVE;
             touch->pos.x = (i32)(((f32)location.x / w) * r2_width(g_device_rect));
             touch->pos.y = (i32)(((f32)location.y / h) * r2_height(g_device_rect));
         }
