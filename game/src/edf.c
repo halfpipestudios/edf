@@ -363,11 +363,16 @@ void game_render(Memory *memory) {
     // UI draw
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
     ui_render(gs->gpu, &gs->ui);
-
-    static char fps_text[1024];
-    snprintf(fps_text, 1024, "FPS: %d", gs->FPS);
-    font_draw_text(gs->gpu, gs->times, fps_text, -w*0.5f + 150, h*0.5f-150, v4(1, 1, 1, 1));
-
+    
+    {
+        static char fps_text[1024];
+        snprintf(fps_text, 1024, "FPS: %d", gs->FPS);
+        R2 dim = font_size_text(gs->times, fps_text);
+        f32 pos_x = -VIRTUAL_RES_X*0.5f;
+        f32 pos_y = VIRTUAL_RES_Y*0.5f - r2_height(dim);
+        font_draw_text(gs->gpu, gs->times, fps_text, pos_x, pos_y, v4(1, 1, 1, 1));
+    }
+    
     if(gs->paused) {
         char *text = "Pause";
         R2 dim = font_size_text(gs->times, text);
