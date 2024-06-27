@@ -178,10 +178,16 @@ PARTICLE_SYSTEM_UPDATE(confeti_ps_update) {
         particle->vel.x = dir.x * 180.0f + gs->hero->vel.x;
         particle->vel.y = dir.y * 180.0f + gs->hero->vel.y;
         particle->scale = 15.0f;
+        particle->save_lifetime = (f32)rand_range(25, 400) / 100.0f;
+        particle->lifetime = (f32)rand_range(25, 400) / 100.0f;
         particle->tex = gs->confeti_texture[confeti_tint_index];
         particle->tint = hex_to_v4(confeti_tint[confeti_tint_index]);
         confeti_tint_index = (confeti_tint_index + 1) % array_len(confeti_tint);
     }
+    if((particle->lifetime / particle->save_lifetime) < 0.15) {
+        particle->tint.w = particle->lifetime;
+    }
+    
     particle->angle += 2.0f*dt;
     particle->pos.x += particle->vel.x * dt;
     particle->pos.y += particle->vel.y * dt;
@@ -287,7 +293,7 @@ void game_init(Memory *memory) {
                                     ship_ps_update);
     */
     gs->ps = particle_system_create(&gs->game_arena,
-                                    100, 10,
+                                    1000, 10,
                                     0.05f, v2(0, 0), 0,
                                     confeti_ps_update);
     
