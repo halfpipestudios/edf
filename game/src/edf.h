@@ -42,6 +42,7 @@ typedef struct GameState {
     struct ParticleSystem *fire;
     struct ParticleSystem *confeti;
     struct ParticleSystem *neon;
+    struct ParticleSystem *smoke;
     struct ParticleSystem *ps;
  
     f32 time_per_frame;

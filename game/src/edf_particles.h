@@ -25,12 +25,11 @@ typedef struct Particle {
     f32 lifetime;
     f32 save_lifetime;
     V4 tint;
+    b32 init;
 } Particle;
 
 #define PARTICLE_SYSTEM_UPDATE(name) void name(struct GameState *gs, Particle *particle, f32 dt)
 typedef PARTICLE_SYSTEM_UPDATE(ParticleSystemUpdateFunc);
-
-
 
 typedef struct ParticleSystem {
     i32 particle_count;

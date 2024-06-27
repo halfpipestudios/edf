@@ -135,7 +135,9 @@ PARTICLE_SYSTEM_UPDATE(ship_ps_update) {
         0xfffff796
     };
 
-    if(v2_len(particle->vel) == 0.0f) {
+    if(!particle->init) {
+        particle->init = true;
+
         f32 rand = ((f32)rand_range(-20, 20)/ 180.0f) * PI;
         f32 offset = (PI*0.5f) + rand;
         V2 dir;
@@ -167,7 +169,9 @@ PARTICLE_SYSTEM_UPDATE(neon_ps_update) {
         0xFFF3FF90
     };
 
-    if(v2_len(particle->vel) == 0.0f) {
+    if(!particle->init) {
+        particle->init = true;
+
         V2 dir;
         dir.x = -cosf(gs->hero->angle + (PI*0.5f));
         dir.y = -sinf(gs->hero->angle + (PI*0.5f));
@@ -196,6 +200,45 @@ PARTICLE_SYSTEM_UPDATE(neon_ps_update) {
     particle->pos.y += particle->vel.y * dt;
 }
 
+PARTICLE_SYSTEM_UPDATE(smoke_ps_update) {
+
+    static u32 tint_index = 0;
+    static u32 tint[] = {
+        0x11d8d8d8,
+        0x11b1b1b1,
+        0x117e7e7e,
+        0x11474747,
+        0x111a1a1a
+    };
+
+    if(!particle->init) {
+        particle->init = true;
+    
+        V2 dir;
+        dir.x = -cosf(gs->hero->angle + (PI*0.5f));
+        dir.y = -sinf(gs->hero->angle + (PI*0.5f));
+
+        V2 perp = v2(-dir.y, dir.x);
+        f32 x_offet = rand_range(gs->hero->scale.x*-0.15f, gs->hero->scale.x*0.15f);
+        particle->pos.x += perp.x * x_offet;
+        particle->pos.y += perp.y * x_offet + rand_range(0, 20);
+
+        particle->tint = hex_to_v4(tint[tint_index]);
+        tint_index = (tint_index + 1) % array_len(tint);
+        
+        particle->scale = 30;
+        particle->vel = v2(0, 0);
+        particle->lifetime = 3;
+
+        particle->angle = (f32)rand_range(0, 360) / 180.0f * PI;
+    }
+
+    
+
+    if((particle->lifetime / particle->save_lifetime) < 0.30) {
+        particle->tint.w = particle->lifetime;
+    }
+}
 
 PARTICLE_SYSTEM_UPDATE(confeti_ps_update) {
     static u32 confeti_tint_index = 0;
@@ -207,7 +250,8 @@ PARTICLE_SYSTEM_UPDATE(confeti_ps_update) {
         0xfffdff6a
     };
 
-    if(v2_len(particle->vel) == 0.0f) {
+    if(!particle->init) {
+        particle->init = true;
         
         f32 rand = ((f32)rand_range(-20, 20)/ 180.0f) * PI;
         f32 offset = (PI*0.5f) + rand;
@@ -308,6 +352,9 @@ void game_init(Memory *memory) {
     gs->neon    = particle_system_create(&gs->game_arena, 200, 20,
                                          0.05f, v2(0, 0), gs->orbe_texture,
                                          neon_ps_update, GPU_BLEND_STATE_ADDITIVE);
+    gs->smoke    = particle_system_create(&gs->game_arena, 500, 10,
+                                         0.05f, v2(0, 0), gs->star_texture,
+                                         smoke_ps_update, GPU_BLEND_STATE_ALPHA);
 
     u32 ps_rand = rand_range(0, 1);
     if(ps_rand == 1) {
@@ -371,7 +418,8 @@ void game_update(Memory *memory, Input *input, f32 dt) {
         ParticleSystem *particles[] = {
             gs->fire,
             gs->confeti,
-            gs->neon
+            gs->neon,
+            gs->smoke
         };
 
         static u32 next = 0;

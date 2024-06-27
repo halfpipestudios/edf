@@ -48,6 +48,7 @@ void particle_system_update(struct GameState* gs, ParticleSystem *ps, f32 dt) {
                 particle->tex = ps->tex;
                 particle->angle = 0;
                 particle->tint = v4(1, 1, 1, 1);
+                particle->init = false;
                 ps->current_particle = (ps->current_particle + 1) % ps->particle_count;
             }
             ps->current_spawn_time = ps->spawn_time;
