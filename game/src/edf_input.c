@@ -331,10 +331,8 @@ void ui_end(Ui *ui, Multitouch *mt, Input *input) {
 }
 
 void ui_render(Gpu gpu, Ui *ui) {
-
     Widget *widget = ui->widgets;
     while(widget) {
-
         switch (widget->type) {
             case WIDGET_TYPE_BUTTON: {
                 Button *button = &widget->button;
@@ -345,7 +343,6 @@ void ui_render(Gpu gpu, Ui *ui) {
 
             } break;
             case WIDGET_TYPE_JOYSTICK: {
-
                 Joystick *joystick = &widget->joystick;
 
                 gpu_draw_quad_texture(gpu, joystick->pos.x, joystick->pos.y, 
@@ -358,7 +355,6 @@ void ui_render(Gpu gpu, Ui *ui) {
 
             } break;
         }
-
 #if 0
         V2 center = r2_center(widget->widget_rect);
         gpu_draw_quad_color(gpu, center.x, center.y,

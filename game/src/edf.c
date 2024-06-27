@@ -234,7 +234,6 @@ void game_init(Memory *memory) {
     gs->confeti_bitmap[4] = bitmap_load(&gs->game_arena, "confeti5.png");
     gs->pause_bitmap      = bitmap_load(&gs->game_arena, "pause.png");
 
-
     gs->ship_texture[0]    = gpu_texture_load(gs->gpu, &gs->ship_bitmap[0]);
     gs->ship_texture[1]    = gpu_texture_load(gs->gpu, &gs->ship_bitmap[1]);
     gs->move_outer_texture = gpu_texture_load(gs->gpu, &gs->move_outer_bitmap);
