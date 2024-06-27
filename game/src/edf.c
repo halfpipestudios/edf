@@ -181,8 +181,8 @@ PARTICLE_SYSTEM_UPDATE(confeti_ps_update) {
         particle->pos.x += perp.x * x_offet;
         particle->pos.y += perp.y * x_offet;
         
-        particle->vel.x = dir.x * (f32)rand_range(100, 300) + gs->hero->vel.x;
-        particle->vel.y = dir.y * (f32)rand_range(100, 300) + gs->hero->vel.y;
+        particle->vel.x = dir.x * (f32)rand_range(300, 600) + gs->hero->vel.x;
+        particle->vel.y = dir.y * (f32)rand_range(300, 600) + gs->hero->vel.y;
         particle->scale = 20.0f;
         particle->save_lifetime = (f32)rand_range(25, 400) / 100.0f;
         particle->lifetime = (f32)rand_range(25, 400) / 100.0f;
@@ -194,7 +194,7 @@ PARTICLE_SYSTEM_UPDATE(confeti_ps_update) {
     if((particle->lifetime / particle->save_lifetime) < 0.15) {
         particle->tint.w = particle->lifetime;
     }
-    
+
     particle->angle += particle->angular_vel * dt;
     particle->pos.x += particle->vel.x * dt;
     particle->pos.y += particle->vel.y * dt;
