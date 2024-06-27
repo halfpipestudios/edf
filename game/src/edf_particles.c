@@ -93,6 +93,17 @@ void particle_system_stop(ParticleSystem *ps) {
 }
 
 
+void particle_system_reset(ParticleSystem *ps) {
+    ps->current_particle = 0;
+    ps->current_spawn_time = 0;
+    ps->pause =  true;
+    for(i32 i = 0; i < ps->particle_count; i++) {
+        Particle *particle = ps->particles + i;
+        particles->lifetime = 0.0f;
+    }
+}
+
+
 void particle_system_set_position(ParticleSystem *ps, V2 pos) {
     ps->pos = pos;
 }

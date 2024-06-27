@@ -55,6 +55,7 @@ void particle_system_update(struct GameState *gs, ParticleSystem *ps, f32 dt);
 void particle_system_render(Gpu gpu, ParticleSystem *ps);
 void particle_system_start(ParticleSystem *ps);
 void particle_system_stop(ParticleSystem *ps);
+void particle_system_reset(ParticleSystem *ps);
 void particle_system_set_position(ParticleSystem *ps, V2 pos);
 
 #endif /* EDF_PARTICLES_H */
