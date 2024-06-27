@@ -34,6 +34,14 @@ bool point_in_circle(V2 point, V2 c, f32 r) {
 //             Multitouch system
 // ----------------------------------------------
 
+void mt_touch_unregister(Multitouch *mt, i32 *touch) {
+    i32 index = *touch;
+    if(mt->registry[index]) {
+        *(mt->registry[index]) = -1;
+    }
+    mt->registry[index] = 0;
+}
+
 void mt_begin(Multitouch *mt, Input *input) {
     mt->input = input;
     for(u32 i = 0; i < mt->last_input.count; ++i) {
@@ -47,10 +55,7 @@ void mt_begin(Multitouch *mt, Input *input) {
         }
 
         if(!found) {
-            if(mt->registry[location_to_found]) {
-                *(mt->registry[location_to_found]) = -1;
-            }
-            mt->registry[location_to_found] = 0;
+            mt_touch_unregister(mt, &location_to_found);
         }
     }
 }
@@ -145,6 +150,12 @@ V2 mt_touch_pos(Multitouch *mt, int touch) {
     return input_to_game_coords(t->pos);
 }
 
+V2 mt_touch_last_pos(Multitouch *mt, int touch) {
+    assert(touch != -1);
+    Touch *t = mt->last_input.touches + touch;
+    return input_to_game_coords(t->pos);
+}
+
 b32 mt_touch_down(Multitouch *mt, int touch) {
     return touch != -1;
 }
@@ -167,6 +178,7 @@ Widget *ui_widget_alloc(Ui *ui, struct Arena *arena) {
     assert(result);
 
     result->touch = -1;
+    result->last_touch = -1;
     
     if(!ui->widgets) {
         ui->widgets = result;
@@ -196,16 +208,14 @@ void ui_widget_free(Ui *ui, Widget *widget) {
     ui->first_free = widget;
 }
 
-b32 ui_widget_is_active_(Multitouch *mt, Widget *widget) {
-    return mt_touch_down(mt, widget->touch);
-}
-
 Joystick *ui_joystick_alloc(Ui *ui, struct Arena *arena, V2 pos, R2 rect, 
                             f32 inner_radii, f32 outer_raddi, Texture inner_texture, Texture outer_texture) {
     Widget *result = ui_widget_alloc(ui, arena);
     result->type = WIDGET_TYPE_JOYSTICK;
     result->pos = pos;
     
+    Joystick *joystick = &result->joystick;
+
     result->joystick.max_distance = outer_raddi - inner_radii*0.5f;;
     result->joystick.outer_radii = outer_raddi;
     result->joystick.inner_radii = inner_radii;
@@ -215,6 +225,11 @@ Joystick *ui_joystick_alloc(Ui *ui, struct Arena *arena, V2 pos, R2 rect,
     result->joystick.outer_texture = outer_texture;
     result->joystick.rect = rect;
 
+    i32 pos_x = (i32)(pos.x - outer_raddi);
+    i32 pos_y = (i32)(pos.y - outer_raddi);
+
+    joystick->widget_rect = r2_from_wh(pos_x, pos_y, (i32)outer_raddi*2, (i32)outer_raddi*2);
+
     return &result->joystick;
 }
 
@@ -222,17 +237,40 @@ Button *ui_button_alloc(Ui *ui, struct Arena *arena, V2 pos, float radii, Textur
     Widget *result = ui_widget_alloc(ui, arena);
     result->type = WIDGET_TYPE_BUTTON;
     result->pos = pos;
-    
-    result->button.radii = radii;
-    result->button.texture = texture;
-    
-    return &result->button;
+
+    Button *button = &result->button;
+    button->radii = radii;
+    button->texture = texture;
+
+    i32 pos_x = (i32)(pos.x - radii);
+    i32 pos_y = (i32)(pos.y - radii);
+    button->widget_rect = r2_from_wh(pos_x, pos_y, (i32)button->radii*2, (i32)button->radii*2);
+
+    return button;
 }
 
-void ui_update(Ui *ui, Multitouch *mt, f32 dt) {
+b32 ui_clean_position(Ui *ui, V2 pos, Widget *me) {
+
     Widget *widget = ui->widgets;
     while(widget) {
+        if(me != widget) {
+            if(r2_point_overlaps(widget->widget_rect, pos.x, pos.y)) {
+                return false;
+            }
+        }
+        widget = widget->next;
+    }
 
+    return true;
+
+}
+
+void ui_begin(Ui *ui, Multitouch *mt, Input *input, f32 dt) {
+
+    mt_begin(mt, input);
+
+    Widget *widget = ui->widgets;
+    while(widget) {
         switch (widget->type) {
             case WIDGET_TYPE_BUTTON: {
                 Button *button = &widget->button;
@@ -242,15 +280,19 @@ void ui_update(Ui *ui, Multitouch *mt, f32 dt) {
                 } else {
                     button->tint = v4(1, 1, 1, 1);
                 }
-
             } break;
             case WIDGET_TYPE_JOYSTICK: {
                 
                 Joystick *joystick = &widget->joystick;
 
                 if(mt_touch_in_rect(mt, &joystick->touch, joystick->rect)) {
-                    joystick->pos = mt_touch_pos(mt, joystick->touch);
-                    joystick->c_pos = joystick->pos;
+                    V2 pos = mt_touch_pos(mt, joystick->touch);
+                    if(ui_clean_position(ui, pos, widget)) {
+                        joystick->pos = mt_touch_pos(mt, joystick->touch);
+                        joystick->c_pos = joystick->pos;
+                    } else {
+                        mt_touch_unregister(mt, &joystick->touch);
+                    }
                 } 
                 
                 if(mt_touch_down(mt, joystick->touch)) {
@@ -273,13 +315,24 @@ void ui_update(Ui *ui, Multitouch *mt, f32 dt) {
 
         widget = widget->next;
     }
+
+
 }
 
-void ui_render(Gpu gpu, Ui *ui) {
+void ui_end(Ui *ui, Multitouch *mt, Input *input) {
 
     Widget *widget = ui->widgets;
     while(widget) {
+        widget->last_touch = widget->touch;
+        widget = widget->next;
+    }
 
+    mt_end(mt, input);
+}
+
+void ui_render(Gpu gpu, Ui *ui) {
+    Widget *widget = ui->widgets;
+    while(widget) {
         switch (widget->type) {
             case WIDGET_TYPE_BUTTON: {
                 Button *button = &widget->button;
@@ -290,7 +343,6 @@ void ui_render(Gpu gpu, Ui *ui) {
 
             } break;
             case WIDGET_TYPE_JOYSTICK: {
-
                 Joystick *joystick = &widget->joystick;
 
                 gpu_draw_quad_texture(gpu, joystick->pos.x, joystick->pos.y, 
@@ -303,8 +355,40 @@ void ui_render(Gpu gpu, Ui *ui) {
 
             } break;
         }
-
+#if 0
+        V2 center = r2_center(widget->widget_rect);
+        gpu_draw_quad_color(gpu, center.x, center.y,
+                            (f32)r2_width(widget->widget_rect), (f32)r2_height(widget->widget_rect),
+                            0, v4(1, 0, 0, 0.2f));
+#endif
         widget = widget->next;
     }
 
+}
+
+
+b32 ui_widget_is_active_(Multitouch *mt, Widget *widget) {
+    return mt_touch_down(mt, widget->touch);
+}
+
+b32 ui_widget_just_press_(Multitouch *mt, Widget *widget) {
+    b32 is_down = mt_touch_down(mt, widget->touch);
+    b32 was_down = mt_touch_down(mt, widget->last_touch);
+    return is_down && !was_down;
+}
+
+b32 ui_widget_just_up_(Multitouch *mt, Widget *widget) {
+    b32 is_down = mt_touch_down(mt, widget->touch);
+    b32 was_down = mt_touch_down(mt, widget->last_touch);
+    return !is_down && was_down;
+}
+
+b32 ui_button_just_up(Multitouch *mt, Button *button) {
+    if(ui_widget_just_up(mt, button)) {
+        V2 pos = mt_touch_last_pos(mt, button->last_touch);
+        if(r2_point_overlaps(button->widget_rect, pos.x, pos.y)) {
+            return true;
+        }
+    }
+    return false;
 }

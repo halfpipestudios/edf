@@ -262,6 +262,13 @@ static inline i32 r2_height(R2 a) {
     return (a.max.y - a.min.y) + 1;
 }
 
+static inline V2 r2_center(R2 a) {
+    V2 center;
+    center.x = a.min.x + r2_width(a)*0.5f;
+    center.y = a.min.y + r2_height(a)*0.5f;
+    return center;
+}
+
 static inline R2 r2_intersection(R2 a, R2 b) {
     R2 result;
     result.min.x = max(a.min.x, b.min.x);

@@ -167,8 +167,7 @@ PARTICLE_SYSTEM_UPDATE(confeti_ps_update) {
         0xffff718d,
         0xfffdff6a
     };
-    
-    
+
     if(v2_len(particle->vel) == 0.0f) {
         
         f32 rand = ((f32)rand_range(-20, 20)/ 180.0f) * PI;
@@ -190,13 +189,13 @@ PARTICLE_SYSTEM_UPDATE(confeti_ps_update) {
         particle->tex = gs->confeti_texture[confeti_tint_index];
         particle->tint = hex_to_v4(confeti_tint[confeti_tint_index]);
         confeti_tint_index = (confeti_tint_index + 1) % array_len(confeti_tint);
-        particle->angular_vel = (f32)rand_range(-20, 20) * dt;
+        particle->angular_vel = (f32)rand_range(-20, 20);
     }
     if((particle->lifetime / particle->save_lifetime) < 0.15) {
         particle->tint.w = particle->lifetime;
     }
     
-    particle->angle += particle->angular_vel;
+    particle->angle += particle->angular_vel * dt;
     particle->pos.x += particle->vel.x * dt;
     particle->pos.y += particle->vel.y * dt;
 }
@@ -233,7 +232,7 @@ void game_init(Memory *memory) {
     gs->confeti_bitmap[2] = bitmap_load(&gs->game_arena, "confeti3.png");
     gs->confeti_bitmap[3] = bitmap_load(&gs->game_arena, "confeti4.png");
     gs->confeti_bitmap[4] = bitmap_load(&gs->game_arena, "confeti5.png");
-
+    gs->pause_bitmap      = bitmap_load(&gs->game_arena, "pause.png");
 
     gs->ship_texture[0]    = gpu_texture_load(gs->gpu, &gs->ship_bitmap[0]);
     gs->ship_texture[1]    = gpu_texture_load(gs->gpu, &gs->ship_bitmap[1]);
@@ -253,7 +252,7 @@ void game_init(Memory *memory) {
     gs->confeti_texture[2] = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[2]);
     gs->confeti_texture[3] = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[3]);
     gs->confeti_texture[4] = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[4]);
-
+    gs->pause_texture      = gpu_texture_load(gs->gpu, &gs->pause_bitmap);
 
     gs->em = entity_manager_load(&gs->game_arena, 100);
 
@@ -285,45 +284,47 @@ void game_init(Memory *memory) {
     i32 hw = VIRTUAL_RES_X * 0.5f;
     i32 hh = VIRTUAL_RES_Y * 0.5f;
     R2 window_rect;
-    
     window_rect.min.x = -hw;
     window_rect.max.x = 0;
     window_rect.min.y = -hh;
     window_rect.max.y = hh;
     gs->joystick = ui_joystick_alloc(&gs->ui, &gs->game_arena, v2(-740, -250), window_rect, 
                                     140, 220, gs->move_inner_texture, gs->move_outer_texture);
-    gs->button = ui_button_alloc(&gs->ui, &gs->game_arena, v2(740, -250), 135, gs->boost_texture);
-    
-    f32 radio = 80;
-    R2 rect = { {740-radio, 250-radio}, {740+radio, 250+radio} };
-    gs->joystick2 = ui_joystick_alloc(&gs->ui, &gs->game_arena, v2(740, 250), rect, 
-                            radio, radio*1.6f, gs->move_inner_texture, gs->move_outer_texture);
 
-    gs->button2 = ui_button_alloc(&gs->ui, &gs->game_arena, v2(340, -250), 100, gs->deathstar_texture);
+    gs->boost_button = ui_button_alloc(&gs->ui, &gs->game_arena, v2(740, -250), 135, gs->boost_texture);
+
+    f32 paddin_top = 20;
+    f32 pause_buttom_dim = 100;
+    V2 pause_button_pos = v2(0, VIRTUAL_RES_Y*0.5f-pause_buttom_dim*0.5f-paddin_top);
+    gs->pause_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, gs->pause_texture);
 
     stars_init(gs);
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {
-
-    f32 fake_dt = 1.0f/60.0f;
-
+    
     GameState *gs = game_state(memory);
 
-    mt_begin(&gs->mt, input);
-    ui_update(&gs->ui, &gs->mt, dt);
-    input_system_update(gs, gs->em, fake_dt);
-    mt_end(&gs->mt, input);
+    ui_begin(&gs->ui, &gs->mt, input, dt);
 
-    physics_system_update(gs->em, fake_dt);
-    stars_update(gs, fake_dt);
+    if(ui_button_just_up(&gs->mt, gs->pause_button)) {
+        gs->paused = !gs->paused;
+    }
 
-    V2 dir;
-    dir.x = cosf(gs->hero->angle + PI*0.5f);
-    dir.y = sinf(gs->hero->angle + PI*0.5f);
-    particle_system_set_position(gs->ps, v2_sub(v2(gs->hero->pos.x, gs->hero->pos.y), v2_scale(dir, gs->hero->scale.y*0.5f)));
-    
-    particle_system_update(gs, gs->ps, fake_dt);
+    if(!gs->paused) {
+        input_system_update(gs, gs->em, dt);
+        physics_system_update(gs->em, dt);
+        stars_update(gs, dt);
+
+        V2 dir;
+        dir.x = cosf(gs->hero->angle + PI*0.5f);
+        dir.y = sinf(gs->hero->angle + PI*0.5f);
+        particle_system_set_position(gs->ps, v2_sub(v2(gs->hero->pos.x, gs->hero->pos.y), v2_scale(dir, gs->hero->scale.y*0.5f)));
+        
+        particle_system_update(gs, gs->ps, dt);
+    }
+
+   ui_end(&gs->ui, &gs->mt, input);
 
     // FPS Counter
     gs->fps_counter += 1;
@@ -362,11 +363,23 @@ void game_render(Memory *memory) {
     // UI draw
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
     ui_render(gs->gpu, &gs->ui);
-
-    static char fps_text[1024];
-    snprintf(fps_text, 1024, "FPS: %d", gs->FPS);
-    font_draw_text(gs->gpu, gs->times, fps_text, -w*0.5f + 150, h*0.5f-150, v4(1, 1, 1, 1));
-
+    
+    {
+        static char fps_text[1024];
+        snprintf(fps_text, 1024, "FPS: %d", gs->FPS);
+        R2 dim = font_size_text(gs->times, fps_text);
+        f32 pos_x = -VIRTUAL_RES_X*0.5f;
+        f32 pos_y = VIRTUAL_RES_Y*0.5f - r2_height(dim);
+        font_draw_text(gs->gpu, gs->times, fps_text, pos_x, pos_y, v4(1, 1, 1, 1));
+    }
+    
+    if(gs->paused) {
+        char *text = "Pause";
+        R2 dim = font_size_text(gs->times, text);
+        f32 pos_x = 0 - r2_width(dim)*0.5f;
+        f32 pos_y = 0 - r2_height(dim)*0.5f + VIRTUAL_RES_Y*0.25f;
+        font_draw_text(gs->gpu, gs->times, text, pos_x, pos_y, v4(1, 1, 1, 1));
+    }
 
     gpu_frame_end(gs->gpu);
 

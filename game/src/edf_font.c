@@ -65,9 +65,12 @@ void font_unload(Gpu gpu, Font *font) {
     unused(font);
 }
 
-R2 font_size_text(Font *font, const char *text, f32 x, f32 y) {
+R2 font_size_text(Font *font, const char *text) {
 
     R2 result = r2_set_invalid();
+
+    f32 x = 0;
+    f32 y = 0;
 
     f32 current_x = (f32)x;
     sz len        = strlen(text);

@@ -38,7 +38,7 @@ typedef struct Font {
 Font *font_load(Gpu gpu, struct Arena *arena, char *path, float size);
 void font_unload(Gpu gpu, Font *font);
 
-R2 font_size_text(Font *font, const char *text, f32 x, f32 y);
+R2 font_size_text(Font *font, const char *text);
 void font_draw_text(Gpu gpu, Font *font, const char *text, f32 x, f32 y, V4 color);
 
 #endif // EDF_EDF_FONT_H
