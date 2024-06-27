@@ -157,6 +157,36 @@ PARTICLE_SYSTEM_UPDATE(ship_ps_update) {
     particle->pos.y += particle->vel.y * dt;
 }
 
+
+PARTICLE_SYSTEM_UPDATE(confeti_ps_update) {
+    static u32 confeti_tint_index = 0;
+    static u32 confeti_tint[] = {
+        0xffa864fd,
+        0xff29cdff,
+        0xff78ff44,
+        0xffff718d,
+        0xfffdff6a
+    };
+
+    if(v2_len(particle->vel) == 0.0f) {
+        
+        f32 rand = ((f32)rand_range(-20, 20)/ 180.0f) * PI;
+        f32 offset = (PI*0.5f) + rand;
+        V2 dir;
+        dir.x = -cosf(gs->hero->angle + offset);
+        dir.y = -sinf(gs->hero->angle + offset);
+        particle->vel.x = dir.x * 180.0f + gs->hero->vel.x;
+        particle->vel.y = dir.y * 180.0f + gs->hero->vel.y;
+        
+        particle->tex = gs->confeti_texture[confeti_tint_index];
+        particle->tint = hex_to_v4(confeti_tint[confeti_tint_index]);
+        confeti_tint_index = (confeti_tint_index + 1) % array_len(confeti_tint);
+    }
+    particle->angle += 2.0f*dt;
+    particle->pos.x += particle->vel.x * dt;
+    particle->pos.y += particle->vel.y * dt;
+}
+
 void game_init(Memory *memory) {
     game_state_init(memory);
     GameState *gs = game_state(memory);
@@ -184,6 +214,12 @@ void game_init(Memory *memory) {
     gs->meteorito_bitmap   = bitmap_load(&gs->game_arena, "Meteorito.png");
     gs->deathstar_bitmap   = bitmap_load(&gs->game_arena, "deathstar.png");
     gs->orbe_bitmap   = bitmap_load(&gs->game_arena, "orbe.png");
+    gs->confeti_bitmap[0] = bitmap_load(&gs->game_arena, "confeti1.png");
+    gs->confeti_bitmap[1] = bitmap_load(&gs->game_arena, "confeti2.png");
+    gs->confeti_bitmap[2] = bitmap_load(&gs->game_arena, "confeti3.png");
+    gs->confeti_bitmap[3] = bitmap_load(&gs->game_arena, "confeti4.png");
+    gs->confeti_bitmap[4] = bitmap_load(&gs->game_arena, "confeti5.png");
+
 
     gs->ship_texture[0]    = gpu_texture_load(gs->gpu, &gs->ship_bitmap[0]);
     gs->ship_texture[1]    = gpu_texture_load(gs->gpu, &gs->ship_bitmap[1]);
@@ -197,7 +233,13 @@ void game_init(Memory *memory) {
     gs->satelite_texture   = gpu_texture_load(gs->gpu, &gs->satelite_bitmap);
     gs->meteorito_texture  = gpu_texture_load(gs->gpu, &gs->meteorito_bitmap);
     gs->deathstar_texture  = gpu_texture_load(gs->gpu, &gs->deathstar_bitmap);
-    gs->orbe_texture = gpu_texture_load(gs->gpu, &gs->orbe_bitmap);
+    gs->orbe_texture       = gpu_texture_load(gs->gpu, &gs->orbe_bitmap);
+    gs->confeti_texture[0] = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[0]);
+    gs->confeti_texture[1] = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[1]);
+    gs->confeti_texture[2] = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[2]);
+    gs->confeti_texture[3] = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[3]);
+    gs->confeti_texture[4] = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[4]);
+
 
     gs->em = entity_manager_load(&gs->game_arena, 100);
 
@@ -230,12 +272,25 @@ void game_init(Memory *memory) {
     gs->button2 = ui_button_alloc(&gs->ui, &gs->game_arena, v2(340, -250), 100, gs->deathstar_texture);
 
     stars_init(gs);
-
+    /*
+    if(ship_rand_texture) {
+        
+        
+    }
+    else {
+        
+        
+    }
     gs->ps = particle_system_create(&gs->game_arena, 
                                     100, 10, 
                                     0.05f, v2(0, 0), gs->orbe_texture,
                                     ship_ps_update);
-    particle_system_start(gs->ps);
+    */
+    gs->ps = particle_system_create(&gs->game_arena,
+                                    100, 10,
+                                    0.05f, v2(0, 0), 0,
+                                    confeti_ps_update);
+    
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {
