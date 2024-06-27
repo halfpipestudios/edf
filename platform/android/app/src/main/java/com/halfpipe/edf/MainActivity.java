@@ -47,6 +47,17 @@ public class MainActivity extends Activity {
                 | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        gameView.getRenderer().onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        gameView.getRenderer().onResume();
+    }
 }
 
 class Touch {
@@ -96,6 +107,10 @@ class GameView extends GLSurfaceView {
         setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
 
 
+    }
+
+    public GameRenderer getRenderer() {
+        return this.renderer;
     }
 
     private void printInput(GameInput input) {
@@ -177,6 +192,13 @@ class GameRenderer implements GLSurfaceView.Renderer {
     public GameRenderer(AssetManager assetManager, GameInput input) {
         this.assetManager = assetManager;
         this.input = input;
+    }
+
+    public void onPause() {
+    }
+
+    public void onResume() {
+        lastTime = System.nanoTime();
     }
 
     @Override

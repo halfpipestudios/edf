@@ -19,7 +19,7 @@ SYSTEM_UPDATE(input_system) {
             entity->angle = atan2f(dir.y, dir.x) + (PI / 2.0f);
         }
     }
-    if(ui_widget_is_active(&gs->mt, gs->button)) {
+    if(ui_widget_is_active(&gs->mt, gs->boost_button)) {
         V2 dir = {0};
         dir.x = cosf(entity->angle + (PI / 2.0f));
         dir.y = sinf(entity->angle + (PI / 2.0f));

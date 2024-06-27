@@ -39,11 +39,16 @@ typedef struct Multitouch {
 void mt_begin(Multitouch *mt, Input *input);
 void mt_end(Multitouch *mt, Input *input);
 
+void mt_touch_unregister(Multitouch *mt, i32 *touch);
+
 b32 mt_touch_in_circle(Multitouch *mt, i32 *touch, V2 pos, float radii);
 b32 mt_touch_just_in_circle(Multitouch *mt, i32 *touch, V2 pos, float radii);
 b32 mt_touch_in_rect(Multitouch *mt, i32 *touch, R2 rect);
 b32 mt_touch_just_in_rect(Multitouch *mt, i32 *touch, R2 rect);
+
 V2 mt_touch_pos(Multitouch *mt, int touch);
+V2 mt_touch_last_pos(Multitouch *mt, int touch);
+
 b32 mt_touch_down(Multitouch *mt, int touch);
 
 // ----------------------------------------------
@@ -59,7 +64,9 @@ typedef enum WidgetType {
 struct {                \
     WidgetType type;    \
     V2 pos;             \
+    R2 widget_rect;             \
     i32 touch;          \
+    i32 last_touch;     \
     union Widget *next; \
     union Widget *prev; \
 };                      
@@ -98,17 +105,29 @@ typedef struct Ui {
     Widget *first_free;
 } Ui;
 
-void ui_update(Ui *ui, Multitouch *mt, f32 dt);
+void ui_begin(Ui *ui, Multitouch *mt, Input *input, f32 dt);
+void ui_end(Ui *ui, Multitouch *mt, Input *input);
+
 void ui_render(Gpu gpu, Ui *ui);
 
+b32 ui_clean_position(Ui *ui, V2 pos, Widget *me);
+
 Widget *ui_widget_alloc(Ui *ui, struct Arena *arena);
-void ui_widget_free(Ui *ui, Widget *widget);
+void ui_widget_free(Ui *ui, Widget *dirty);
 
 #define ui_widget_is_active(mt, widget) ui_widget_is_active_((mt), (Widget *)(widget))
 b32 ui_widget_is_active_(Multitouch *mt, Widget *widget);
+#define ui_widget_just_press(mt, widget) ui_widget_just_press_((mt), (Widget *)(widget))
+b32 ui_widget_just_press_(Multitouch *mt, Widget *widget);
+#define ui_widget_just_up(mt, widget) ui_widget_just_up_((mt), (Widget *)(widget))
+b32 ui_widget_just_up_(Multitouch *mt, Widget *widget);
+
+Button *ui_button_alloc(Ui *ui, struct Arena *arena, V2 pos, float radii, Texture texture);
+b32 ui_button_just_up(Multitouch *mt, Button *button);
 
 Joystick *ui_joystick_alloc(Ui *ui, struct Arena *arena, V2 pos, R2 rect, 
                             f32 inner_radii, f32 outer_raddi, Texture inner_texture, Texture outer_texture);
-Button *ui_button_alloc(Ui *ui, struct Arena *arena, V2 pos, float radii, Texture texture);
+
+
 
 #endif //EDF_EDF_INPUT_H

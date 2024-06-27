@@ -19,7 +19,7 @@ struct ParticleSystem;
 #define MAX_GALAXY 6
 
 typedef struct GameState {
-    
+
     Gpu gpu;
     Spu spu;
     Multitouch mt;
@@ -29,9 +29,10 @@ typedef struct GameState {
     Arena game_arena;
 
     Joystick *joystick;
-    Joystick *joystick2;
-    Button *button;
-    Button *button2;
+    Button *boost_button;
+    Button *pause_button;
+
+    b32 paused;
 
     struct Entity *hero;
     struct EntityManager *em;
@@ -59,6 +60,7 @@ typedef struct GameState {
     Bitmap deathstar_bitmap;
     Bitmap orbe_bitmap;
     Bitmap confeti_bitmap[5];
+    Bitmap pause_bitmap;
 
     Texture ship_texture[2];
     Texture move_outer_texture;
@@ -73,6 +75,7 @@ typedef struct GameState {
     Texture deathstar_texture;
     Texture orbe_texture;
     Texture confeti_texture[5];
+    Texture pause_texture;
 
     Sprite stars[MAX_STARS];
     Sprite galaxy[MAX_GALAXY];
