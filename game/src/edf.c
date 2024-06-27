@@ -157,6 +157,45 @@ PARTICLE_SYSTEM_UPDATE(ship_ps_update) {
     particle->pos.y += particle->vel.y * dt;
 }
 
+PARTICLE_SYSTEM_UPDATE(neon_ps_update) {
+
+    static u32 neon_tint_index = 0;
+    static u32 neon_tint[] = {
+        0xFF059212,
+        0xFF06D001,
+        0xFF9BEC00,
+        0xFFF3FF90
+    };
+
+    if(v2_len(particle->vel) == 0.0f) {
+        V2 dir;
+        dir.x = -cosf(gs->hero->angle + (PI*0.5f));
+        dir.y = -sinf(gs->hero->angle + (PI*0.5f));
+
+        V2 perp = v2(-dir.y, dir.x);
+        f32 x_offet = rand_range(gs->hero->scale.x*-0.15f, gs->hero->scale.x*0.15f);
+        particle->pos.x += perp.x * x_offet;
+        particle->pos.y += perp.y * x_offet;
+
+        V2 offset_point = v2_add(gs->hero->pos.xy, v2_scale(dir, 120));
+        dir = v2_normalized(v2_sub(offset_point, particle->pos));
+
+        particle->vel.x = dir.x * 300.0f + gs->hero->vel.x;
+        particle->vel.y = dir.y * 300.0f + gs->hero->vel.y;
+        particle->tint = hex_to_v4(neon_tint[neon_tint_index]);
+        neon_tint_index = (neon_tint_index + 1) % array_len(neon_tint);
+    }
+    
+    float x = particle->lifetime;
+    particle->scale =  clamp((1.0f-(2*x-1)*(2*x-1)) * 60, 5, 60);
+    
+    x = particle->lifetime/particle->save_lifetime;
+    particle->tint.w = x*x;
+    
+    particle->pos.x += particle->vel.x * dt;
+    particle->pos.y += particle->vel.y * dt;
+}
+
 
 PARTICLE_SYSTEM_UPDATE(confeti_ps_update) {
     static u32 confeti_tint_index = 0;
@@ -260,12 +299,15 @@ void game_init(Memory *memory) {
     f32 size = 32.0f * 3.0f;
     srand(time(0));
     
-    gs->fire = particle_system_create(&gs->game_arena, 100, 10,
-                                      0.05f, v2(0, 0), gs->orbe_texture,
+    gs->fire    = particle_system_create(&gs->game_arena, 100, 10,
+                                         0.05f, v2(0, 0), gs->orbe_texture,
                                       ship_ps_update, GPU_BLEND_STATE_ADDITIVE);
     gs->confeti = particle_system_create(&gs->game_arena, 1000, 10,
                                          0.05f, v2(0, 0), 0,
                                          confeti_ps_update, GPU_BLEND_STATE_ALPHA);
+    gs->neon    = particle_system_create(&gs->game_arena, 200, 20,
+                                         0.05f, v2(0, 0), gs->orbe_texture,
+                                         neon_ps_update, GPU_BLEND_STATE_ADDITIVE);
 
     u32 ps_rand = rand_range(0, 1);
     if(ps_rand == 1) {
@@ -318,23 +360,30 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     if(ui_button_just_up(&gs->mt, gs->next_ship_button)) {
         static u32 next_ship = 0;
         if(gs->hero->tex == gs->ship_texture[next_ship]) {
-            next_ship = (next_ship + 1) % array_len(gs->ship_texture);        
+            next_ship = (next_ship + 1) % array_len(gs->ship_texture);
         }
         gs->hero->tex = gs->ship_texture[next_ship];
         next_ship = (next_ship + 1) % array_len(gs->ship_texture);
     }
 
-    if(ui_button_just_up(&gs->mt, gs->next_boost_button)) {        
+    if(ui_button_just_up(&gs->mt, gs->next_boost_button)) {
+
+        ParticleSystem *particles[] = {
+            gs->fire,
+            gs->confeti,
+            gs->neon
+        };
+
+        static u32 next = 0;
+
         particle_system_stop(gs->ps);
-        if(gs->ps == gs->fire) {
-            particle_system_reset(gs->confeti);
-            particle_system_start(gs->confeti);
-            gs->ps = gs->confeti;
-        } else {
-            particle_system_reset(gs->fire);
-            particle_system_start(gs->fire);
-            gs->ps = gs->fire;
+        if(gs->ps == particles[next]) {
+            next = (next + 1) % array_len(particles);
         }
+        gs->ps = particles[next];
+        next = (next + 1) % array_len(particles);
+        particle_system_reset(gs->ps);
+        particle_system_start(gs->ps);
     }
 
     if(!gs->paused) {
@@ -383,8 +432,6 @@ void game_render(Memory *memory) {
 
     // Entities draw
     render_system_update(gs, gs->em);
-
-
 
     // UI draw
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
