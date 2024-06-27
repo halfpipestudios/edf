@@ -177,7 +177,7 @@ PARTICLE_SYSTEM_UPDATE(confeti_ps_update) {
         dir.y = -sinf(gs->hero->angle + offset);
         particle->vel.x = dir.x * 180.0f + gs->hero->vel.x;
         particle->vel.y = dir.y * 180.0f + gs->hero->vel.y;
-        
+        particle->scale = 15.0f;
         particle->tex = gs->confeti_texture[confeti_tint_index];
         particle->tint = hex_to_v4(confeti_tint[confeti_tint_index]);
         confeti_tint_index = (confeti_tint_index + 1) % array_len(confeti_tint);
@@ -339,9 +339,9 @@ void game_render(Memory *memory) {
     gpu_camera_set(gs->gpu, v3(gs->hero->pos.x, gs->hero->pos.y, 0), 0);
     stars_render(gs);
 
-    gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ADDITIVE);
+    //gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ADDITIVE);
     particle_system_render(gs->gpu, gs->ps);
-    gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ALPHA);
+    //gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ALPHA);
 
     // Entities draw
     render_system_update(gs, gs->em);
