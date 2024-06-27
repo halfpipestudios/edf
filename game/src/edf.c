@@ -226,9 +226,9 @@ PARTICLE_SYSTEM_UPDATE(smoke_ps_update) {
         particle->tint = hex_to_v4(tint[tint_index]);
         tint_index = (tint_index + 1) % array_len(tint);
         
-        particle->scale = 30;
+        particle->scale = rand_range(10, 40);
         particle->vel = v2(0, 0);
-        particle->lifetime = 3;
+        particle->lifetime = 10;
 
         particle->angle = (f32)rand_range(0, 360) / 180.0f * PI;
     }
@@ -352,7 +352,7 @@ void game_init(Memory *memory) {
     gs->neon    = particle_system_create(&gs->game_arena, 200, 20,
                                          0.05f, v2(0, 0), gs->orbe_texture,
                                          neon_ps_update, GPU_BLEND_STATE_ADDITIVE);
-    gs->smoke    = particle_system_create(&gs->game_arena, 500, 10,
+    gs->smoke    = particle_system_create(&gs->game_arena, 1000, 5,
                                          0.05f, v2(0, 0), gs->star_texture,
                                          smoke_ps_update, GPU_BLEND_STATE_ALPHA);
 
