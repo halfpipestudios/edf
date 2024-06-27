@@ -308,7 +308,7 @@ void game_init(Memory *memory) {
 void game_update(Memory *memory, Input *input, f32 dt) {
     
     GameState *gs = game_state(memory);
-    
+
     ui_begin(&gs->ui, &gs->mt, input, dt);
 
     if(ui_button_just_up(&gs->mt, gs->pause_button)) {
@@ -317,6 +317,9 @@ void game_update(Memory *memory, Input *input, f32 dt) {
 
     if(ui_button_just_up(&gs->mt, gs->next_ship_button)) {
         static u32 next_ship = 0;
+        if(gs->hero->tex == gs->ship_texture[next_ship]) {
+            next_ship = (next_ship + 1) % array_len(gs->ship_texture);        
+        }
         gs->hero->tex = gs->ship_texture[next_ship];
         next_ship = (next_ship + 1) % array_len(gs->ship_texture);
     }
