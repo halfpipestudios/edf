@@ -45,6 +45,13 @@ static inline V2 v2(f32 x, f32 y) {
     return (V2){ x, y };
 }
 
+static inline V2 v2_add(V2 a, V2 b) {
+    V2 result = { 0 };
+    result.x  = a.x + b.x;
+    result.y  = a.y + b.y;
+    return result;
+}
+
 static inline V2 v2_sub(V2 a, V2 b) {
     V2 result = { 0 };
     result.x  = a.x - b.x;
@@ -67,12 +74,27 @@ static inline f32 v2_len(V2 v) {
     return sqrtf(v2_dot(v, v));
 }
 
+static inline f32 v2_len_sq(V2 v) {
+    return v2_dot(v, v);
+}
+
+
+static inline void v2_normalize(V2 *v) {
+    f32 len_sq = v2_len_sq(*v);
+    if(len_sq <= 0) {
+        return;
+    }
+    f32 inv_len = 1.0f / sqrtf(len_sq);
+    v->x *= inv_len;
+    v->y *= inv_len;
+}
+
 static inline V2 v2_normalized(V2 v) {
-    f32 len = v2_len(v);
-    if(len <= 0) {
+    f32 len_sq = v2_len_sq(v);
+    if(len_sq <= 0) {
         return v;
     }
-    f32 inv_len = 1.0f / len;
+    f32 inv_len = 1.0f / sqrtf(len_sq);
     V2 result   = { v.x * inv_len, v.y * inv_len };
     return result;
 }
@@ -83,6 +105,10 @@ typedef union V3 {
     };
     struct {
         f32 r, g, b;
+    };
+    struct {
+        V2 xy;
+        f32 unused;
     };
     f32 m[3];
 } V3;
