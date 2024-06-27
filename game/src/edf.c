@@ -167,7 +167,8 @@ PARTICLE_SYSTEM_UPDATE(confeti_ps_update) {
         0xffff718d,
         0xfffdff6a
     };
-
+    
+    
     if(v2_len(particle->vel) == 0.0f) {
         
         f32 rand = ((f32)rand_range(-20, 20)/ 180.0f) * PI;
@@ -175,6 +176,12 @@ PARTICLE_SYSTEM_UPDATE(confeti_ps_update) {
         V2 dir;
         dir.x = -cosf(gs->hero->angle + offset);
         dir.y = -sinf(gs->hero->angle + offset);
+        V2 perp = v2(-dir.y, dir.x);
+
+        f32 x_offet = rand_range(gs->hero->scale.x*-0.15f, gs->hero->scale.x*0.15f);
+        particle->pos.x += perp.x * x_offet;
+        particle->pos.y += perp.y * x_offet;
+        
         particle->vel.x = dir.x * (f32)rand_range(100, 300) + gs->hero->vel.x;
         particle->vel.y = dir.y * (f32)rand_range(100, 300) + gs->hero->vel.y;
         particle->scale = 20.0f;
@@ -183,12 +190,13 @@ PARTICLE_SYSTEM_UPDATE(confeti_ps_update) {
         particle->tex = gs->confeti_texture[confeti_tint_index];
         particle->tint = hex_to_v4(confeti_tint[confeti_tint_index]);
         confeti_tint_index = (confeti_tint_index + 1) % array_len(confeti_tint);
+        particle->angular_vel = (f32)rand_range(-20, 20) * dt;
     }
     if((particle->lifetime / particle->save_lifetime) < 0.15) {
         particle->tint.w = particle->lifetime;
     }
     
-    particle->angle += (f32)rand_range(-20, 20) * dt;
+    particle->angle += particle->angular_vel;
     particle->pos.x += particle->vel.x * dt;
     particle->pos.y += particle->vel.y * dt;
 }
@@ -252,6 +260,22 @@ void game_init(Memory *memory) {
     // hero initialization
     f32 size = 32.0f * 3.0f;
     srand(time(0));
+    
+    u32 ps_rand = rand_range(0, 1);
+    if(ps_rand == 1) {
+        gs->ps = particle_system_create(&gs->game_arena,
+                                        100, 10,
+                                        0.05f, v2(0, 0), gs->orbe_texture,
+                                        ship_ps_update, GPU_BLEND_STATE_ADDITIVE);
+    } else {
+        gs->ps = particle_system_create(&gs->game_arena,
+                                        1000, 10,
+                                        0.05f, v2(0, 0), 0,
+                                        confeti_ps_update, GPU_BLEND_STATE_ALPHA);
+        
+    }
+    
+    
     u32 ship_rand_texture = rand_range(0, 1);
     gs->hero = entity_manager_add_entity(gs->em);
     entity_add_input_component(gs->hero);
@@ -278,25 +302,6 @@ void game_init(Memory *memory) {
     gs->button2 = ui_button_alloc(&gs->ui, &gs->game_arena, v2(340, -250), 100, gs->deathstar_texture);
 
     stars_init(gs);
-    /*
-    if(ship_rand_texture) {
-        
-        
-    }
-    else {
-        
-        
-    }
-    gs->ps = particle_system_create(&gs->game_arena, 
-                                    100, 10, 
-                                    0.05f, v2(0, 0), gs->orbe_texture,
-                                    ship_ps_update);
-    */
-    gs->ps = particle_system_create(&gs->game_arena,
-                                    1000, 10,
-                                    0.05f, v2(0, 0), 0,
-                                    confeti_ps_update);
-    
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {

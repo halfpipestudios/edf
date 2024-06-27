@@ -11,7 +11,8 @@
 ParticleSystem *particle_system_create(struct Arena *arena, 
                                        i32 particle_count, i32 emision_count, 
                                        f32 spawn_time, V2 pos, Texture texture,
-                                       ParticleSystemUpdateFunc *particle_update) {
+                                       ParticleSystemUpdateFunc *particle_update,
+                                       GpuBlendState blend_state) {
 
     ParticleSystem *ps = (ParticleSystem *)arena_push(arena, sizeof(ParticleSystem), 8);
     ps->particle_count = particle_count;
@@ -25,6 +26,7 @@ ParticleSystem *particle_system_create(struct Arena *arena,
     ps->spawn_time = spawn_time;
     ps->current_spawn_time = 0;
     ps->pause = true;
+    ps->blend_state = blend_state;
     return ps;
 
 }
@@ -67,6 +69,7 @@ void particle_system_update(struct GameState* gs, ParticleSystem *ps, f32 dt) {
 
 void particle_system_render(Gpu gpu, ParticleSystem *ps) {
     // render alive particles
+    gpu_blend_state_set(gpu, ps->blend_state);
     for(i32 i = 0; i < ps->particle_count; i++) {
         Particle *particle = ps->particles + i;
         if(particle->lifetime > 0.0f) {
@@ -77,6 +80,8 @@ void particle_system_render(Gpu gpu, ParticleSystem *ps) {
                              particle->tint); 
         }
     }
+    gpu_blend_state_set(gpu, GPU_BLEND_STATE_ALPHA);
+
 }
 
 void particle_system_start(ParticleSystem *ps) {
