@@ -44,7 +44,7 @@ void mt_touch_unregister(Multitouch *mt, i32 *touch) {
 
 void mt_begin(Multitouch *mt, Input *input) {
     mt->input = input;
-    for(u32 i = 0; i < mt->last_input.count; ++i) {
+    for(u32 i = 0; i < MAX_TOUCHES; ++i) {
         b32 found = false;
         int location_to_found = mt->last_input.locations[i];
         for(u32 j = 0; j < mt->input->count; ++j) {
@@ -53,8 +53,8 @@ void mt_begin(Multitouch *mt, Input *input) {
                 break;
             }
         }
-
-        if(!found) {
+        
+        if(!found && location_to_found != -1) {
             mt_touch_unregister(mt, &location_to_found);
         }
     }
