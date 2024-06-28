@@ -40,14 +40,10 @@ typedef struct Polygon {
 V2 closest_point_point_circle(V2 a, Circle b);
 V2 closest_point_point_aabb(V2 a, AABB b);
 V2 closest_point_point_obb(V2 a, OBB b);
-V2 closest_point_circle_circle(Circle a, Circle b);
-V2 closest_point_circle_aabb(Circle a, AABB b);
-V2 closest_point_circle_obb(Circle a, OBB b);
-V2 closest_point_aabb_aabb(AABB a, AABB b);
-V2 closest_point_abbb_obb(AABB a, OBB bb);
-V2 closest_point_obb_obb(OBB a, OBB b);
 
 i32 test_cirlce_circle(Circle a, Circle b);
+i32 test_circle_aabb(Circle a, AABB b);
+i32 test_circle_obb(Circle a, OBB b);
 i32 test_aabb_aabb(AABB a, AABB b);
 i32 test_aabb_obb(AABB a, OBB b);
 i32 test_obb_obb(OBB a, OBB b);

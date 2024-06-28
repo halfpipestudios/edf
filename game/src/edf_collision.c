@@ -65,33 +65,6 @@ V2 closest_point_point_obb(V2 a, OBB b) {
     local_a = v2_add(local_a, b.c);
     return local_a;
 }
-
-/*
-V2 closest_point_circle_circle(Circle a, Circle b) {
-
-}
-
-V2 closest_point_circle_aabb(Circle a, AABB b) {
-
-}
-
-V2 closest_point_circle_obb(Circle a, OBB b) {
-
-}
-
-V2 closest_point_aabb_aabb(AABB a, AABB b) {
-
-}
-
-V2 closest_point_abbb_obb(AABB a, OBB bb) {
-
-}
-
-V2 closest_point_obb_obb(OBB a, OBB b) {
-
-}
-*/
-
 //==================================================
 //==================================================
 
@@ -107,6 +80,20 @@ i32 test_cirlce_circle(Circle a, Circle b) {
     f32 radius_sum = a.r + b.r;
     return dist2 <= radius_sum * radius_sum;
     
+}
+
+i32 test_circle_aabb(Circle a, AABB b) {
+    V2 closest = closest_point_point_aabb(a.c, b);
+    f32 dist2 = v2_len_sq(d);
+    f32 radius_sum = a.r + b.r;
+    return dist2 <= radius_sum * radius_sum;
+}
+
+i32 test_circle_obb(Circle a, OBB b) {
+    V2 closest = closest_point_point_obb(a.c, b);
+    f32 dist2 = v2_len_sq(d);
+    f32 radius_sum = a.r + b.r;
+    return dist2 <= radius_sum * radius_sum;
 }
 
 i32 test_aabb_aabb(AABB a, AABB b) {
