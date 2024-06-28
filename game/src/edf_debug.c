@@ -11,51 +11,83 @@ void cs_print(Console *c, char *text) {
         char character = text[i];
         if(character == '\n') {
             c->col = 0;
-            c->line = (c->line + 1) % c->max_lines;
-
-            if(c->line == c->lines_start) {
-                memset(&c->buffer[c->line * c->max_cols], 0, c->max_cols);
-                c->lines_start = (c->lines_start + 1) % c->max_lines;
-            }
-
+            c->line = (c->line + 1) % c->max_rows;
             continue;
         }
 
         if(c->col >= c->max_cols) {
             c->col = 0;
-            c->line = (c->line + 1) % c->max_lines;
-
-            if(c->line == c->lines_start) {
-                memset(&c->buffer[c->line * c->max_cols], 0, c->max_cols);
-                c->lines_start = (c->lines_start + 1) % c->max_lines;
-            }
-
+            c->line = (c->line + 1) % c->max_rows;
         }
 
-
+        if(c->line == c->next_line) {
+            memset(&c->buffer[c->line * c->max_cols], 0, c->max_cols);
+            c->next_line = (c->next_line + 1) % c->max_rows;
+        }
 
         c->buffer[c->line * c->max_cols + c->col++] = character;
     }
 }
 
-Console cs_init(struct Font *font, u32 w, u32 h) {
+static i32 found_max_glyph_advance_w(Font *font) {
+    i32 result = 0;
+    for(u32 i = 0; i < font->glyphs_count; ++i) {
+        Glyph *glyph = font->glyphs + i;
+        result = max(result, glyph->advance_w);
+    }
+    return result;
+}
 
-    u32 num_cols = w / font->size*2;
-    u32 num_lines = h / font->size;
+#if 0
+static i32 found_max_glyph_w(Font *font) {
+    i32 result = 0;
+    for(u32 i = 0; i < font->glyphs_count; ++i) {
+        Glyph *glyph = font->glyphs + i;
+        result = max(result, r2_width(glyph->bounds));
+    }
+    return result;
+}
+#endif
 
-    Console c = {0};
-    c.w = w;
-    c.h = h;
-    c.max_lines = MAX_CONSOLE_BUFFER_SIZE / num_cols;
-    c.max_cols = num_cols;
+static i32 found_max_glyph_h(Font *font) {
+    i32 result = 0;
+    for(u32 i = 0; i < font->glyphs_count; ++i) {
+        Glyph *glyph = font->glyphs + i;
+        result = max(result, r2_height(glyph->bounds));
+    }
+    return result;
+}
+
+Console cs_init(struct Font *font, i32 x, i32 y, i32 w, i32 h) {
+
+    Console c = (Console){0};
+
     c.font = font;
+    c.line = 0;
+    c.next_line = 1;
+    
+    c.rect = r2_from_wh(x, y, w, h);
+    c.pixels_per_col = found_max_glyph_advance_w(font);
+    c.pixels_per_row = found_max_glyph_h(font);
+
+    c.visible_cols = r2_width(c.rect) / c.pixels_per_col;
+    c.visible_rows = r2_height(c.rect) / c.pixels_per_row;
+
+    assert(c.visible_cols <= MAX_CONSOLE_BUFFER_SIZE);
+
+    c.max_cols = c.visible_cols;
+    c.max_rows = MAX_CONSOLE_BUFFER_SIZE / c.visible_cols;
+
+    if(c.visible_rows > c.max_rows) {
+        c.visible_rows = c.max_rows;
+    }
 
     return c;
 }
 
 static char *cs_get_nullterminated(Arena *arena, Console *c, char *line_buffer) {
-    u32 line_size = 0;
-    for(u32 i = 0; i <= c->max_cols; ++i) {
+    i32 line_size = 0;
+    for(i32 i = 0; i <= c->max_cols; ++i) {
         line_size = i;
         if(i < c->max_cols && line_buffer[i] == 0) {
             break;
@@ -67,39 +99,48 @@ static char *cs_get_nullterminated(Arena *arena, Console *c, char *line_buffer) 
     return text;
 }
 
+void cs_draw_line(Gpu gpu, Console *c, i32 line, i32 index) {
+    Arena *arena = get_scratch_arena(0);
+    TempArena temp = temp_arena_begin(arena);
+
+    char *line_buffer = &c->buffer[line * c->max_cols];
+    char *text = cs_get_nullterminated(temp.arena, c, line_buffer);
+    
+    i32 pos_x = c->rect.min.x;
+    i32 pos_y = c->rect.max.y + -index * c->pixels_per_row - c->pixels_per_row;
+    font_draw_text(gpu, c->font, text, (f32)pos_x, (f32)pos_y, v4(1,1,1,1));
+
+    temp_arena_end(temp);
+}
+
 void cs_render(Gpu gpu, Console *c) {
 
-    i32 offset_x = -VIRTUAL_RES_X*0.5f;
-    i32 offset_y = -VIRTUAL_RES_Y*0.5f + c->h;
+    V2 center = r2_center(c->rect);
 
-    gpu_draw_quad_color(gpu, offset_x+c->w*0.5f, offset_y-c->h*0.5f, c->w+20, c->h+20, 0, v4(0.5f, 0.5f, 0.5f, 0.5f));
+    gpu_draw_quad_color(gpu, center.x, center.y, (f32)r2_width(c->rect), (f32)r2_height(c->rect), 0, v4(0.5f, 0.5f, 0.5f, 0.5f));
 
-    u32 num_lines = c->h / c->font->size;
-
-    u32 last_line = (c->line + 1) % c->max_lines;
-    u32 line = 0;
-
-    if(last_line > num_lines) {
-        line = last_line - num_lines;
-    } else {
-        line = c->max_lines - (num_lines - last_line);
+    i32 line = c->next_line - c->visible_rows;
+    if(line < 0) {
+        line = c->max_rows + line;
     }
 
-    i32 index = 0;
-    do {
-        Arena *arena = get_scratch_arena(0);
-        TempArena temp = temp_arena_begin(arena);
+    assert(line >= 0);
 
-        char *line_buffer = &c->buffer[line * c->max_cols];
-        char *text = cs_get_nullterminated(temp.arena, c, line_buffer);
-        
+    if(line < c->next_line) {
+        i32 index = 0;
+        for(i32 i = line; i < c->next_line; ++i) {
+            cs_draw_line(gpu, c, i, index++);
+        }
 
-        i32 pos_x = offset_x + 20;
-        i32 pos_y = offset_y + -index * c->font->size - c->font->size;
-        font_draw_text(gpu, c->font, text, pos_x, pos_y, v4(1,1,1,1));
+    } else {
+        i32 index = 0;
+        for(i32 i = line; i < c->max_rows; ++i) {
+            cs_draw_line(gpu, c, i, index++);
+        }
 
-        temp_arena_end(temp);
-        ++index;
-        line = (line + 1) % c->max_lines;
-    } while(line != last_line);
+        for(i32 i = 0; i < c->next_line; ++i) {
+            cs_draw_line(gpu, c, i, index++); 
+        }
+    }
+
 }

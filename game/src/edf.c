@@ -297,7 +297,7 @@ void game_init(Memory *memory) {
     gs->liberation = font_load(gs->gpu, &gs->platform_arena, "LiberationMono-Regular.ttf", 32);
     gs->times = font_load(gs->gpu, &gs->platform_arena, "times.ttf", 64);
 
-    gs->cs = cs_init(gs->liberation, VIRTUAL_RES_X/2, VIRTUAL_RES_Y/2);
+    gs->cs = cs_init(gs->liberation, -VIRTUAL_RES_X/2, -40, 600, VIRTUAL_RES_Y/2);
 
     gs->ship_bitmap[0]    = bitmap_load(&gs->game_arena, "Player.png");
     gs->ship_bitmap[1]    = bitmap_load(&gs->game_arena, "OG Es.png");
