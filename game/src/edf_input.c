@@ -46,10 +46,6 @@ bool point_in_circle(V2 point, V2 c, f32 r) {
 // ----------------------------------------------
 
 void mt_touch_unregister(Multitouch *mt, i32 *touch) {
-    
-    cs_print(gcs, "unregistered touch\n");
-    print_touch(mt, *touch);
-    
     i32 index = *touch;
     if(mt->registry[index]) {
         *(mt->registry[index]) = -1;
@@ -58,6 +54,14 @@ void mt_touch_unregister(Multitouch *mt, i32 *touch) {
 }
 
 void mt_begin(Multitouch *mt, Input *input) {
+
+    if(input->count) {
+        cs_print(gcs, "----------------------------\n");
+        for(u32 i = 0; i < MAX_TOUCHES; ++i) {
+            cs_print(gcs, "location:%d\n", input->locations[i]);
+        }
+    }
+
     mt->input = input;
     for(u32 i = 0; i < MAX_TOUCHES; ++i) {
         b32 found = false;
@@ -311,10 +315,6 @@ void ui_begin(Ui *ui, Multitouch *mt, Input *input, f32 dt) {
                     } else {
                         mt_touch_unregister(mt, &joystick->touch);
                     }
-
-                    cs_print(gcs, "registered touch\n");
-                    print_touch(mt, joystick->touch);
-
                 }
 
                 if(mt_touch_down(mt, joystick->touch)) {
