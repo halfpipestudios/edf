@@ -7,6 +7,17 @@
 #include "edf_memory.h"
 #include "edf_platform.h"
 
+static inline void print_touch(Multitouch *mt, int touch) {
+    cs_print(gcs, "touch location:%d\n", touch);
+    if(touch != -1) {
+        int *entry = mt->registry[touch];
+        cs_print(gcs, "touch entry:%p\n", entry);
+        if(entry) {
+            cs_print(gcs, "touch data:%d\n", *entry);
+        }
+    }
+}
+
 V2 input_to_game_coords(V2i in_pos) {
     R2 device = os_device_rect();
     R2 display = os_display_rect();
@@ -35,6 +46,10 @@ bool point_in_circle(V2 point, V2 c, f32 r) {
 // ----------------------------------------------
 
 void mt_touch_unregister(Multitouch *mt, i32 *touch) {
+    
+    cs_print(gcs, "unregistered touch\n");
+    print_touch(mt, *touch);
+    
     i32 index = *touch;
     if(mt->registry[index]) {
         *(mt->registry[index]) = -1;
@@ -296,8 +311,12 @@ void ui_begin(Ui *ui, Multitouch *mt, Input *input, f32 dt) {
                     } else {
                         mt_touch_unregister(mt, &joystick->touch);
                     }
-                } 
-                
+
+                    cs_print(gcs, "registered touch\n");
+                    print_touch(mt, joystick->touch);
+
+                }
+
                 if(mt_touch_down(mt, joystick->touch)) {
                     joystick->c_pos = mt_touch_pos(mt, joystick->touch);
                 } else {
