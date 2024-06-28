@@ -294,8 +294,10 @@ void game_init(Memory *memory) {
 
     gs->gpu   = gpu_load(&gs->platform_arena);
     gs->spu   = spu_load(&gs->platform_arena);
-    gs->arial = font_load(gs->gpu, &gs->platform_arena, "arial.ttf", 128);
+    gs->liberation = font_load(gs->gpu, &gs->platform_arena, "LiberationMono-Regular.ttf", 32);
     gs->times = font_load(gs->gpu, &gs->platform_arena, "times.ttf", 64);
+
+    gs->cs = cs_init(gs->liberation, VIRTUAL_RES_X/2, VIRTUAL_RES_Y/2);
 
     gs->ship_bitmap[0]    = bitmap_load(&gs->game_arena, "Player.png");
     gs->ship_bitmap[1]    = bitmap_load(&gs->game_arena, "OG Es.png");
@@ -390,6 +392,9 @@ void game_init(Memory *memory) {
     gs->next_ship_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, gs->pause_texture, v4(0,1,0,1));
     pause_button_pos.x += 220;
     gs->next_boost_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, gs->pause_texture, v4(0,0,1,1));
+    pause_button_pos.x += 220;
+    gs->debug_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, gs->pause_texture, v4(1,0,1,1));
+
 
     stars_init(gs);
 
@@ -418,17 +423,14 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     
     GameState *gs = game_state(memory);
     
-    os_print("location [%d]: %d", 0, input->locations[0]);
-    os_print("location [%d]: %d", 1, input->locations[1]);
-    os_print("location [%d]: %d", 2, input->locations[2]);
-    os_print("location [%d]: %d", 3, input->locations[3]);
-    os_print("location [%d]: %d", 4, input->locations[4]);
-
-
     ui_begin(&gs->ui, &gs->mt, input, dt);
 
     if(ui_button_just_up(&gs->mt, gs->pause_button)) {
         gs->paused = !gs->paused;
+    }
+
+    if(ui_button_just_up(&gs->mt, gs->debug_button)) {
+        gs->debug_show = !gs->debug_show;
     }
 
     if(ui_button_just_up(&gs->mt, gs->next_ship_button)) {
@@ -462,6 +464,12 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     }
 
     if(!gs->paused) {
+
+        static i32 count = 0;
+        char text[256];
+        sprintf(text, "console count: %d\n", count++);
+        cs_print(&gs->cs, text);
+
         input_system_update(gs, gs->em, dt);
         physics_system_update(gs->em, dt);
         stars_update(gs, dt);
@@ -564,15 +572,17 @@ void game_render(Memory *memory) {
     // UI draw
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
     ui_render(gs->gpu, &gs->ui);
-    
-    {
+
+    if(gs->debug_show) {
+        cs_render(gs->gpu, &gs->cs);
         static char fps_text[1024];
         snprintf(fps_text, 1024, "FPS: %d", gs->FPS);
-        R2 dim = font_size_text(gs->times, fps_text);
+        R2 dim = font_size_text(gs->liberation, fps_text);
         f32 pos_x = -VIRTUAL_RES_X*0.5f;
         f32 pos_y = VIRTUAL_RES_Y*0.5f - r2_height(dim);
-        font_draw_text(gs->gpu, gs->times, fps_text, pos_x, pos_y, v4(1, 1, 1, 1));
+        font_draw_text(gs->gpu, gs->liberation, fps_text, pos_x, pos_y, v4(1, 1, 1, 1));
     }
+
     
     if(gs->paused) {
         char *text = "Pause";
