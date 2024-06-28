@@ -27,7 +27,9 @@ typedef struct Console {
 } Console;
 
 Console cs_init(struct Font *font, i32 x, i32 y, i32 w, i32 h);
-void cs_print(Console *c, char *text);
+void cs_print(Console *c, char *format, ...);
 void cs_render(Gpu gpu, Console *c);
+
+extern Console *gcs;
 
 #endif // EDF_DEBUG_H

@@ -3,7 +3,10 @@
 #include "edf_memory.h"
 #include "edf_font.h"
 
-void cs_print(Console *c, char *text) {
+#include <stdarg.h>
+#include <stdio.h>
+
+static void cs_print_text(Console *c, char *text) {
     u32 len = strlen(text);
 
     for(u32 i = 0; i < len; ++i) {
@@ -27,6 +30,20 @@ void cs_print(Console *c, char *text) {
 
         c->buffer[c->line * c->max_cols + c->col++] = character;
     }
+}
+
+void cs_print(Console *c, char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    Arena *arena = get_scratch_arena(0);
+    TempArena temp = temp_arena_begin(arena);
+    u32 text_size = vsnprintf(0, 0, format, args) + 1;
+    char *text = arena_push(temp.arena, text_size+1, 8);
+    vsnprintf(text, text_size, format, args);
+    text[text_size] = 0;
+    cs_print_text(c, text);
+    temp_arena_end(temp);
+    va_end(args);
 }
 
 static i32 found_max_glyph_advance_w(Font *font) {

@@ -8,6 +8,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+Console *gcs;
+
 void stars_init(GameState *gs) {
     static u32 star_colors[4] = {
         0xFFFDF4F5,
@@ -298,6 +300,7 @@ void game_init(Memory *memory) {
     gs->times = font_load(gs->gpu, &gs->platform_arena, "times.ttf", 64);
 
     gs->cs = cs_init(gs->liberation, -VIRTUAL_RES_X/2, -40, 600, VIRTUAL_RES_Y/2);
+    gcs = &gs->cs;
 
     gs->ship_bitmap[0]    = bitmap_load(&gs->game_arena, "Player.png");
     gs->ship_bitmap[1]    = bitmap_load(&gs->game_arena, "OG Es.png");
@@ -464,12 +467,6 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     }
 
     if(!gs->paused) {
-
-        static i32 count = 0;
-        char text[256];
-        sprintf(text, "console count: %d\n", count++);
-        cs_print(&gs->cs, text);
-
         input_system_update(gs, gs->em, dt);
         physics_system_update(gs->em, dt);
         stars_update(gs, dt);
