@@ -394,11 +394,11 @@ void game_init(Memory *memory) {
     stars_init(gs);
 
 
-    gs->aabb.min = v2(400, 400);
-    gs->aabb.max = v2(500, 500);
+    gs->aabb.min = v2(500, 400);
+    gs->aabb.max = v2(600, 500);
     
-    gs->obb0.c = v2(580, 450);
-    gs->obb0.he = v2(50, 100);
+    gs->obb0.c = v2(750, 450);
+    gs->obb0.he = v2(50, 200);
     gs->obb0.r = 0;
 
 
@@ -409,11 +409,21 @@ void game_init(Memory *memory) {
     gs->obb2.c = v2(120, 400);
     gs->obb2.he = v2(50, 50);
     gs->obb2.r = 0;
+
+    gs->circle.c = v2(-200, 0);
+    gs->circle.r = 200;
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {
     
     GameState *gs = game_state(memory);
+    
+    os_print("location [%d]: %d", 0, input->locations[0]);
+    os_print("location [%d]: %d", 1, input->locations[1]);
+    os_print("location [%d]: %d", 2, input->locations[2]);
+    os_print("location [%d]: %d", 3, input->locations[3]);
+    os_print("location [%d]: %d", 4, input->locations[4]);
+
 
     ui_begin(&gs->ui, &gs->mt, input, dt);
 
@@ -498,7 +508,7 @@ void game_render(Memory *memory) {
     // Entities draw
     render_system_update(gs, gs->em);
     
-    static f32 angle = 0;
+    static f32 angle = PI*0.25f;
     if(angle >= 2.0f*PI) {
         angle = 0.0f;
     }
@@ -529,6 +539,27 @@ void game_render(Memory *memory) {
         gpu_draw_quad_color(gs->gpu, gs->obb1.c.x, gs->obb1.c.y, gs->obb1.he.x*2.0f, gs->obb1.he.y*2.0f, gs->obb1.r, v4(0, 1, 0, 0.5f));
         gpu_draw_quad_color(gs->gpu, gs->obb2.c.x, gs->obb2.c.y, gs->obb2.he.x*2.0f, gs->obb2.he.y*2.0f, gs->obb2.r, v4(0, 1, 0, 0.5f));
     }
+
+    gpu_draw_quad_texture_tinted(gs->gpu, 
+                                 gs->circle.c.x, gs->circle.c.y,
+                                 gs->circle.r*2.0f, gs->circle.r*2.0f,
+                                 0, gs->move_outer_texture, v4(1, 0, 1, 0.3f));
+    V2 closest = closest_point_point_circle(gs->hero->pos.xy, gs->circle);
+    gpu_draw_quad_texture_tinted(gs->gpu, 
+                                 closest.x, closest.y,
+                                 20, 20,
+                                 0, gs->move_inner_texture, v4(1, 0, 0, 0.8f));
+    closest = closest_point_point_aabb(gs->hero->pos.xy, gs->aabb);
+    gpu_draw_quad_texture_tinted(gs->gpu, 
+                                 closest.x, closest.y,
+                                 20, 20,
+                                 0, gs->move_inner_texture, v4(1, 0, 0, 0.8f));
+
+    closest = closest_point_point_obb(gs->hero->pos.xy, gs->obb0);
+    gpu_draw_quad_texture_tinted(gs->gpu, 
+                                 closest.x, closest.y,
+                                 20, 20,
+                                 0, gs->move_inner_texture, v4(1, 0, 1, 0.8f));
 
     // UI draw
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
