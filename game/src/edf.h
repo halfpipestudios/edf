@@ -38,6 +38,8 @@ typedef struct GameState {
     b32 debug_show;
 
     struct Entity *hero;
+    struct Entity *asteroid;
+
     struct EntityManager *em;
 
     struct ParticleSystem *fire;
@@ -53,12 +55,6 @@ typedef struct GameState {
 
     Font *liberation;
     Font *times;
-
-    AABB aabb;
-    OBB  obb0;
-    OBB  obb1;
-    OBB  obb2;
-    Circle circle;
 
     Bitmap ship_bitmap[2];
     Bitmap move_outer_bitmap;
