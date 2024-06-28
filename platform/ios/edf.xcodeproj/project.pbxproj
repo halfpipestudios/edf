@@ -21,6 +21,7 @@
 		6E855BE52C2C6F0C004FDE97 /* edf_particles.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E855BE42C2C6F0C004FDE97 /* edf_particles.c */; };
 		6E8AAE9D2C29EED600009430 /* edf_input.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E8AAE9C2C29EED600009430 /* edf_input.c */; };
 		6ED097D82C266CEE005630FB /* edf_font.c in Sources */ = {isa = PBXBuildFile; fileRef = 6ED097D62C266CEE005630FB /* edf_font.c */; };
+		6ED51BF82C2F180900E3F6F1 /* edf_debug.c in Sources */ = {isa = PBXBuildFile; fileRef = 6ED51BF62C2F180900E3F6F1 /* edf_debug.c */; };
 		6ED7993E2C2708EE005E0FDF /* ios_sound.c in Sources */ = {isa = PBXBuildFile; fileRef = 6ED7993D2C2708EE005E0FDF /* ios_sound.c */; };
 		6ED799412C276888005E0FDF /* edf_graphics.c in Sources */ = {isa = PBXBuildFile; fileRef = 6ED799402C276888005E0FDF /* edf_graphics.c */; };
 		6ED799442C276899005E0FDF /* edf_sound.c in Sources */ = {isa = PBXBuildFile; fileRef = 6ED799432C276899005E0FDF /* edf_sound.c */; };
@@ -58,6 +59,8 @@
 		6ED097D52C266CCE005630FB /* stb_truetype.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stb_truetype.h; sourceTree = "<group>"; };
 		6ED097D62C266CEE005630FB /* edf_font.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = edf_font.c; sourceTree = "<group>"; };
 		6ED097D72C266CEE005630FB /* edf_font.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = edf_font.h; sourceTree = "<group>"; };
+		6ED51BF62C2F180900E3F6F1 /* edf_debug.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = edf_debug.c; sourceTree = "<group>"; };
+		6ED51BF72C2F180900E3F6F1 /* edf_debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = edf_debug.h; sourceTree = "<group>"; };
 		6ED7993C2C2708EE005E0FDF /* ios_sound.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ios_sound.h; sourceTree = "<group>"; };
 		6ED7993D2C2708EE005E0FDF /* ios_sound.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ios_sound.c; sourceTree = "<group>"; };
 		6ED7993F2C276888005E0FDF /* edf_graphics.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = edf_graphics.h; sourceTree = "<group>"; };
@@ -155,6 +158,8 @@
 		6EE114D72C222A030018B7E1 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				6ED51BF62C2F180900E3F6F1 /* edf_debug.c */,
+				6ED51BF72C2F180900E3F6F1 /* edf_debug.h */,
 				6E1A35362C2B660A007CB85B /* sys */,
 				6E8AAE9E2C29EEE000009430 /* edf_input.h */,
 				6E8AAE9C2C29EED600009430 /* edf_input.c */,
@@ -254,6 +259,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6E0F64BB2C23687100FC0EC0 /* edf_memory.c in Sources */,
+				6ED51BF82C2F180900E3F6F1 /* edf_debug.c in Sources */,
 				6ED799412C276888005E0FDF /* edf_graphics.c in Sources */,
 				6ED7993E2C2708EE005E0FDF /* ios_sound.c in Sources */,
 				6ED799442C276899005E0FDF /* edf_sound.c in Sources */,

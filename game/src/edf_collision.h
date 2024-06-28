@@ -21,14 +21,10 @@ typedef struct AABB {
     V2 max;
 } AABB;
 
-i32 test_aabb_aabb(AABB a, AABB b);
-
 typedef struct Circle {
     V2 c;
     f32 r;
 } Circle;
-
-i32 test_cirlce_circle(Circle a, Circle b);
 
 typedef struct OBB {
     V2 c;
@@ -36,12 +32,25 @@ typedef struct OBB {
     f32 r;
 } OBB;
 
-i32 test_aabb_obb(AABB a, OBB b);
-i32 test_obb_obb(OBB a, OBB b);
-
 typedef struct Polygon {
     V2 *vertices;
     u32 vertices_count;
 } Polygon;
+
+V2 closest_point_point_circle(V2 a, Circle b);
+V2 closest_point_point_aabb(V2 a, AABB b);
+V2 closest_point_point_obb(V2 a, OBB b);
+V2 closest_point_circle_circle(Circle a, Circle b);
+V2 closest_point_circle_aabb(Circle a, AABB b);
+V2 closest_point_circle_obb(Circle a, OBB b);
+V2 closest_point_aabb_aabb(AABB a, AABB b);
+V2 closest_point_abbb_obb(AABB a, OBB bb);
+V2 closest_point_obb_obb(OBB a, OBB b);
+
+i32 test_cirlce_circle(Circle a, Circle b);
+i32 test_aabb_aabb(AABB a, AABB b);
+i32 test_aabb_obb(AABB a, OBB b);
+i32 test_obb_obb(OBB a, OBB b);
+
 
 #endif /* EDF_COLLISION_H */
