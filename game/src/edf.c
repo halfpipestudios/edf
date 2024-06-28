@@ -392,6 +392,23 @@ void game_init(Memory *memory) {
     gs->next_boost_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, gs->pause_texture, v4(0,0,1,1));
 
     stars_init(gs);
+
+
+    gs->aabb.min = v2(400, 400);
+    gs->aabb.max = v2(500, 500);
+    
+    gs->obb0.c = v2(580, 450);
+    gs->obb0.he = v2(50, 100);
+    gs->obb0.r = 0;
+
+
+    gs->obb1.c = v2(0, 400);
+    gs->obb1.he = v2(50, 50);
+    gs->obb1.r = 0;
+
+    gs->obb2.c = v2(120, 400);
+    gs->obb2.he = v2(50, 50);
+    gs->obb2.r = 0;
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {
@@ -480,6 +497,38 @@ void game_render(Memory *memory) {
 
     // Entities draw
     render_system_update(gs, gs->em);
+    
+    static f32 angle = 0;
+    if(angle >= 2.0f*PI) {
+        angle = 0.0f;
+    }
+    angle += 0.016f;
+
+
+    gs->obb0.r = angle;
+    gs->obb1.r = angle;
+    gs->obb2.r = -angle;
+    
+    V2 aabb_pos = v2_add(gs->aabb.min, v2_scale(v2_sub(gs->aabb.max, gs->aabb.min), 0.5f));
+    V2 aabb_e = v2_sub(gs->aabb.max, gs->aabb.min); 
+    if(test_aabb_obb(gs->aabb, gs->obb0)) {
+        gpu_draw_quad_color(gs->gpu, aabb_pos.x, aabb_pos.y, aabb_e.x, aabb_e.y, 0, v4(1, 0, 0, 0.5f));
+        gpu_draw_quad_color(gs->gpu, gs->obb0.c.x, gs->obb0.c.y, gs->obb0.he.x*2.0f, gs->obb0.he.y*2.0f, gs->obb0.r, v4(1, 0, 0, 0.5f));
+    }
+    else {
+        gpu_draw_quad_color(gs->gpu, aabb_pos.x, aabb_pos.y, aabb_e.x, aabb_e.y, 0, v4(0, 1, 0, 0.5f));
+        gpu_draw_quad_color(gs->gpu, gs->obb0.c.x, gs->obb0.c.y, gs->obb0.he.x*2.0f, gs->obb0.he.y*2.0f, gs->obb0.r, v4(0, 1, 0, 0.5f));
+
+    }
+
+    if(test_obb_obb(gs->obb1, gs->obb2)) {
+        gpu_draw_quad_color(gs->gpu, gs->obb1.c.x, gs->obb1.c.y, gs->obb1.he.x*2.0f, gs->obb1.he.y*2.0f, gs->obb1.r, v4(1, 0, 0, 0.5f));
+        gpu_draw_quad_color(gs->gpu, gs->obb2.c.x, gs->obb2.c.y, gs->obb2.he.x*2.0f, gs->obb2.he.y*2.0f, gs->obb2.r, v4(1, 0, 0, 0.5f));
+    }
+    else {
+        gpu_draw_quad_color(gs->gpu, gs->obb1.c.x, gs->obb1.c.y, gs->obb1.he.x*2.0f, gs->obb1.he.y*2.0f, gs->obb1.r, v4(0, 1, 0, 0.5f));
+        gpu_draw_quad_color(gs->gpu, gs->obb2.c.x, gs->obb2.c.y, gs->obb2.he.x*2.0f, gs->obb2.he.y*2.0f, gs->obb2.r, v4(0, 1, 0, 0.5f));
+    }
 
     // UI draw
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);

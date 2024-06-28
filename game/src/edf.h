@@ -5,6 +5,7 @@
 #include "edf_memory.h"
 #include "edf_platform.h"
 #include "edf_input.h"
+#include "edf_collision.h"
 
 #define VIRTUAL_RES_X 1920
 #define VIRTUAL_RES_Y 1080
@@ -52,6 +53,13 @@ typedef struct GameState {
 
     Font *arial;
     Font *times;
+
+    AABB aabb;
+    OBB  obb0;
+
+
+    OBB  obb1;
+    OBB  obb2;
 
     Bitmap ship_bitmap[2];
     Bitmap move_outer_bitmap;

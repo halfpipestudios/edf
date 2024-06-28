@@ -45,6 +45,13 @@ static inline V2 v2(f32 x, f32 y) {
     return (V2){ x, y };
 }
 
+static inline V2 v2_perp(V2 v) {
+    V2 result;
+    result.x = -v.y;
+    result.y = v.x;
+    return result;
+}
+
 static inline V2 v2_add(V2 a, V2 b) {
     V2 result = { 0 };
     result.x  = a.x + b.x;
@@ -202,6 +209,21 @@ static inline V4 hex_to_v4(u32 hex) {
     V4 result = v4(r, g, b, a);
     return result;
 }
+
+typedef struct M2 {
+    f32 m[4];
+} M2;
+
+static inline V2 m2_mul_v2(M2 m, V2 v) {
+    V2 result;
+    result.m[0] = m.m[0]*v.m[0] + m.m[1]*v.m[1];
+    result.m[1] = m.m[2]*v.m[0] + m.m[3]*v.m[1];
+    return result;
+}
+
+typedef struct M3 {
+    f32 m[9];
+} M3;
 
 typedef struct M4 {
     f32 m[16];
