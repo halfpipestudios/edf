@@ -31,6 +31,12 @@ void entity_add_ai_component(Entity *entity) {
     entity->components |= ENTITY_AI_COMPONENT;
 }
 
+void entity_add_collision_component(Entity *entity, Collision collision, bool collides) {
+    entity->components |= ENTITY_COLLISION_COMPONENT;
+    entity->collision = collision;
+    entity->collides = collides;
+}
+
 void entity_remove_components(Entity *entity, u64 components) {
     entity->components &= ~components;
 }
