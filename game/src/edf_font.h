@@ -23,6 +23,8 @@ typedef struct Glyph {
 } Glyph;
 
 typedef struct Font {
+    u32 size;
+
     Glyph *glyphs;
     u32 glyphs_count;
 

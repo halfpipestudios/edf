@@ -10,6 +10,7 @@
 
 Font *font_load(Gpu gpu, Arena *arena, char *path, float size) {
     Font *result         = arena_push(arena, sizeof(*result), 8);
+    result->size = (u32)size;
     result->glyphs_count = (FONT_CODEPOINT_RANGE_END - FONT_CODEPOINT_RANGE_START + 1);
     result->glyphs       = arena_push(arena, sizeof(*result->glyphs) * result->glyphs_count, 8);
 

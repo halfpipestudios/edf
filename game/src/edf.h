@@ -2,13 +2,11 @@
 #define EDF_H
 
 #include "edf_font.h"
+#include "edf_debug.h"
 #include "edf_memory.h"
 #include "edf_platform.h"
 #include "edf_input.h"
 #include "edf_collision.h"
-
-#define VIRTUAL_RES_X 1920
-#define VIRTUAL_RES_Y 1080
 
 #define GAME_MEMORY_SIZE mb(256)
 struct Memory;
@@ -34,8 +32,10 @@ typedef struct GameState {
     Button *pause_button;
     Button *next_ship_button;
     Button *next_boost_button;
+    Button *debug_button;
 
     b32 paused;
+    b32 debug_show;
 
     struct Entity *hero;
     struct EntityManager *em;
@@ -49,9 +49,9 @@ typedef struct GameState {
     f32 time_per_frame;
     i32 fps_counter;
     i32 FPS;
-    V2 DEBUG_touch;
+    Console cs;
 
-    Font *arial;
+    Font *liberation;
     Font *times;
 
     AABB aabb;

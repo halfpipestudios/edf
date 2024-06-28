@@ -7,6 +7,9 @@
 #include "edf_sound.h"
 #include "edf_input.h"
 
+#define VIRTUAL_RES_X 1920
+#define VIRTUAL_RES_Y 1080
+
 struct Arena;
 
 
