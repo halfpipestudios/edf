@@ -15,11 +15,19 @@ SYSTEM_UPDATE(collision_system) {
         entity->collision.circle.c = entity->pos.xy;
     }
     if(entity->collision.type == COLLISION_TYPE_AABB) {
-
+        V2 min = entity->collision.aabb.min;
+        V2 max = entity->collision.aabb.max;
+        V2 mid = v2_add(min, v2_scale(max, 0.5f));
+        min = v2_sub(min, mid);
+        max = v2_sub(max, mid);
+        min = v2_add(min, entity->pos.xy);
+        max = v2_add(max, entity->pos.xy);
+        entity->collision.aabb.min = min;
+        entity->collision.aabb.max = max;
     }
     if(entity->collision.type == COLLISION_TYPE_OBB) {
-        //entity->collision.obb.c
-
+        entity->collision.obb.c = entity->pos.xy;
+        entity->collision.obb.r = entity->angle;
     }
 
     if(!entity->collides) {
