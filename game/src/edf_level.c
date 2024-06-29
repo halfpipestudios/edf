@@ -135,8 +135,7 @@ Level *load_level(GameState *gs, struct Arena *arena, struct EntityManager *em) 
     hero_collision.circle.c = gs->hero->pos.xy;
     hero_collision.circle.r = gs->hero->scale.x*0.4f;
     entity_add_collision_component(gs->hero, hero_collision, true);
-    entity_add_animation_component(gs->hero, &gs->game_arena,
-        gs->explotion_textures, array_len(gs->explotion_textures), 0.1f, false, false);
+    entity_add_animation_component(gs->hero, gs->explotion_anim);
 
 
 

@@ -63,20 +63,9 @@ void entity_add_trigger_component(Entity *entity, struct Arena *arena,
     entity->to_trigger_count = 0;
 }
 
-void entity_add_animation_component(Entity *entity, struct Arena *arena,
-                                    Texture *textures, i32 textures_count, f32 speed,
-                                    bool playing, bool looping) {
-    Animation *animation = (Animation *)arena_push(arena, sizeof(Animation), 8);
-    animation->frame_count = textures_count;
-    animation->frames = (Texture *)arena_push(arena, sizeof(Texture) * animation->frame_count, 8);
-    memcpy(animation->frames, textures, sizeof(Texture) * animation->frame_count);
-    animation->speed = speed;
-    animation->current_frame = 0;
-    animation->current_time = 0;
-    animation->playing = playing;
-    animation->looping = looping;
-    entity->save_tex = entity->tex;
 
+void entity_add_animation_component(Entity *entity, Animation *animation) {
+    entity->save_tex = entity->tex;
     entity->components |= ENTITY_ANIMATION_COMPONENT;
     entity->animation = animation;
     return;

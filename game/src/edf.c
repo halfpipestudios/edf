@@ -408,6 +408,10 @@ void game_init(Memory *memory) {
         
     }
 
+    gs->explotion_anim = animation_load(&gs->game_arena,
+                           gs->explotion_textures, array_len(gs->explotion_textures),
+                           0.1f, false, false);
+
 
     gs->em = entity_manager_load(&gs->game_arena, 1000);
 

@@ -32,4 +32,18 @@ typedef struct Sprite {
 Sprite *sprite_load(struct Arena *arena, V2 pos, V2 scale, V4 tint, f32 anlge, Texture texture);
 void sprite_draw(Gpu gpu, Sprite *sprite);
 
+typedef struct Animation {
+    Texture *frames;
+    i32 frame_count;
+    f32 speed;
+    i32 current_frame;
+    f32 current_time;
+    bool playing;
+    bool looping;
+} Animation;
+
+ Animation *animation_load(struct Arena *arena,
+                           Texture *textures, i32 textures_count,
+                           f32 speed, bool playing, bool looping);
+
 #endif /* EDF_GRAPHICS_H */
