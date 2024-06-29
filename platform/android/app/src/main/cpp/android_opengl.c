@@ -152,6 +152,7 @@ void quad_batch_flush(OpenglGPU *renderer) {
     glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizeiptr)renderer->quad_count*(GLsizeiptr)sizeof(OpenglQuad), renderer->quad_buffer);
     glDrawArrays(GL_TRIANGLES, 0, (GLsizei)renderer->quad_count*6);
     renderer->quad_count = 0;
+    renderer->draw_calls++;
 }
 
 void quad_batch_push(OpenglGPU *renderer, OpenglQuad quad) {

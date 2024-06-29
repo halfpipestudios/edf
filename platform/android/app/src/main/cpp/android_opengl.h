@@ -64,6 +64,7 @@ typedef struct OpenglGPU {
     u32 quad_count;
     OpenglTextureAtlas atlas;
     b32 load_textures;
+    u32 draw_calls;
 } OpenglGPU;
 
 void quad_batch_flush(OpenglGPU *renderer);

@@ -119,11 +119,12 @@ void gpu_frame_begin(Gpu gpu) {
 
     glUseProgram(renderer->program);
     glBindVertexArray(renderer->vao);
+
+    renderer->draw_calls = 0;
 }
 
 void gpu_frame_end(Gpu gpu) {
     OpenglGPU *renderer = (OpenglGPU *)gpu;
-
 
     // draw texture atlas test
 #if 0
@@ -162,7 +163,7 @@ void gpu_frame_end(Gpu gpu) {
     for(u32 i = 0; i < array_len(quad.vertex); ++i) {
         V3 vertex = m4_mul_v3(world, vertices[i]);
         quad.vertex[i].pos = v2(vertex.x, vertex.y);
-        quad.vertex[i].color = v3(1, 1, 1);
+        quad.vertex[i].color = v4(1, 1, 1, 1);
         quad.vertex[i].uvs = uvs[i];
     }
     quad_batch_push(renderer, quad);
@@ -170,6 +171,8 @@ void gpu_frame_end(Gpu gpu) {
     // -----------------------------------------------
 #endif
     quad_batch_flush(renderer);
+
+    cs_print(gcs, "Draw calls: %d\n", renderer->draw_calls);
 }
 
 Texture gpu_texture_load(Gpu gpu, Bitmap *bitmap) {
