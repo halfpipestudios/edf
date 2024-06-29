@@ -13,8 +13,9 @@ struct Memory;
 struct Entity;
 struct EntityManager;
 struct ParticleSystem;
+struct Level;
 
-#define MAX_STARS 75
+#define MAX_STARS 1000
 #define MAX_GALAXY 6
 
 typedef struct GameState {
@@ -37,10 +38,10 @@ typedef struct GameState {
     b32 paused;
     b32 debug_show;
 
-    struct Entity *hero;
-    struct Entity *asteroid;
-
     struct EntityManager *em;
+    struct Entity *hero;
+
+    struct Level *level;
 
     struct ParticleSystem *fire;
     struct ParticleSystem *confeti;
@@ -70,7 +71,10 @@ typedef struct GameState {
     Bitmap orbe_bitmap;
     Bitmap confeti_bitmap[5];
     Bitmap pause_bitmap;
-
+    Bitmap rocks_bitmap;
+    Bitmap rocks_corner_bitmap;
+    Bitmap explotion_bitmaps[11];
+    
     Texture ship_texture[2];
     Texture move_outer_texture;
     Texture move_inner_texture;
@@ -85,6 +89,9 @@ typedef struct GameState {
     Texture orbe_texture;
     Texture confeti_texture[5];
     Texture pause_texture;
+    Texture rocks_texutre;
+    Texture rocks_corner_texture;
+    Texture explotion_textures[11];
 
     Sprite stars[MAX_STARS];
     Sprite galaxy[MAX_GALAXY];

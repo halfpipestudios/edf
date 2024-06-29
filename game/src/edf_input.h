@@ -2,8 +2,8 @@
 // Created by tomas on 24/6/2024.
 //
 
-#ifndef EDF_EDF_INPUT_H
-#define EDF_EDF_INPUT_H
+#ifndef EDF_INPUT_H
+#define EDF_INPUT_H
 
 #include "edf_common.h"
 #include "edf_math.h"
@@ -131,4 +131,4 @@ Joystick *ui_joystick_alloc(Ui *ui, struct Arena *arena, V2 pos, R2 rect, f32 in
 
 
 
-#endif //EDF_EDF_INPUT_H
+#endif //EDF_INPUT_H
