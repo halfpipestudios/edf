@@ -388,6 +388,7 @@ void game_init(Memory *memory) {
 
     gs->ps = gs->fire;
 
+    /*
     u32 ship_rand_texture = rand_range(0, 1);
 
     V3 hero_position = v3((f32)gs->level->dim.min.x, 0, 0);
@@ -403,7 +404,7 @@ void game_init(Memory *memory) {
 
     entity_add_animation_component(gs->hero, &gs->game_arena,
         gs->explotion_textures, array_len(gs->explotion_textures), 0.1f, false, false);
-
+    */
 
     i32 hw = VIRTUAL_RES_X * 0.5f;
     i32 hh = VIRTUAL_RES_Y * 0.5f;
@@ -516,9 +517,10 @@ void game_render(Memory *memory) {
 
     // Entities draw
     gpu_camera_set(gs->gpu, gs->level->camera_pos, 0);
-    level_render(gs->level, gs->gpu);
-    particle_system_render(gs->gpu, gs->ps);
+
     stars_render(gs);
+    particle_system_render(gs->gpu, gs->ps);
+    render_system_update(gs, gs->em);
 
     // UI draw
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);

@@ -7,7 +7,9 @@
 
 #include "edf_collision_sys.h"
 #include "../edf_entity.h"
+#include "../edf.h"
 #include "../edf_debug.h"
+#include "../edf_particles.h"
 
 
 SYSTEM_UPDATE(collision_system) {
@@ -51,6 +53,7 @@ SYSTEM_UPDATE(collision_system) {
             entity->animation->playing = true;
             entity->vel = v2(0, 0);
             entity->acc = v2(0, 0);
+            particle_system_stop(gs->ps);
         }
     }
 }

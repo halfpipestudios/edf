@@ -9,6 +9,7 @@
 #include "../edf_entity.h"
 #include "../edf.h"
 #include "../edf_level.h"
+#include "../edf_particles.h"
 
 SYSTEM_UPDATE(animation_system) {
     Animation *animation = entity->animation;
@@ -28,6 +29,8 @@ SYSTEM_UPDATE(animation_system) {
                     gs->hero->pos.x = gs->level->dim.min.x;
                     gs->hero->pos.y = 0.0f;
                     gs->level->camera_pos.x = gs->level->dim.min.x;
+
+                    particle_system_reset(gs->ps);
 
                     return;
                 }

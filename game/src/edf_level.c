@@ -98,6 +98,22 @@ Level *load_level(GameState *gs, struct Arena *arena, struct EntityManager *em) 
     level->camera_vel = v3(300, 0, 0);
     level->camera_pos.x = level->dim.min.x;
 
+    u32 ship_rand_texture = rand_range(0, 1);
+    V3 hero_position = v3((f32)level->dim.min.x, 0, 0);
+    gs->hero = entity_manager_add_entity(gs->em);
+    entity_add_input_component(gs->hero);
+    entity_add_render_component(gs->hero, hero_position, v2(32*3, 32*3), gs->ship_texture[ship_rand_texture], v4(1, 1, 1, 1));
+    entity_add_physics_component(gs->hero, v2(0, 0), v2(0, 0), 0.4f);
+    Collision hero_collision;
+    hero_collision.type = COLLISION_TYPE_CIRLCE;
+    hero_collision.circle.c = gs->hero->pos.xy;
+    hero_collision.circle.r = gs->hero->scale.x*0.4f;
+    entity_add_collision_component(gs->hero, hero_collision, true);
+    entity_add_animation_component(gs->hero, &gs->game_arena,
+        gs->explotion_textures, array_len(gs->explotion_textures), 0.1f, false, false);
+
+
+
     {
         static char asteroids[] = {
             "..............."
@@ -229,5 +245,4 @@ void level_update(Level *level, f32 dt) {
 }
 
 void level_render(Level *level, Gpu gpu) {
-    render_system_update(level->gs, level->em);
 }
