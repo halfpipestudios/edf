@@ -11,8 +11,9 @@
 #include "../edf_common.h"
 
 struct EntityManager;
+struct GameState;
 
-void collision_system_update(struct EntityManager *em, f32 dt);
+void collision_system_update(struct GameState *gs, struct EntityManager *em, f32 dt);
 
 
 #endif /* EDF_COLLISION_SYS_H */
