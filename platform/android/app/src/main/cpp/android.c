@@ -35,6 +35,7 @@ R2 os_device_rect(void) {
 
 File os_file_read(struct Arena *arena, char *path) {
     AAsset *asset = AAssetManager_open(asset_manager, path, AASSET_MODE_BUFFER);
+    assert(asset);
     File file = {0};
     file.size = AAsset_getLength(asset);
     file.data = arena_push(arena, file.size+1, 8);

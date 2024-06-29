@@ -21,14 +21,13 @@ void stars_init(GameState *gs) {
     i32 hh = (VIRTUAL_RES_Y * 0.5f) * 1.25f;
     
     Texture planet_textures[MAX_GALAXY] = {
-        gs->galaxy_texture,
-        gs->planet1_texture,
-        gs->planet2_texture,
-        gs->satelite_texture,
-        gs->meteorito_texture,
-        gs->deathstar_texture
+        am_get_texture(gs->am, "galaxy.png"),
+        am_get_texture(gs->am, "planet1.png"),
+        am_get_texture(gs->am, "planet2.png"),
+        am_get_texture(gs->am, "Satelite.png"),
+        am_get_texture(gs->am, "Satelite.png"),
+        am_get_texture(gs->am, "deathstar.png")
     };
-
 
     i32 color_index = 0;
     srand(123);
@@ -49,7 +48,7 @@ void stars_init(GameState *gs) {
     color_index = 0;
     for(i32 i = 0; i < MAX_STARS; i++) {
         Sprite *star = gs->stars + i;
-        star->texture = gs->star_texture;
+        star->texture = am_get_texture(gs->am, "star.png");
         star->pos.x = rand_range(-hw, hw);
         star->pos.y = rand_range(-hh, hh);
         star->z = (f32)rand_range(1, 10);
