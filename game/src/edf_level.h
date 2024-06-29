@@ -8,5 +8,24 @@
 #ifndef EDF_LEVEL_H
 #define EDF_LEVEL_H
 
+#include "edf_graphics.h"
+
+typedef struct Level {
+    struct GameState *gs;
+
+    struct Arena *arena;
+    struct EntityManager *em;
+
+    R2 dim;
+    V3 camera_vel;
+    V3 camera_pos;
+
+} Level;
+
+struct GameState;
+
+Level *load_level(struct GameState *gs, struct Arena *arena, struct EntityManager *em);
+void level_update(Level *level, f32 dt);
+void level_render(Level *level, Gpu gpu);
 
 #endif /* EDF_LEVEL_H */

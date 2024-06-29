@@ -7,7 +7,7 @@
 #include "edf_memory.h"
 #include "edf_platform.h"
 
-static inline void print_touch(Multitouch *mt, int touch) {
+inline void print_touch(Multitouch *mt, int touch) {
     cs_print(gcs, "touch location:%d\n", touch);
     if(touch != -1) {
         int *entry = mt->registry[touch];
@@ -54,13 +54,6 @@ void mt_touch_unregister(Multitouch *mt, i32 *touch) {
 }
 
 void mt_begin(Multitouch *mt, Input *input) {
-
-    if(input->count) {
-        cs_print(gcs, "----------------------------\n");
-        for(u32 i = 0; i < MAX_TOUCHES; ++i) {
-            cs_print(gcs, "location:%d\n", input->locations[i]);
-        }
-    }
 
     mt->input = input;
     for(u32 i = 0; i < MAX_TOUCHES; ++i) {

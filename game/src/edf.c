@@ -5,6 +5,7 @@
 #include "sys/edf_physics_sys.h"
 #include "sys/edf_collision_sys.h"
 #include "edf_particles.h"
+#include "edf_level.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -19,7 +20,7 @@ void stars_init(GameState *gs) {
         0xFFC0DBEA
     };
 
-    i32 hw = (VIRTUAL_RES_X * 0.5f) * 1.25f;
+    i32 hw = (r2_width(gs->level->dim) * 0.5f) * 1.25f;
     i32 hh = (VIRTUAL_RES_Y * 0.5f) * 1.25f;
     
     Texture planet_textures[MAX_GALAXY] = {
@@ -65,18 +66,22 @@ void stars_init(GameState *gs) {
 }
 
 void stars_update(GameState *gs, f32 dt) {
-    i32 hw = VIRTUAL_RES_X * 0.5f;
+
+    i32 hw = (r2_width(gs->level->dim) * 0.5f);
     i32 hh = VIRTUAL_RES_Y * 0.5f;
 
+    V2 pos = gs->level->camera_pos.xy;
+    V2 vel = gs->level->camera_vel.xy;
+
     R2 bounds = {0};
-    bounds.min.x = gs->hero->pos.x - (hw * 1.25f);
-    bounds.min.y = gs->hero->pos.y - (hh * 1.25f);
-    bounds.max.x = gs->hero->pos.x + (hw * 1.25f);
-    bounds.max.y = gs->hero->pos.y + (hh * 1.25f);
+    bounds.min.x = pos.x - (hw * 1.25f);
+    bounds.min.y = pos.y - (hh * 1.25f);
+    bounds.max.x = pos.x + (hw * 1.25f);
+    bounds.max.y = pos.y + (hh * 1.25f);
     for(i32 i = 0; i < MAX_GALAXY; i++) {
         Sprite *galaxy = gs->galaxy + i;
-        galaxy->pos.x -= (gs->hero->vel.x / galaxy->z) * dt;
-        galaxy->pos.y -= (gs->hero->vel.y / galaxy->z) * dt;
+        galaxy->pos.x -= (vel.x / galaxy->z) * dt;
+        galaxy->pos.y -= (vel.y / galaxy->z) * dt;
         
         if(galaxy->pos.x > bounds.max.x) {
             galaxy->pos.x = bounds.min.x;
@@ -93,12 +98,12 @@ void stars_update(GameState *gs, f32 dt) {
         }
     }
 
-
     for(i32 i = 0; i < MAX_STARS; i++) {
         Sprite *star = gs->stars + i;
-        star->pos.x -= (gs->hero->vel.x / star->z) * dt;
-        star->pos.y -= (gs->hero->vel.y / star->z) * dt;
+        star->pos.x -= (vel.x / star->z) * dt;
+        star->pos.y -= (vel.y / star->z) * dt;
         
+#if 0
         if(star->pos.x > bounds.max.x) {
             star->pos.x = bounds.min.x;
         }
@@ -112,6 +117,7 @@ void stars_update(GameState *gs, f32 dt) {
         if(star->pos.y < bounds.min.y) {
             star->pos.y = bounds.max.y;
         }
+#endif
     }
 }
 
@@ -322,36 +328,51 @@ void game_init(Memory *memory) {
     gs->confeti_bitmap[3] = bitmap_load(&gs->game_arena, "confeti4.png");
     gs->confeti_bitmap[4] = bitmap_load(&gs->game_arena, "confeti5.png");
     gs->pause_bitmap      = bitmap_load(&gs->game_arena, "pause.png");
+    gs->rocks_bitmap      = bitmap_load(&gs->game_arena, "rocks_flat.png");
+    gs->rocks_corner_bitmap      = bitmap_load(&gs->game_arena, "rocks_corner.png");
+    static char explotion_name_buffer[256];
+    for(u32 i = 0; i < array_len(gs->explotion_bitmaps); ++i) {
+        sprintf(explotion_name_buffer, "destroyed/destroyed%d.png", (i+1));
+        gs->explotion_bitmaps[i] = bitmap_load(&gs->game_arena, explotion_name_buffer);
+        
+    }
 
-    gs->ship_texture[0]    = gpu_texture_load(gs->gpu, &gs->ship_bitmap[0]);
-    gs->ship_texture[1]    = gpu_texture_load(gs->gpu, &gs->ship_bitmap[1]);
-    gs->move_outer_texture = gpu_texture_load(gs->gpu, &gs->move_outer_bitmap);
-    gs->move_inner_texture = gpu_texture_load(gs->gpu, &gs->move_inner_bitmap);
-    gs->boost_texture      = gpu_texture_load(gs->gpu, &gs->boost_bitmap);
-    gs->star_texture       = gpu_texture_load(gs->gpu, &gs->star_bitmap);
-    gs->galaxy_texture     = gpu_texture_load(gs->gpu, &gs->galaxy_bitmap);
-    gs->planet1_texture    = gpu_texture_load(gs->gpu, &gs->planet1_bitmap);
-    gs->planet2_texture    = gpu_texture_load(gs->gpu, &gs->planet2_bitmap);
-    gs->satelite_texture   = gpu_texture_load(gs->gpu, &gs->satelite_bitmap);
-    gs->meteorito_texture  = gpu_texture_load(gs->gpu, &gs->meteorito_bitmap);
-    gs->deathstar_texture  = gpu_texture_load(gs->gpu, &gs->deathstar_bitmap);
-    gs->orbe_texture       = gpu_texture_load(gs->gpu, &gs->orbe_bitmap);
-    gs->confeti_texture[0] = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[0]);
-    gs->confeti_texture[1] = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[1]);
-    gs->confeti_texture[2] = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[2]);
-    gs->confeti_texture[3] = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[3]);
-    gs->confeti_texture[4] = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[4]);
-    gs->pause_texture      = gpu_texture_load(gs->gpu, &gs->pause_bitmap);
+    gs->ship_texture[0]      = gpu_texture_load(gs->gpu, &gs->ship_bitmap[0]);
+    gs->ship_texture[1]      = gpu_texture_load(gs->gpu, &gs->ship_bitmap[1]);
+    gs->move_outer_texture   = gpu_texture_load(gs->gpu, &gs->move_outer_bitmap);
+    gs->move_inner_texture   = gpu_texture_load(gs->gpu, &gs->move_inner_bitmap);
+    gs->boost_texture        = gpu_texture_load(gs->gpu, &gs->boost_bitmap);
+    gs->star_texture         = gpu_texture_load(gs->gpu, &gs->star_bitmap);
+    gs->galaxy_texture       = gpu_texture_load(gs->gpu, &gs->galaxy_bitmap);
+    gs->planet1_texture      = gpu_texture_load(gs->gpu, &gs->planet1_bitmap);
+    gs->planet2_texture      = gpu_texture_load(gs->gpu, &gs->planet2_bitmap);
+    gs->satelite_texture     = gpu_texture_load(gs->gpu, &gs->satelite_bitmap);
+    gs->meteorito_texture    = gpu_texture_load(gs->gpu, &gs->meteorito_bitmap);
+    gs->deathstar_texture    = gpu_texture_load(gs->gpu, &gs->deathstar_bitmap);
+    gs->orbe_texture         = gpu_texture_load(gs->gpu, &gs->orbe_bitmap);
+    gs->confeti_texture[0]   = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[0]);
+    gs->confeti_texture[1]   = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[1]);
+    gs->confeti_texture[2]   = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[2]);
+    gs->confeti_texture[3]   = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[3]);
+    gs->confeti_texture[4]   = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[4]);
+    gs->pause_texture        = gpu_texture_load(gs->gpu, &gs->pause_bitmap);
+    gs->rocks_texutre        = gpu_texture_load(gs->gpu, &gs->rocks_bitmap);
+    gs->rocks_corner_texture = gpu_texture_load(gs->gpu, &gs->rocks_corner_bitmap);
+    for(u32 i = 0; i < array_len(gs->explotion_textures); ++i) {
+        gs->explotion_textures[i] = gpu_texture_load(gs->gpu, &gs->explotion_bitmaps[i]);
+        
+    }
 
-    gs->em = entity_manager_load(&gs->game_arena, 100);
 
-    // hero initialization
-    f32 size = 32.0f * 3.0f;
-    srand(time(0));
+    gs->em = entity_manager_load(&gs->game_arena, 1000);
+
+    gs->level = load_level(gs, &gs->game_arena, gs->em);
+
+    stars_init(gs);
     
     gs->fire    = particle_system_create(&gs->game_arena, 100, 10,
                                          0.05f, v2(0, 0), gs->orbe_texture,
-                                      ship_ps_update, GPU_BLEND_STATE_ADDITIVE);
+                                         ship_ps_update, GPU_BLEND_STATE_ADDITIVE);
     gs->confeti = particle_system_create(&gs->game_arena, 1000, 10,
                                          0.05f, v2(0, 0), 0,
                                          confeti_ps_update, GPU_BLEND_STATE_ALPHA);
@@ -362,32 +383,20 @@ void game_init(Memory *memory) {
                                          0.05f, v2(0, 0), gs->star_texture,
                                          smoke_ps_update, GPU_BLEND_STATE_ALPHA);
 
-    u32 ps_rand = rand_range(0, 1);
-    if(ps_rand == 1) {
-        gs->ps = gs->fire;
-    } else {
-        gs->ps =   gs->confeti;
-    }
-    
-    
+    gs->ps = gs->fire;
+
     u32 ship_rand_texture = rand_range(0, 1);
+
+    V3 hero_position = v3((f32)gs->level->dim.min.x + VIRTUAL_RES_X*0.5f, 0, 0);
     gs->hero = entity_manager_add_entity(gs->em);
     entity_add_input_component(gs->hero);
-    entity_add_render_component(gs->hero, v3(0, 0, 0), v2(size, size), gs->ship_texture[ship_rand_texture], v4(1, 1, 1, 1));
+    entity_add_render_component(gs->hero, hero_position, v2(32*3, 32*3), gs->ship_texture[ship_rand_texture], v4(1, 1, 1, 1));
     entity_add_physics_component(gs->hero, v2(0, 0), v2(0, 0), 0.4f);
     Collision hero_collision;
     hero_collision.type = COLLISION_TYPE_CIRLCE;
     hero_collision.circle.c = gs->hero->pos.xy;
     hero_collision.circle.r = gs->hero->scale.x*0.4f;
     entity_add_collision_component(gs->hero, hero_collision, true);
-
-    gs->asteroid = entity_manager_add_entity(gs->em);
-    entity_add_render_component(gs->asteroid, v3(800, 0, 0), v2(1000, 1000), gs->meteorito_texture, v4(0, 1, 0, 1));
-    Collision asteriod_collision;
-    asteriod_collision.type = COLLISION_TYPE_CIRLCE;
-    asteriod_collision.circle.c = gs->asteroid->pos.xy;
-    asteriod_collision.circle.r = gs->asteroid->scale.x*0.5f;
-    entity_add_collision_component(gs->asteroid, asteriod_collision, false);
 
     i32 hw = VIRTUAL_RES_X * 0.5f;
     i32 hh = VIRTUAL_RES_Y * 0.5f;
@@ -412,15 +421,12 @@ void game_init(Memory *memory) {
     pause_button_pos.x += 220;
     gs->debug_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, gs->pause_texture, v4(1,0,1,1));
 
-
-    stars_init(gs);
-
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {
     
     GameState *gs = game_state(memory);
-    
+
     ui_begin(&gs->ui, &gs->mt, input, dt);
 
     if(ui_button_just_up(&gs->mt, gs->pause_button)) {
@@ -466,6 +472,7 @@ void game_update(Memory *memory, Input *input, f32 dt) {
         physics_system_update(gs->em, dt);
         collision_system_update(gs->em, dt);
         stars_update(gs, dt);
+        level_update(gs->level, dt);
 
         V2 dir;
         dir.x = cosf(gs->hero->angle + PI*0.5f);
@@ -499,16 +506,11 @@ void game_render(Memory *memory) {
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
     gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v4(0.05f, 0.05f, 0.1f, 1));
 
-    gpu_camera_set(gs->gpu, v3(gs->hero->pos.x, gs->hero->pos.y, 0), 0);
-    stars_render(gs);
-
-    //gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ADDITIVE);
-    particle_system_render(gs->gpu, gs->ps);
-    //gpu_blend_state_set(gs->gpu, GPU_BLEND_STATE_ALPHA);
-
     // Entities draw
-    render_system_update(gs, gs->em);
-    
+    gpu_camera_set(gs->gpu, gs->level->camera_pos, 0);
+    level_render(gs->level, gs->gpu);
+    particle_system_render(gs->gpu, gs->ps);
+    stars_render(gs);
 
     // UI draw
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
@@ -534,7 +536,6 @@ void game_render(Memory *memory) {
     }
 
     gpu_frame_end(gs->gpu);
-
 }
 
 void game_shutdown(Memory *memory) {
