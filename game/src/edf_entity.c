@@ -35,11 +35,15 @@ void entity_add_collision_component(Entity *entity, Collision collision, bool co
 
 void entity_add_asteroid_component(Entity *entity, V2 vel, Entity *trigger) {
     assert((trigger->components & ENTITY_TRIGGER_COMPONENT) != 0);
-    assert((trigger->to_trigger_count + 1) <= trigger->max_trigger_count);
     entity->components |= ENTITY_ASTEROID_COMPONENT;
     entity->vel = vel;
     entity->active = false;
-    trigger->to_trigger[trigger->to_trigger_count++] = entity;
+    Entity *last = trigger;
+    while(last->to_trigger) {
+        last = last->to_trigger; 
+    }
+    last->to_trigger = entity;
+    trigger->to_trigger_count++;
 }
 
 void entity_add_enemy0_component(Entity *entity) {
@@ -54,12 +58,10 @@ void entity_add_enemy2_component(Entity *entity) {
     entity->components |= ENTITY_ENEMY2_COMPONENT;
 }
 
-void entity_add_trigger_component(Entity *entity, struct Arena *arena,
-                                  i32 entity_to_trigger_count) {
+void entity_add_trigger_component(Entity *entity) {
     assert((entity->components & ENTITY_COLLISION_COMPONENT) != 0);
     entity->components |= ENTITY_TRIGGER_COMPONENT;
-    entity->max_trigger_count = entity_to_trigger_count; 
-    entity->to_trigger = (Entity **)arena_push(arena, sizeof(Entity *)*entity->max_trigger_count, 8);
+    entity->to_trigger = 0;
     entity->to_trigger_count = 0;
 }
 

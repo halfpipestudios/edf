@@ -15,8 +15,10 @@
 //=================================================================================
 SYSTEM_UPDATE(trigger_system) {
     if(test_entity_entity(entity, gs->hero)) {
-        for(i32 i = 0; i < entity->to_trigger_count; i++) {
-            entity->to_trigger[i]->active = true;
+        Entity *to_trigger = entity->to_trigger;
+        while(to_trigger) {
+            to_trigger->active = true;
+            to_trigger = to_trigger->to_trigger;
         }
     }  
 }

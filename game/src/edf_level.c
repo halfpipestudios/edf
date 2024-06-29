@@ -92,8 +92,7 @@ void add_screen(GameState *gs, Level *level, i32 screen_index, const char *posit
                     collision.aabb.min = v2_sub(posv2, v2(200, VIRTUAL_RES_Y*0.5f));
                     collision.aabb.max = v2_add(posv2, v2(200, VIRTUAL_RES_Y*0.5f));
                     entity_add_collision_component(last_trigger, collision, false);
-                    entity_add_trigger_component(last_trigger, &gs->game_arena, 20
-                    );
+                    entity_add_trigger_component(last_trigger);
                 } break;
                 case '*': {
                     texture = gs->meteorito_texture;
