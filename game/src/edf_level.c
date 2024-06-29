@@ -224,11 +224,11 @@ Level *load_level(GameState *gs, struct Arena *arena, struct EntityManager *em) 
             "fffftttttttttte"
             "fffe..........."
             "ffe............"
-            "fe.ad.........."
-            "e.affd........."
-            ".affffd........"
-            "affffffd......."
-            "ffffffffbbbbbbd"
+            "fe..ad........."
+            "e..affd........"
+            "..affffd......."
+            ".affffffd......"
+            "bffffffffbbbbbd"
         };
 
         add_screen(gs, level, 7, asteroids, 8, array_len(asteroids));
