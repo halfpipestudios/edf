@@ -21,6 +21,8 @@
 		6E855BE52C2C6F0C004FDE97 /* edf_particles.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E855BE42C2C6F0C004FDE97 /* edf_particles.c */; };
 		6E8AAE9D2C29EED600009430 /* edf_input.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E8AAE9C2C29EED600009430 /* edf_input.c */; };
 		6E93693A2C2F66FB00853750 /* edf_level.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E9369392C2F66FB00853750 /* edf_level.c */; };
+		6E93693D2C2FB30100853750 /* edf_enemy_sys.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E93693C2C2FB30100853750 /* edf_enemy_sys.c */; };
+		6E9369402C2FC7CD00853750 /* edf_animation_sys.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E93693F2C2FC7CD00853750 /* edf_animation_sys.c */; };
 		6ED097D82C266CEE005630FB /* edf_font.c in Sources */ = {isa = PBXBuildFile; fileRef = 6ED097D62C266CEE005630FB /* edf_font.c */; };
 		6ED51BF82C2F180900E3F6F1 /* edf_debug.c in Sources */ = {isa = PBXBuildFile; fileRef = 6ED51BF62C2F180900E3F6F1 /* edf_debug.c */; };
 		6ED51C052C2F57C300E3F6F1 /* edf_collision_sys.c in Sources */ = {isa = PBXBuildFile; fileRef = 6ED51C042C2F57C300E3F6F1 /* edf_collision_sys.c */; };
@@ -60,6 +62,10 @@
 		6E8AAE9E2C29EEE000009430 /* edf_input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = edf_input.h; sourceTree = "<group>"; };
 		6E9369382C2F66FB00853750 /* edf_level.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = edf_level.h; sourceTree = "<group>"; };
 		6E9369392C2F66FB00853750 /* edf_level.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = edf_level.c; sourceTree = "<group>"; };
+		6E93693B2C2FB30100853750 /* edf_enemy_sys.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = edf_enemy_sys.h; sourceTree = "<group>"; };
+		6E93693C2C2FB30100853750 /* edf_enemy_sys.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = edf_enemy_sys.c; sourceTree = "<group>"; };
+		6E93693E2C2FC7CD00853750 /* edf_animation_sys.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = edf_animation_sys.h; sourceTree = "<group>"; };
+		6E93693F2C2FC7CD00853750 /* edf_animation_sys.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = edf_animation_sys.c; sourceTree = "<group>"; };
 		6ED097D52C266CCE005630FB /* stb_truetype.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stb_truetype.h; sourceTree = "<group>"; };
 		6ED097D62C266CEE005630FB /* edf_font.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = edf_font.c; sourceTree = "<group>"; };
 		6ED097D72C266CEE005630FB /* edf_font.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = edf_font.h; sourceTree = "<group>"; };
@@ -123,6 +129,10 @@
 				6E1A353E2C2B77A4007CB85B /* edf_input_sys.c */,
 				6ED51C032C2F57C300E3F6F1 /* edf_collision_sys.h */,
 				6ED51C042C2F57C300E3F6F1 /* edf_collision_sys.c */,
+				6E93693B2C2FB30100853750 /* edf_enemy_sys.h */,
+				6E93693C2C2FB30100853750 /* edf_enemy_sys.c */,
+				6E93693E2C2FC7CD00853750 /* edf_animation_sys.h */,
+				6E93693F2C2FC7CD00853750 /* edf_animation_sys.c */,
 			);
 			path = sys;
 			sourceTree = "<group>";
@@ -276,6 +286,7 @@
 				6ED51C052C2F57C300E3F6F1 /* edf_collision_sys.c in Sources */,
 				6ED799442C276899005E0FDF /* edf_sound.c in Sources */,
 				6E1A35392C2B662F007CB85B /* edf_physics_sys.c in Sources */,
+				6E9369402C2FC7CD00853750 /* edf_animation_sys.c in Sources */,
 				6E1420822C23196300C8BB04 /* edf.c in Sources */,
 				6E0F64BE2C23837600FC0EC0 /* ios_shader.metal in Sources */,
 				6E855BE52C2C6F0C004FDE97 /* edf_particles.c in Sources */,
@@ -285,6 +296,7 @@
 				6E01D0B42C2A10960024ED66 /* edf_entity.c in Sources */,
 				6E8AAE9D2C29EED600009430 /* edf_input.c in Sources */,
 				6E1420812C23192100C8BB04 /* ios_main.m in Sources */,
+				6E93693D2C2FB30100853750 /* edf_enemy_sys.c in Sources */,
 				6ED097D82C266CEE005630FB /* edf_font.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

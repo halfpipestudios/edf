@@ -6,6 +6,7 @@
 //
 
 #include "edf_collision.h"
+#include "edf_entity.h"
 
 //==================================================
 // Separated Axis Theorem (SAT)
@@ -173,6 +174,50 @@ i32 test_obb_obb(OBB a, OBB b) {
     local_b.c = ab;
 
     return test_aabb_obb(local_a, local_b);    
+}
+
+
+i32 test_entity_entity(struct Entity *entity, struct Entity *other) {
+    if(entity->collision.type == COLLISION_TYPE_CIRLCE &&
+       other->collision.type == COLLISION_TYPE_CIRLCE) {
+        return test_cirlce_circle(entity->collision.circle, other->collision.circle);
+    }
+    else if(entity->collision.type == COLLISION_TYPE_AABB &&
+       other->collision.type == COLLISION_TYPE_AABB) {
+        return test_aabb_aabb(entity->collision.aabb, other->collision.aabb);
+    }
+    else if(entity->collision.type == COLLISION_TYPE_OBB &&
+       other->collision.type == COLLISION_TYPE_OBB) {
+        return test_obb_obb(entity->collision.obb, other->collision.obb);
+    }
+    else if(entity->collision.type == COLLISION_TYPE_CIRLCE &&
+       other->collision.type == COLLISION_TYPE_AABB) {
+        return test_circle_aabb(entity->collision.circle, other->collision.aabb);
+    }
+    else if(entity->collision.type == COLLISION_TYPE_AABB &&
+       other->collision.type == COLLISION_TYPE_CIRLCE) {
+        return test_circle_aabb(other->collision.circle, entity->collision.aabb);
+    }
+    else if(entity->collision.type == COLLISION_TYPE_CIRLCE &&
+       other->collision.type == COLLISION_TYPE_OBB) {
+        return test_circle_obb(entity->collision.circle, other->collision.obb);
+    }
+    else if(entity->collision.type == COLLISION_TYPE_OBB &&
+       other->collision.type == COLLISION_TYPE_CIRLCE) {
+        return test_circle_obb(other->collision.circle, entity->collision.obb);
+    }
+    else if(entity->collision.type == COLLISION_TYPE_AABB &&
+       other->collision.type == COLLISION_TYPE_OBB) {
+        return test_aabb_obb(entity->collision.aabb, other->collision.obb);
+    }
+    else if(entity->collision.type == COLLISION_TYPE_OBB &&
+       other->collision.type == COLLISION_TYPE_AABB) {
+        return test_aabb_obb(other->collision.aabb, entity->collision.obb);
+    }
+    else {
+        assert(!"ERROR: collision pair not handle!!!");
+    }
+    return 0;
 }
 //==================================================
 //==================================================

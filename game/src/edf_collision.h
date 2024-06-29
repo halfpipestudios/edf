@@ -11,6 +11,8 @@
 #include "edf_common.h"
 #include "edf_math.h"
 
+struct Entity;
+
 typedef struct Interval {
     f32 min;
     f32 max;
@@ -47,6 +49,7 @@ i32 test_circle_obb(Circle a, OBB b);
 i32 test_aabb_aabb(AABB a, AABB b);
 i32 test_aabb_obb(AABB a, OBB b);
 i32 test_obb_obb(OBB a, OBB b);
+i32 test_entity_entity(struct Entity *entity, struct Entity *other);
 
 
 #endif /* EDF_COLLISION_H */

@@ -4,6 +4,7 @@
 #include "sys/edf_input_sys.h"
 #include "sys/edf_physics_sys.h"
 #include "sys/edf_collision_sys.h"
+#include "sys/edf_animation_sys.h"
 #include "edf_particles.h"
 #include "edf_level.h"
 
@@ -400,6 +401,10 @@ void game_init(Memory *memory) {
     hero_collision.circle.r = gs->hero->scale.x*0.4f;
     entity_add_collision_component(gs->hero, hero_collision, true);
 
+    entity_add_animation_component(gs->hero, &gs->game_arena,
+        gs->explotion_textures, array_len(gs->explotion_textures), 0.1f, false, false);
+
+
     i32 hw = VIRTUAL_RES_X * 0.5f;
     i32 hh = VIRTUAL_RES_Y * 0.5f;
     R2 window_rect;
@@ -472,7 +477,8 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     if(!gs->paused) {
         input_system_update(gs, gs->em, dt);
         physics_system_update(gs->em, dt);
-        collision_system_update(gs->em, dt);
+        collision_system_update(gs, gs->em, dt);
+        animation_system_update(gs->em, dt);
         stars_update(gs, dt);
         level_update(gs->level, dt);
 
