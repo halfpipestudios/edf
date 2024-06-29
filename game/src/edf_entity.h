@@ -66,10 +66,9 @@ typedef struct Entity {
     bool collides;
     
     // triggers
-    struct Entity **to_trigger;
-    i32 to_trigger_count;
-    i32 max_trigger_count;
     bool active;
+    struct Entity *to_trigger;
+    i32 to_trigger_count;
 
 // internal data for the entity manager
     struct Entity *next;
@@ -84,7 +83,7 @@ void entity_add_asteroid_component(Entity *entity, V2 vel, Entity *trigger);
 void entity_add_enemy0_component(Entity *entity); // TODO:...
 void entity_add_enemy1_component(Entity *entity); // TODO:...
 void entity_add_enemy2_component(Entity *entity); // TODO:...
-void entity_add_trigger_component(Entity *entity, struct Arena *arena, i32 entity_to_trigger_count);
+void entity_add_trigger_component(Entity *entity);
 void entity_add_animation_component(Entity *entity, Animation *animation);
 
 void entity_remove_components(Entity *entity, u64 components);
