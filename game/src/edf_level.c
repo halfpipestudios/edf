@@ -92,7 +92,8 @@ void add_screen(GameState *gs, Level *level, i32 screen_index, const char *posit
                     collision.aabb.min = v2_sub(posv2, v2(200, VIRTUAL_RES_Y*0.5f));
                     collision.aabb.max = v2_add(posv2, v2(200, VIRTUAL_RES_Y*0.5f));
                     entity_add_collision_component(last_trigger, collision, false);
-                    entity_add_trigger_component(last_trigger, &gs->game_arena, 5);
+                    entity_add_trigger_component(last_trigger, &gs->game_arena, 20
+                    );
                 } break;
                 case '*': {
                     texture = gs->meteorito_texture;
@@ -277,16 +278,46 @@ Level *load_level(GameState *gs, struct Arena *arena, struct EntityManager *em) 
     {
         static char asteroids[] = {
             "ttttttttttttttt"
-            "..............*"
+            "..............."
             "..........*...."
-            "..............*"
+            "..............."
             "..........*...."
-            "..............*"
+            "..............."
             "..............."
             "bbbbbbbbbbbbbbb"
         };
 
         add_screen(gs, level, 9, asteroids, 8, array_len(asteroids));
+    }
+
+    {
+        static char asteroids[] = {
+            "ttttttttttttttt"
+            "..............*"
+            "..............."
+            "..............*"
+            "..............."
+            "..............*"
+            "..............."
+            "bbbbbbbbbbbbbbb"
+        };
+
+        add_screen(gs, level, 10, asteroids, 8, array_len(asteroids));
+    }
+
+    {
+        static char asteroids[] = {
+            "ttttttttttttttt"
+            "..............."
+            "..............*"
+            "..............."
+            "..............*"
+            "..............."
+            "..............."
+            "bbbbbbbbbbbbbbb"
+        };
+
+        add_screen(gs, level, 11, asteroids, 8, array_len(asteroids));
     }
 
     return level;
