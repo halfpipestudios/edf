@@ -23,6 +23,7 @@
 		6E93693A2C2F66FB00853750 /* edf_level.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E9369392C2F66FB00853750 /* edf_level.c */; };
 		6E93693D2C2FB30100853750 /* edf_enemy_sys.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E93693C2C2FB30100853750 /* edf_enemy_sys.c */; };
 		6E9369402C2FC7CD00853750 /* edf_animation_sys.c in Sources */ = {isa = PBXBuildFile; fileRef = 6E93693F2C2FC7CD00853750 /* edf_animation_sys.c */; };
+		6EB2328A2C30A42C00F506E1 /* edf_efx.c in Sources */ = {isa = PBXBuildFile; fileRef = 6EB232892C30A42C00F506E1 /* edf_efx.c */; };
 		6ED097D82C266CEE005630FB /* edf_font.c in Sources */ = {isa = PBXBuildFile; fileRef = 6ED097D62C266CEE005630FB /* edf_font.c */; };
 		6ED51BF82C2F180900E3F6F1 /* edf_debug.c in Sources */ = {isa = PBXBuildFile; fileRef = 6ED51BF62C2F180900E3F6F1 /* edf_debug.c */; };
 		6ED51C052C2F57C300E3F6F1 /* edf_collision_sys.c in Sources */ = {isa = PBXBuildFile; fileRef = 6ED51C042C2F57C300E3F6F1 /* edf_collision_sys.c */; };
@@ -66,6 +67,8 @@
 		6E93693C2C2FB30100853750 /* edf_enemy_sys.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = edf_enemy_sys.c; sourceTree = "<group>"; };
 		6E93693E2C2FC7CD00853750 /* edf_animation_sys.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = edf_animation_sys.h; sourceTree = "<group>"; };
 		6E93693F2C2FC7CD00853750 /* edf_animation_sys.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = edf_animation_sys.c; sourceTree = "<group>"; };
+		6EB232882C30A42C00F506E1 /* edf_efx.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = edf_efx.h; sourceTree = "<group>"; };
+		6EB232892C30A42C00F506E1 /* edf_efx.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = edf_efx.c; sourceTree = "<group>"; };
 		6ED097D52C266CCE005630FB /* stb_truetype.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stb_truetype.h; sourceTree = "<group>"; };
 		6ED097D62C266CEE005630FB /* edf_font.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = edf_font.c; sourceTree = "<group>"; };
 		6ED097D72C266CEE005630FB /* edf_font.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = edf_font.h; sourceTree = "<group>"; };
@@ -176,6 +179,8 @@
 		6EE114D72C222A030018B7E1 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				6EB232892C30A42C00F506E1 /* edf_efx.c */,
+				6EB232882C30A42C00F506E1 /* edf_efx.h */,
 				6ED51BF62C2F180900E3F6F1 /* edf_debug.c */,
 				6ED51BF72C2F180900E3F6F1 /* edf_debug.h */,
 				6E1A35362C2B660A007CB85B /* sys */,
@@ -295,6 +300,7 @@
 				6E3689E82C2E06E500F5D7B0 /* edf_collision.c in Sources */,
 				6E01D0B42C2A10960024ED66 /* edf_entity.c in Sources */,
 				6E8AAE9D2C29EED600009430 /* edf_input.c in Sources */,
+				6EB2328A2C30A42C00F506E1 /* edf_efx.c in Sources */,
 				6E1420812C23192100C8BB04 /* ios_main.m in Sources */,
 				6E93693D2C2FB30100853750 /* edf_enemy_sys.c in Sources */,
 				6ED097D82C266CEE005630FB /* edf_font.c in Sources */,
