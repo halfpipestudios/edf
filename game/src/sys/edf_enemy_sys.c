@@ -35,6 +35,7 @@ void trigger_system_update(struct GameState *gs, struct EntityManager *em, f32 d
 SYSTEM_UPDATE(asteroid_system) {
     if(entity->active) {
         entity->pos.xy = v2_add(entity->pos.xy, v2_scale(entity->vel, dt));
+        entity->angle += dt*2.0f;
     }
 }
 
@@ -42,5 +43,16 @@ void asteroid_system_update(struct EntityManager *em, f32 dt) {
     u64 components = ENTITY_ASTEROID_COMPONENT;
     entity_manager_forall(0, em, asteroid_system, components, dt);
 }
+
+SYSTEM_UPDATE(asteroid_reset) {
+    entity->active = false;
+    entity->pos = entity->save_pos;
+}
+
+void asteroid_system_reset(struct EntityManager *em) {
+    u64 components = ENTITY_ASTEROID_COMPONENT;
+    entity_manager_forall(0, em, asteroid_reset, components, 0);
+}
+
 //=================================================================================
 //=================================================================================

@@ -5,6 +5,7 @@
 #include "sys/edf_physics_sys.h"
 #include "sys/edf_collision_sys.h"
 #include "sys/edf_animation_sys.h"
+#include "sys/edf_enemy_sys.h"
 #include "edf_particles.h"
 #include "edf_level.h"
 
@@ -480,6 +481,8 @@ void game_update(Memory *memory, Input *input, f32 dt) {
         physics_system_update(gs->em, dt);
         collision_system_update(gs, gs->em, dt);
         animation_system_update(gs, gs->em, dt);
+        trigger_system_update(gs, gs->em, dt);
+        asteroid_system_update(gs->em, dt);
         stars_update(gs, dt);
         level_update(gs->level, dt);
 

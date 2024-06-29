@@ -16,5 +16,6 @@ struct GameState;
 void trigger_system_update(struct GameState *gs, struct EntityManager *em, f32 dt);
 
 void asteroid_system_update(struct EntityManager *em, f32 dt);
+void asteroid_system_reset(struct EntityManager *em);
 
 #endif /* EDF_ENEMY_SYS_H */

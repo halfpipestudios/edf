@@ -85,14 +85,14 @@ i32 test_cirlce_circle(Circle a, Circle b) {
 
 i32 test_circle_aabb(Circle a, AABB b) {
     V2 closest = closest_point_point_aabb(a.c, b);
-    f32 dist2 = v2_len_sq(closest);
+    f32 dist2 = v2_len_sq(v2_sub(a.c, closest));
     f32 radius2 = a.r * a.r;
     return dist2 <= radius2;
 }
 
 i32 test_circle_obb(Circle a, OBB b) {
     V2 closest = closest_point_point_obb(a.c, b);
-    f32 dist2 = v2_len_sq(closest);
+    f32 dist2 = v2_len_sq(v2_sub(a.c, closest));
     f32 radius2 = a.r * a.r;
     return dist2 <= radius2;
 }

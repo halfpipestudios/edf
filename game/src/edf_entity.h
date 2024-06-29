@@ -59,6 +59,7 @@ typedef struct Animation {
 typedef struct Entity {
     u64 components;
     V3 pos;
+    V3 save_pos;
     V2 vel;
     V2 acc;
     V2 scale;

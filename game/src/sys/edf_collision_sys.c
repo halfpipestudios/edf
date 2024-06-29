@@ -18,15 +18,7 @@ SYSTEM_UPDATE(collision_system) {
         entity->collision.circle.c = entity->pos.xy;
     }
     if(entity->collision.type == COLLISION_TYPE_AABB) {
-        V2 min = entity->collision.aabb.min;
-        V2 max = entity->collision.aabb.max;
-        V2 mid = v2_add(min, v2_scale(max, 0.5f));
-        min = v2_sub(min, mid);
-        max = v2_sub(max, mid);
-        min = v2_add(min, entity->pos.xy);
-        max = v2_add(max, entity->pos.xy);
-        entity->collision.aabb.min = min;
-        entity->collision.aabb.max = max;
+        // TODO: ...
     }
     if(entity->collision.type == COLLISION_TYPE_OBB) {
         entity->collision.obb.c = entity->pos.xy;
@@ -40,7 +32,7 @@ SYSTEM_UPDATE(collision_system) {
     i32 hit = false;
     for(i32 i = 0; i < others_count; i++) {
         Entity *other = others[i];
-        if(entity != other) {
+        if(entity != other && (other->components & ENTITY_TRIGGER_COMPONENT) == 0) {
             hit = test_entity_entity(entity, other);
             if(hit) { 
                 break;
@@ -50,7 +42,10 @@ SYSTEM_UPDATE(collision_system) {
 
     if(hit) {
         if(entity->animation) {
-            entity->animation->playing = true;
+            if(entity->animation->playing == false) {
+                entity->save_tex = entity->tex;
+                entity->animation->playing = true;
+            }
             entity->vel = v2(0, 0);
             entity->acc = v2(0, 0);
             particle_system_stop(gs->ps);

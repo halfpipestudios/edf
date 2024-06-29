@@ -30,7 +30,7 @@ void add_screen(GameState *gs, Level *level, i32 screen_index, const char *posit
     i32 asteroid_position_cols = total_size/asteroid_position_rows;
     i32 tile_x = VIRTUAL_RES_X / asteroid_position_cols;
     i32 tile_y = VIRTUAL_RES_Y / asteroid_position_rows;
-
+    static Entity *last_trigger = 0;
     for(i32 y = 0; y < asteroid_position_rows; ++y) {
         for(i32 x = 0; x < asteroid_position_cols; ++x) {
             
@@ -81,6 +81,32 @@ void add_screen(GameState *gs, Level *level, i32 screen_index, const char *posit
                     texture = gs->meteorito_texture;
                     add_entity(level, screen_x, screen_y, scale, texture);
                 } break;
+                case '!': {
+                    texture = gs->rocks_texutre;
+                    V3 pos = v3(screen_x, screen_y, 0);
+                    last_trigger = entity_manager_add_entity(level->em);
+                    entity_add_render_component(last_trigger, pos, scale, texture, v4(1, 1, 1, 0));
+                    Collision collision;
+                    collision.type = COLLISION_TYPE_AABB;
+                    V2 posv2 = v2(screen_x, screen_y);
+                    collision.aabb.min = v2_sub(posv2, v2(200, VIRTUAL_RES_Y*0.5f));
+                    collision.aabb.max = v2_add(posv2, v2(200, VIRTUAL_RES_Y*0.5f));
+                    entity_add_collision_component(last_trigger, collision, false);
+                    entity_add_trigger_component(last_trigger, &gs->game_arena, 5);
+                } break;
+                case '*': {
+                    texture = gs->meteorito_texture;
+                    V3 pos = v3(screen_x, screen_y, 0);
+                    Entity *asteroid = entity_manager_add_entity(level->em);
+                    asteroid->save_pos = pos;
+                    entity_add_render_component(asteroid, pos, scale, texture, v4(1, 1, 1, 1));
+                    Collision asteriod_collision;
+                    asteriod_collision.type = COLLISION_TYPE_CIRLCE;
+                    asteriod_collision.circle.c = asteroid->pos.xy;
+                    asteriod_collision.circle.r = fabsf(asteroid->scale.x)*0.5f;
+                    entity_add_collision_component(asteroid, asteriod_collision, false);
+                    entity_add_asteroid_component(asteroid, v2(-400, 0), last_trigger);
+                } break;
             }
         }
     }
@@ -119,7 +145,7 @@ Level *load_level(GameState *gs, struct Arena *arena, struct EntityManager *em) 
             "..............."
             ".....x........."
             "..............."
-            "........x......"
+            "..............."
             "..............."
             "..............."
             "..x............"
@@ -221,17 +247,47 @@ Level *load_level(GameState *gs, struct Arena *arena, struct EntityManager *em) 
 
     {
         static char asteroids[] = {
-            "fffftttttttttte"
+            "ffffttttttttttt"
             "fffe..........."
             "ffe............"
             "fe..ad........."
             "e..affd........"
             "..affffd......."
             ".affffffd......"
-            "bffffffffbbbbbd"
+            "bffffffffbbbbbb"
         };
 
         add_screen(gs, level, 7, asteroids, 8, array_len(asteroids));
+    }
+
+    {
+        static char asteroids[] = {
+            "ttttttttttttttt"
+            "..............."
+            "..............."
+            "!.............."
+            "..............."
+            "..............."
+            "..............."
+            "bbbbbbbbbbbbbbb"
+        };
+
+        add_screen(gs, level, 8, asteroids, 8, array_len(asteroids));
+    }
+
+    {
+        static char asteroids[] = {
+            "ttttttttttttttt"
+            "..............*"
+            "..........*...."
+            "..............*"
+            "..........*...."
+            "..............*"
+            "..............."
+            "bbbbbbbbbbbbbbb"
+        };
+
+        add_screen(gs, level, 9, asteroids, 8, array_len(asteroids));
     }
 
     return level;
