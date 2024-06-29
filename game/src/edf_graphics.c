@@ -56,3 +56,19 @@ void sprite_draw(Gpu gpu, Sprite *sprite) {
     gpu_draw_quad_texture_tinted(gpu, sprite->pos.x, sprite->pos.y, sprite->scale.x,
                                  sprite->scale.y, sprite->angle, sprite->texture, sprite->tint);
 }
+
+
+ Animation *animation_load(struct Arena *arena,
+                           Texture *textures, i32 textures_count,
+                           f32 speed, bool playing, bool looping) {
+    Animation *animation = (Animation *)arena_push(arena, sizeof(Animation), 8);
+    animation->frame_count = textures_count;
+    animation->frames = (Texture *)arena_push(arena, sizeof(Texture) * animation->frame_count, 8);
+    memcpy(animation->frames, textures, sizeof(Texture) * animation->frame_count);
+    animation->speed = speed;
+    animation->current_frame = 0;
+    animation->current_time = 0;
+    animation->playing = playing;
+    animation->looping = looping;
+    return animation;
+ }

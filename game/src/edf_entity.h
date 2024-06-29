@@ -46,16 +46,6 @@ typedef struct Collision {
     };
 } Collision;
 
-typedef struct Animation {
-    Texture *frames;
-    i32 frame_count;
-    f32 speed;
-    i32 current_frame;
-    f32 current_time;
-    bool playing;
-    bool looping;
-} Animation;
-
 typedef struct Entity {
     u64 components;
     V3 pos;
@@ -95,8 +85,7 @@ void entity_add_enemy0_component(Entity *entity); // TODO:...
 void entity_add_enemy1_component(Entity *entity); // TODO:...
 void entity_add_enemy2_component(Entity *entity); // TODO:...
 void entity_add_trigger_component(Entity *entity, struct Arena *arena, i32 entity_to_trigger_count);
-void entity_add_animation_component(Entity *entity, struct Arena *arena,
-        Texture *textures, i32 textures_count, f32 speed, bool playing, bool looping);
+void entity_add_animation_component(Entity *entity, Animation *animation);
 
 void entity_remove_components(Entity *entity, u64 components);
 
