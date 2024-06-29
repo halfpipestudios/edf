@@ -211,6 +211,45 @@ PARTICLE_SYSTEM_UPDATE(neon_ps_update) {
     particle->pos.y += particle->vel.y * dt;
 }
 
+PARTICLE_SYSTEM_UPDATE(pixel_ps_update) {
+
+    static u32 tint_index = 0;
+    static u32 tint[] = {
+        0xffff0000,
+        0xff00ff00,
+        0xff0000ff
+    };
+
+    if(!particle->init) {
+        particle->init = true;
+
+        V2 dir;
+        dir.x = -cosf(gs->hero->angle + (PI*0.5f));
+        dir.y = -sinf(gs->hero->angle + (PI*0.5f));
+
+        V2 perp = v2(-dir.y, dir.x);
+        f32 offet = rand_range(gs->hero->scale.x*-0.5f, gs->hero->scale.x*0.5f);
+        particle->pos.x += perp.x * offet;
+        particle->pos.y += perp.y * offet;
+
+        particle->vel.x = dir.x * 300.0f + gs->hero->vel.x;
+        particle->vel.y = dir.y * 300.0f + gs->hero->vel.y;
+        particle->tint = hex_to_v4(tint[tint_index]);
+        tint_index = (tint_index + 1) % array_len(tint);
+
+        particle->angle = gs->hero->angle;
+    }
+    
+    float x = particle->lifetime;
+    particle->scale =  clamp((1.0f-(2*x-1)*(2*x-1)) * 20, 5, 60);
+    
+    x = particle->lifetime/particle->save_lifetime;
+    particle->tint.w = x*x;
+    
+    particle->pos.x += particle->vel.x * dt;
+    particle->pos.y += particle->vel.y * dt;
+}
+
 PARTICLE_SYSTEM_UPDATE(smoke_ps_update) {
 
     static u32 tint_index = 0;
@@ -321,9 +360,9 @@ void game_init(Memory *memory) {
     gs->planet1_bitmap    = bitmap_load(&gs->game_arena, "planet1.png");
     gs->planet2_bitmap    = bitmap_load(&gs->game_arena, "planet2.png");
     gs->satelite_bitmap   = bitmap_load(&gs->game_arena, "Satelite.png");
-    gs->meteorito_bitmap   = bitmap_load(&gs->game_arena, "Meteorito.png");
-    gs->deathstar_bitmap   = bitmap_load(&gs->game_arena, "deathstar.png");
-    gs->orbe_bitmap   = bitmap_load(&gs->game_arena, "orbe.png");
+    gs->meteorito_bitmap  = bitmap_load(&gs->game_arena, "Meteorito.png");
+    gs->deathstar_bitmap  = bitmap_load(&gs->game_arena, "deathstar.png");
+    gs->orbe_bitmap       = bitmap_load(&gs->game_arena, "orbe_shot.png");
     gs->confeti_bitmap[0] = bitmap_load(&gs->game_arena, "confeti1.png");
     gs->confeti_bitmap[1] = bitmap_load(&gs->game_arena, "confeti2.png");
     gs->confeti_bitmap[2] = bitmap_load(&gs->game_arena, "confeti3.png");
@@ -331,8 +370,9 @@ void game_init(Memory *memory) {
     gs->confeti_bitmap[4] = bitmap_load(&gs->game_arena, "confeti5.png");
     gs->pause_bitmap      = bitmap_load(&gs->game_arena, "pause.png");
     gs->rocks_bitmap      = bitmap_load(&gs->game_arena, "rocks_flat.png");
-    gs->rocks_full_bitmap      = bitmap_load(&gs->game_arena, "rock_full.png");
-    gs->rocks_corner_bitmap      = bitmap_load(&gs->game_arena, "rocks_corner.png");
+    gs->rocks_full_bitmap = bitmap_load(&gs->game_arena, "rock_full.png");
+    gs->rocks_corner_bitmap = bitmap_load(&gs->game_arena, "rocks_corner.png");
+    gs->square_bitmap     = bitmap_load(&gs->game_arena, "square.png");
     static char explotion_name_buffer[256];
     for(u32 i = 0; i < array_len(gs->explotion_bitmaps); ++i) {
         sprintf(explotion_name_buffer, "destroyed/destroyed%d.png", (i+1));
@@ -362,6 +402,7 @@ void game_init(Memory *memory) {
     gs->rocks_texutre        = gpu_texture_load(gs->gpu, &gs->rocks_bitmap);
     gs->rocks_full_texture   = gpu_texture_load(gs->gpu, &gs->rocks_full_bitmap);
     gs->rocks_corner_texture = gpu_texture_load(gs->gpu, &gs->rocks_corner_bitmap);
+    gs->square_texture       = gpu_texture_load(gs->gpu, &gs->square_bitmap);
     for(u32 i = 0; i < array_len(gs->explotion_textures); ++i) {
         gs->explotion_textures[i] = gpu_texture_load(gs->gpu, &gs->explotion_bitmaps[i]);
         
@@ -386,6 +427,9 @@ void game_init(Memory *memory) {
     gs->smoke    = particle_system_create(&gs->game_arena, 1000, 5,
                                          0.05f, v2(0, 0), gs->star_texture,
                                          smoke_ps_update, GPU_BLEND_STATE_ALPHA);
+    gs->pixel    = particle_system_create(&gs->game_arena, 100, 10,
+                                          0.05f, v2(0, 0), gs->square_texture,
+                                          pixel_ps_update, GPU_BLEND_STATE_ADDITIVE);
 
     gs->ps = gs->fire;
 
@@ -461,7 +505,8 @@ void game_update(Memory *memory, Input *input, f32 dt) {
             gs->fire,
             gs->confeti,
             gs->neon,
-            gs->smoke
+            gs->smoke,
+            gs->pixel
         };
 
         static u32 next = 0;
