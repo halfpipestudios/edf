@@ -329,6 +329,7 @@ void game_init(Memory *memory) {
     gs->confeti_bitmap[4] = bitmap_load(&gs->game_arena, "confeti5.png");
     gs->pause_bitmap      = bitmap_load(&gs->game_arena, "pause.png");
     gs->rocks_bitmap      = bitmap_load(&gs->game_arena, "rocks_flat.png");
+    gs->rocks_full_bitmap      = bitmap_load(&gs->game_arena, "rock_full.png");
     gs->rocks_corner_bitmap      = bitmap_load(&gs->game_arena, "rocks_corner.png");
     static char explotion_name_buffer[256];
     for(u32 i = 0; i < array_len(gs->explotion_bitmaps); ++i) {
@@ -357,6 +358,7 @@ void game_init(Memory *memory) {
     gs->confeti_texture[4]   = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[4]);
     gs->pause_texture        = gpu_texture_load(gs->gpu, &gs->pause_bitmap);
     gs->rocks_texutre        = gpu_texture_load(gs->gpu, &gs->rocks_bitmap);
+    gs->rocks_full_texture   = gpu_texture_load(gs->gpu, &gs->rocks_full_bitmap);
     gs->rocks_corner_texture = gpu_texture_load(gs->gpu, &gs->rocks_corner_bitmap);
     for(u32 i = 0; i < array_len(gs->explotion_textures); ++i) {
         gs->explotion_textures[i] = gpu_texture_load(gs->gpu, &gs->explotion_bitmaps[i]);
@@ -387,7 +389,7 @@ void game_init(Memory *memory) {
 
     u32 ship_rand_texture = rand_range(0, 1);
 
-    V3 hero_position = v3((f32)gs->level->dim.min.x + VIRTUAL_RES_X*0.5f, 0, 0);
+    V3 hero_position = v3((f32)gs->level->dim.min.x, 0, 0);
     gs->hero = entity_manager_add_entity(gs->em);
     entity_add_input_component(gs->hero);
     entity_add_render_component(gs->hero, hero_position, v2(32*3, 32*3), gs->ship_texture[ship_rand_texture], v4(1, 1, 1, 1));
