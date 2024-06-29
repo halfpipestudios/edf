@@ -6,7 +6,6 @@
 #include "sys/edf_collision_sys.h"
 #include "sys/edf_animation_sys.h"
 #include "sys/edf_enemy_sys.h"
-#include "edf_particles.h"
 #include "edf_level.h"
 #include "edf_efx.h"
 
