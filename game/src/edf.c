@@ -3,6 +3,7 @@
 #include "sys/edf_render_sys.h"
 #include "sys/edf_input_sys.h"
 #include "sys/edf_physics_sys.h"
+#include "sys/edf_collision_sys.h"
 #include "edf_particles.h"
 
 #include <stdarg.h>
@@ -374,6 +375,19 @@ void game_init(Memory *memory) {
     entity_add_input_component(gs->hero);
     entity_add_render_component(gs->hero, v3(0, 0, 0), v2(size, size), gs->ship_texture[ship_rand_texture], v4(1, 1, 1, 1));
     entity_add_physics_component(gs->hero, v2(0, 0), v2(0, 0), 0.4f);
+    Collision hero_collision;
+    hero_collision.type = COLLISION_TYPE_CIRLCE;
+    hero_collision.circle.c = gs->hero->pos.xy;
+    hero_collision.circle.r = gs->hero->scale.x*0.4f;
+    entity_add_collision_component(gs->hero, hero_collision, true);
+
+    gs->asteroid = entity_manager_add_entity(gs->em);
+    entity_add_render_component(gs->asteroid, v3(800, 0, 0), v2(1000, 1000), gs->meteorito_texture, v4(0, 1, 0, 1));
+    Collision asteriod_collision;
+    asteriod_collision.type = COLLISION_TYPE_CIRLCE;
+    asteriod_collision.circle.c = gs->asteroid->pos.xy;
+    asteriod_collision.circle.r = gs->asteroid->scale.x*0.5f;
+    entity_add_collision_component(gs->asteroid, asteriod_collision, false);
 
     i32 hw = VIRTUAL_RES_X * 0.5f;
     i32 hh = VIRTUAL_RES_Y * 0.5f;
@@ -401,25 +415,6 @@ void game_init(Memory *memory) {
 
     stars_init(gs);
 
-
-    gs->aabb.min = v2(500, 400);
-    gs->aabb.max = v2(600, 500);
-    
-    gs->obb0.c = v2(750, 450);
-    gs->obb0.he = v2(50, 200);
-    gs->obb0.r = 0;
-
-
-    gs->obb1.c = v2(0, 400);
-    gs->obb1.he = v2(50, 50);
-    gs->obb1.r = 0;
-
-    gs->obb2.c = v2(120, 400);
-    gs->obb2.he = v2(50, 50);
-    gs->obb2.r = 0;
-
-    gs->circle.c = v2(-200, 0);
-    gs->circle.r = 200;
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {
@@ -469,6 +464,7 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     if(!gs->paused) {
         input_system_update(gs, gs->em, dt);
         physics_system_update(gs->em, dt);
+        collision_system_update(gs->em, dt);
         stars_update(gs, dt);
 
         V2 dir;
@@ -513,58 +509,6 @@ void game_render(Memory *memory) {
     // Entities draw
     render_system_update(gs, gs->em);
     
-    static f32 angle = PI*0.25f;
-    if(angle >= 2.0f*PI) {
-        angle = 0.0f;
-    }
-    angle += 0.016f;
-
-
-    gs->obb0.r = angle;
-    gs->obb1.r = angle;
-    gs->obb2.r = -angle;
-    
-    V2 aabb_pos = v2_add(gs->aabb.min, v2_scale(v2_sub(gs->aabb.max, gs->aabb.min), 0.5f));
-    V2 aabb_e = v2_sub(gs->aabb.max, gs->aabb.min); 
-    if(test_aabb_obb(gs->aabb, gs->obb0)) {
-        gpu_draw_quad_color(gs->gpu, aabb_pos.x, aabb_pos.y, aabb_e.x, aabb_e.y, 0, v4(1, 0, 0, 0.5f));
-        gpu_draw_quad_color(gs->gpu, gs->obb0.c.x, gs->obb0.c.y, gs->obb0.he.x*2.0f, gs->obb0.he.y*2.0f, gs->obb0.r, v4(1, 0, 0, 0.5f));
-    }
-    else {
-        gpu_draw_quad_color(gs->gpu, aabb_pos.x, aabb_pos.y, aabb_e.x, aabb_e.y, 0, v4(0, 1, 0, 0.5f));
-        gpu_draw_quad_color(gs->gpu, gs->obb0.c.x, gs->obb0.c.y, gs->obb0.he.x*2.0f, gs->obb0.he.y*2.0f, gs->obb0.r, v4(0, 1, 0, 0.5f));
-
-    }
-
-    if(test_obb_obb(gs->obb1, gs->obb2)) {
-        gpu_draw_quad_color(gs->gpu, gs->obb1.c.x, gs->obb1.c.y, gs->obb1.he.x*2.0f, gs->obb1.he.y*2.0f, gs->obb1.r, v4(1, 0, 0, 0.5f));
-        gpu_draw_quad_color(gs->gpu, gs->obb2.c.x, gs->obb2.c.y, gs->obb2.he.x*2.0f, gs->obb2.he.y*2.0f, gs->obb2.r, v4(1, 0, 0, 0.5f));
-    }
-    else {
-        gpu_draw_quad_color(gs->gpu, gs->obb1.c.x, gs->obb1.c.y, gs->obb1.he.x*2.0f, gs->obb1.he.y*2.0f, gs->obb1.r, v4(0, 1, 0, 0.5f));
-        gpu_draw_quad_color(gs->gpu, gs->obb2.c.x, gs->obb2.c.y, gs->obb2.he.x*2.0f, gs->obb2.he.y*2.0f, gs->obb2.r, v4(0, 1, 0, 0.5f));
-    }
-
-    gpu_draw_quad_texture_tinted(gs->gpu, 
-                                 gs->circle.c.x, gs->circle.c.y,
-                                 gs->circle.r*2.0f, gs->circle.r*2.0f,
-                                 0, gs->move_outer_texture, v4(1, 0, 1, 0.3f));
-    V2 closest = closest_point_point_circle(gs->hero->pos.xy, gs->circle);
-    gpu_draw_quad_texture_tinted(gs->gpu, 
-                                 closest.x, closest.y,
-                                 20, 20,
-                                 0, gs->move_inner_texture, v4(1, 0, 0, 0.8f));
-    closest = closest_point_point_aabb(gs->hero->pos.xy, gs->aabb);
-    gpu_draw_quad_texture_tinted(gs->gpu, 
-                                 closest.x, closest.y,
-                                 20, 20,
-                                 0, gs->move_inner_texture, v4(1, 0, 0, 0.8f));
-
-    closest = closest_point_point_obb(gs->hero->pos.xy, gs->obb0);
-    gpu_draw_quad_texture_tinted(gs->gpu, 
-                                 closest.x, closest.y,
-                                 20, 20,
-                                 0, gs->move_inner_texture, v4(1, 0, 1, 0.8f));
 
     // UI draw
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
