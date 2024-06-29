@@ -27,14 +27,59 @@ void entity_add_physics_component(Entity *entity, V2 vel, V2 acc, f32 damping) {
     entity->damping = damping;
 }
 
-void entity_add_ai_component(Entity *entity) {
-    entity->components |= ENTITY_AI_COMPONENT;
-}
-
 void entity_add_collision_component(Entity *entity, Collision collision, bool collides) {
     entity->components |= ENTITY_COLLISION_COMPONENT;
     entity->collision = collision;
     entity->collides = collides;
+}
+
+void entity_add_asteroid_component(Entity *entity, V2 vel, Entity *trigger) {
+    assert((trigger->components & ENTITY_TRIGGER_COMPONENT) != 0);
+    assert((trigger->to_trigger_count + 1) <= trigger->max_trigger_count);
+    entity->components |= ENTITY_ASTEROID_COMPONENT;
+    entity->vel = vel;
+    entity->active = false;
+    trigger->to_trigger[trigger->to_trigger_count++] = entity;
+}
+
+void entity_add_enemy0_component(Entity *entity) {
+    entity->components |= ENTITY_ENEMY0_COMPONENT;
+}
+
+void entity_add_enemy1_component(Entity *entity) {
+    entity->components |= ENTITY_ENEMY1_COMPONENT;
+}
+
+void entity_add_enemy2_component(Entity *entity) {
+    entity->components |= ENTITY_ENEMY2_COMPONENT;
+}
+
+void entity_add_trigger_component(Entity *entity, struct Arena *arena,
+                                  i32 entity_to_trigger_count) {
+    assert((entity->components & ENTITY_COLLISION_COMPONENT) != 0);
+    entity->components |= ENTITY_TRIGGER_COMPONENT;
+    entity->max_trigger_count = entity_to_trigger_count; 
+    entity->to_trigger = (Entity **)arena_push(arena, sizeof(Entity *)*entity->max_trigger_count, 8);
+    entity->to_trigger_count = 0;
+}
+
+void entity_add_animation_component(Entity *entity, struct Arena *arena,
+                                    Texture *textures, i32 textures_count, f32 speed,
+                                    bool playing, bool looping) {
+    Animation *animation = (Animation *)arena_push(arena, sizeof(Animation), 8);
+    animation->frame_count = textures_count;
+    animation->frames = (Texture *)arena_push(arena, sizeof(Texture) * animation->frame_count, 8);
+    memcpy(animation->frames, textures, sizeof(Texture) * animation->frame_count);
+    animation->speed = speed;
+    animation->current_frame = 0;
+    animation->current_time = 0;
+    animation->playing = playing;
+    animation->looping = looping;
+    entity->save_tex = entity->tex;
+
+    entity->components |= ENTITY_ANIMATION_COMPONENT;
+    entity->animation = animation;
+    return;
 }
 
 void entity_remove_components(Entity *entity, u64 components) {

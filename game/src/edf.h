@@ -72,6 +72,7 @@ typedef struct GameState {
     Bitmap confeti_bitmap[5];
     Bitmap pause_bitmap;
     Bitmap rocks_bitmap;
+    Bitmap rocks_full_bitmap;
     Bitmap rocks_corner_bitmap;
     Bitmap explotion_bitmaps[11];
     
@@ -90,6 +91,7 @@ typedef struct GameState {
     Texture confeti_texture[5];
     Texture pause_texture;
     Texture rocks_texutre;
+    Texture rocks_full_texture;
     Texture rocks_corner_texture;
     Texture explotion_textures[11];
 
