@@ -20,7 +20,7 @@ static inline void add_entity(Level *level, i32 screen_x, i32 screen_y, V2 scale
     Collision asteriod_collision;
     asteriod_collision.type = COLLISION_TYPE_CIRLCE;
     asteriod_collision.circle.c = asteroid->pos.xy;
-    asteriod_collision.circle.r = asteroid->scale.x*0.5f;
+    asteriod_collision.circle.r = fabsf(asteroid->scale.x)*0.5f;
     entity_add_collision_component(asteroid, asteriod_collision, false);
 }
 
@@ -95,7 +95,7 @@ Level *load_level(GameState *gs, struct Arena *arena, struct EntityManager *em) 
     f32 level_horizontal_size = VIRTUAL_RES_X * 20;
     
     level->dim = r2_from_wh(-level_horizontal_size*0.5, -VIRTUAL_RES_Y*0.5f, level_horizontal_size, VIRTUAL_RES_Y);
-    level->camera_vel = v3(300, 0, 0);
+    level->camera_vel = v3(300*0.75f, 0, 0);
     level->camera_pos.x = level->dim.min.x;
 
     u32 ship_rand_texture = rand_range(0, 1);
