@@ -11,7 +11,8 @@
 #include "../edf_common.h"
 
 struct EntityManager;
+struct GameState;
 
-void animation_system_update(struct EntityManager *em, f32 dt);
+void animation_system_update(struct GameState *gs, struct EntityManager *em, f32 dt);
 
 #endif /* EDF_ANIMATION_SYS_H */

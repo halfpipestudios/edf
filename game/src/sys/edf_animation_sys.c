@@ -7,6 +7,8 @@
 
 #include "edf_animation_sys.h"
 #include "../edf_entity.h"
+#include "../edf.h"
+#include "../edf_level.h"
 
 SYSTEM_UPDATE(animation_system) {
     Animation *animation = entity->animation;
@@ -21,6 +23,13 @@ SYSTEM_UPDATE(animation_system) {
                     animation->current_frame = 0;
                     animation->playing = false;
                     entity->tex = entity->save_tex;
+                    animation->current_time = 0.0f;
+
+                    gs->hero->pos.x = gs->level->dim.min.x;
+                    gs->hero->pos.y = 0.0f;
+                    gs->level->camera_pos.x = gs->level->dim.min.x;
+
+                    return;
                 }
             }
             animation->current_time = 0.0f;
@@ -31,7 +40,7 @@ SYSTEM_UPDATE(animation_system) {
 
 }
 
-void animation_system_update(struct EntityManager *em, f32 dt) {
+void animation_system_update(struct GameState *gs, struct EntityManager *em, f32 dt) {
     u64 components = ENTITY_ANIMATION_COMPONENT;
-    entity_manager_forall(0, em, animation_system, components, dt);
+    entity_manager_forall(gs, em, animation_system, components, dt);
 }

@@ -8,7 +8,7 @@
 #include "edf_collision_sys.h"
 #include "../edf_entity.h"
 #include "../edf_debug.h"
-#include "../edf.h"
+
 
 SYSTEM_UPDATE(collision_system) {
 
@@ -49,6 +49,8 @@ SYSTEM_UPDATE(collision_system) {
     if(hit) {
         if(entity->animation) {
             entity->animation->playing = true;
+            entity->vel = v2(0, 0);
+            entity->acc = v2(0, 0);
         }
     }
 }

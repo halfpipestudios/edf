@@ -478,7 +478,7 @@ void game_update(Memory *memory, Input *input, f32 dt) {
         input_system_update(gs, gs->em, dt);
         physics_system_update(gs->em, dt);
         collision_system_update(gs, gs->em, dt);
-        animation_system_update(gs->em, dt);
+        animation_system_update(gs, gs->em, dt);
         stars_update(gs, dt);
         level_update(gs->level, dt);
 
