@@ -175,17 +175,47 @@ Level *load_level(GameState *gs, struct Arena *arena, struct EntityManager *em) 
 
     {
         static char asteroids[] = {
-            "ttfffffffffffte"
+            "ttffffffffffftt"
             "..qfffffffffe.."
             "...qfffffffe..."
             "....qfffffe...."
             ".....qfffe....."
             "..............."
             "..............."
-            "bbbbbbbbbbbbbbd"
+            "bbbbbbbbbbbbbbb"
         };
 
         add_screen(gs, level, 5, asteroids, 8, array_len(asteroids));
+    }
+
+    {
+        static char asteroids[] = {
+            "tttttttttttffff"
+            "...........qfff"
+            "............qff"
+            ".............qf"
+            "..............q"
+            "..............."
+            "..............."
+            "bbbbbbbbbbbbbbb"
+        };
+
+        add_screen(gs, level, 6, asteroids, 8, array_len(asteroids));
+    }
+
+    {
+        static char asteroids[] = {
+            "fffftttttttttte"
+            "fffe..........."
+            "ffe............"
+            "fe.ad.........."
+            "e.affd........."
+            ".affffd........"
+            "affffffd......."
+            "ffffffffbbbbbbd"
+        };
+
+        add_screen(gs, level, 7, asteroids, 8, array_len(asteroids));
     }
 
     return level;
