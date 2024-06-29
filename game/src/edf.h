@@ -47,6 +47,7 @@ typedef struct GameState {
     struct ParticleSystem *confeti;
     struct ParticleSystem *neon;
     struct ParticleSystem *smoke;
+    struct ParticleSystem *pixel;
     struct ParticleSystem *ps;
  
     f32 time_per_frame;
@@ -75,6 +76,7 @@ typedef struct GameState {
     Bitmap rocks_full_bitmap;
     Bitmap rocks_corner_bitmap;
     Bitmap explotion_bitmaps[11];
+    Bitmap square_bitmap;
     
     Texture ship_texture[2];
     Texture move_outer_texture;
@@ -94,6 +96,8 @@ typedef struct GameState {
     Texture rocks_full_texture;
     Texture rocks_corner_texture;
     Texture explotion_textures[11];
+    Texture square_texture;
+    
 
     Sprite stars[MAX_STARS];
     Sprite galaxy[MAX_GALAXY];
