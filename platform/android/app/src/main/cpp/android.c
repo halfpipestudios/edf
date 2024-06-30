@@ -66,7 +66,6 @@ Gpu gpu_load(struct Arena *arena) {
 
     OpenglGPU *renderer = arena_push(arena, sizeof(*renderer), 8);
     renderer->arena = arena;
-    renderer->load_textures = true;
 
     File vert_src = os_file_read(arena, "shader.vert");
     File frag_src = os_file_read(arena, "shader.frag");
@@ -108,11 +107,6 @@ void gpu_unload(Gpu gpu) {
 
 void gpu_frame_begin(Gpu gpu) {
     OpenglGPU *renderer = (OpenglGPU *)gpu;
-    if(renderer->load_textures) {
-        texture_atlas_generate(renderer->arena, &renderer->atlas);
-        renderer->load_textures = false;
-        logd("Game", "Total platform memory used: %zuKB\n", renderer->arena->used/1024);
-    }
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glClear(GL_COLOR_BUFFER_BIT);

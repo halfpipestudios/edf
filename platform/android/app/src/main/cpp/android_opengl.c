@@ -18,6 +18,8 @@ OpenglTexture *texture_atlas_add_bitmap(Arena *arena, OpenglTextureAtlas *atlas,
     texture->bitmap = bitmap;
     texture->dim = r2_set_invalid();
 
+    texture_atlas_regenerate(arena, atlas);
+
     return texture;
 }
 
@@ -44,17 +46,13 @@ void texture_atlas_sort_textures_per_height(OpenglTextureAtlas *atlas) {
             }
         }
     }
-
-    u32 break_here = 0;
-    unused(break_here);
-
 }
 
 void texture_atlas_calculate_size_and_alloc(Arena *arena, OpenglTextureAtlas *atlas) {
     atlas->bitmap.w = TEXTURE_ATLAS_START_WIDTH;
     atlas->bitmap.h = 1;
     atlas->current_x = 1 + TEXTURE_ATLAS_DEFAULT_PADDING;
-
+    atlas->current_y = 0;
 
     for(u32 i = 0; i < atlas->texture_count; ++i) {
 
@@ -88,9 +86,19 @@ void texture_atlas_calculate_size_and_alloc(Arena *arena, OpenglTextureAtlas *at
 
     ((u32 *)atlas->bitmap.data)[0] = 0xffffffff;
     atlas->current_x = 1 + TEXTURE_ATLAS_DEFAULT_PADDING;
+
+    if(atlas->bitmap.h > atlas->last_h) {
+        atlas->need_to_be_regenerated = true;
+        atlas->last_h = atlas->bitmap.h;
+    }
 }
 
 void texture_atlas_insert_textures(OpenglTextureAtlas *atlas) {
+
+    if(atlas->bitmap.h >= 185) {
+        i32 break_here = 0;
+        unused(break_here);
+    }
 
     for(u32 i = 0; i < atlas->texture_count; ++i) {
 
@@ -127,24 +135,43 @@ void texture_atlas_insert_textures(OpenglTextureAtlas *atlas) {
     }
 }
 
-void texture_atlas_generate(Arena *arena, OpenglTextureAtlas *atlas) {
+void texture_atlas_regenerate(Arena *arena, OpenglTextureAtlas *atlas) {
+    TempArena  temp = temp_arena_begin(arena);
+
     texture_atlas_sort_textures_per_height(atlas);
     texture_atlas_calculate_size_and_alloc(arena, atlas);
     texture_atlas_insert_textures(atlas);
 
-    glGenTextures(1, &atlas->id);
-    glBindTexture(GL_TEXTURE_2D, atlas->id);
+    if(atlas->need_to_be_regenerated) {
+        atlas->need_to_be_regenerated = false;
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        if(!atlas->id) {
+            glDeleteTextures(1, &atlas->id);
+        }
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 5);
+        glGenTextures(1, &atlas->id);
+        glBindTexture(GL_TEXTURE_2D, atlas->id);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, atlas->bitmap.w, atlas->bitmap.h, 0, GL_RGBA,
-                 GL_UNSIGNED_BYTE, atlas->bitmap.data);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 5);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, atlas->bitmap.w, atlas->bitmap.h, 0, GL_RGBA,
+                     GL_UNSIGNED_BYTE, atlas->bitmap.data);
+
+        static u32 count = 0;
+        logd("Game", "textures atlas regeneration count: %d\n", ++count);
+
+    } else {
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, atlas->bitmap.w, atlas->bitmap.h, GL_RGBA,
+                        GL_UNSIGNED_BYTE, atlas->bitmap.data);
+    };
+
+    temp_arena_end(temp);
 }
 
 void quad_batch_flush(OpenglGPU *renderer) {

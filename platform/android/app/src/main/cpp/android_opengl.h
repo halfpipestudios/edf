@@ -36,6 +36,7 @@ typedef struct OpenglTexture {
 #define TEXTURE_ATLAS_START_WIDTH 1024
 #define TEXTURE_ATLAS_DEFAULT_PADDING 4
 #define MAX_ATLAS_TEXTURES 512
+struct OpenglGPU;
 
 typedef struct OpenglTextureAtlas {
     u32 id;
@@ -46,13 +47,17 @@ typedef struct OpenglTextureAtlas {
     u32 buckets[MAX_ATLAS_TEXTURES];
     OpenglTexture textures[MAX_ATLAS_TEXTURES];
     u32 texture_count;
+
+    b32 valid_texture;
+    b32 need_to_be_regenerated;
+    u32 last_h;
 } OpenglTextureAtlas;
 
-OpenglTexture *texture_atlas_add_bitmap(struct Arena *area, OpenglTextureAtlas *atlas, Bitmap *bitmap);
+OpenglTexture *texture_atlas_add_bitmap(Arena *arena, OpenglTextureAtlas *atlas, Bitmap *bitmap);
 void texture_atlas_sort_textures_per_height(OpenglTextureAtlas *atlas);
 void texture_atlas_calculate_size_and_alloc(Arena *arena, OpenglTextureAtlas *atlas);
 void texture_atlas_insert(OpenglTextureAtlas *atlas, OpenglTexture *texture);
-void texture_atlas_generate(Arena *arena, OpenglTextureAtlas *atlas);
+void texture_atlas_regenerate(Arena *arena, OpenglTextureAtlas *atlas);
 
 #define MAX_QUADS_PER_BATCH 1024
 
@@ -63,7 +68,6 @@ typedef struct OpenglGPU {
     OpenglQuad quad_buffer[MAX_QUADS_PER_BATCH];
     u32 quad_count;
     OpenglTextureAtlas atlas;
-    b32 load_textures;
     u32 draw_calls;
 } OpenglGPU;
 
