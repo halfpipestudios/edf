@@ -16,7 +16,7 @@ OpenglTexture *texture_atlas_add_bitmap(Arena *arena, OpenglTextureAtlas *atlas,
     u32 start = 0;
     u32 end = atlas->texture_count;
     u32 mid = start + (end - start)/2;
-    u32 range = (end - start);
+    u32 range = end - start;
     OpenglTexture *other_texture = atlas->textures + atlas->buckets[mid];
 
     while(range > 1) {
@@ -27,11 +27,15 @@ OpenglTexture *texture_atlas_add_bitmap(Arena *arena, OpenglTextureAtlas *atlas,
             start = mid;
             mid = start + (end - start)/2;
         }
-        range = (end - start);
+        range = end - start;
         other_texture = atlas->textures + atlas->buckets[mid];
     }
 
-#if 1
+    if(other_texture->bitmap->h > texture->bitmap->h) {
+        mid++;
+    }
+
+#if 0
     memmove((atlas->buckets + (mid+1)), atlas->buckets + mid, (atlas->texture_count - mid)*sizeof(u32));
 #else
     for(u32 i = atlas->texture_count; i > mid; --i) {
@@ -163,8 +167,12 @@ void texture_atlas_regenerate(Arena *arena, OpenglTextureAtlas *atlas) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, atlas->bitmap.w, atlas->bitmap.h, 0, GL_RGBA,
                      GL_UNSIGNED_BYTE, atlas->bitmap.data);
 
+#if 0
         static u32 count = 0;
-        logd("Game", "textures atlas regeneration count: %d\n", ++count);
+        if(gcs) {
+            cs_print(gcs, "textures atlas regeneration count: %d\n", ++count);
+        }
+#endif
 
     } else {
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, atlas->bitmap.w, atlas->bitmap.h, GL_RGBA,
