@@ -54,7 +54,6 @@ typedef struct OpenglTextureAtlas {
 } OpenglTextureAtlas;
 
 OpenglTexture *texture_atlas_add_bitmap(Arena *arena, OpenglTextureAtlas *atlas, Bitmap *bitmap);
-void texture_atlas_sort_textures_per_height(OpenglTextureAtlas *atlas);
 void texture_atlas_calculate_size_and_alloc(Arena *arena, OpenglTextureAtlas *atlas);
 void texture_atlas_insert(OpenglTextureAtlas *atlas, OpenglTexture *texture);
 void texture_atlas_regenerate(Arena *arena, OpenglTextureAtlas *atlas);

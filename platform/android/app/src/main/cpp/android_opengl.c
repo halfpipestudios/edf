@@ -9,43 +9,43 @@ OpenglTexture *texture_atlas_add_bitmap(Arena *arena, OpenglTextureAtlas *atlas,
 
     assert(atlas->texture_count <= array_len(atlas->textures));
 
-    u32 *bucket = atlas->buckets + atlas->texture_count;
-    *bucket = atlas->texture_count;
-    ++atlas->texture_count;
-
-    OpenglTexture *texture = atlas->textures + (*bucket);
-
+    OpenglTexture *texture = atlas->textures + atlas->texture_count;
     texture->bitmap = bitmap;
     texture->dim = r2_set_invalid();
+
+    u32 start = 0;
+    u32 end = atlas->texture_count;
+    u32 mid = start + (end - start)/2;
+    u32 range = (end - start);
+    OpenglTexture *other_texture = atlas->textures + atlas->buckets[mid];
+
+    while(range > 1) {
+        if(texture->bitmap->h > other_texture->bitmap->h) {
+            end = mid;
+            mid = start + (end - start)/2;
+        } else {
+            start = mid;
+            mid = start + (end - start)/2;
+        }
+        range = (end - start);
+        other_texture = atlas->textures + atlas->buckets[mid];
+    }
+
+#if 1
+    memmove((atlas->buckets + (mid+1)), atlas->buckets + mid, (atlas->texture_count - mid)*sizeof(u32));
+#else
+    for(u32 i = atlas->texture_count; i > mid; --i) {
+        assert(i > 0);
+        atlas->buckets[i] = atlas->buckets[i-1];
+    }
+#endif
+
+    u32 *bucket = atlas->buckets + mid;
+    *bucket = atlas->texture_count++;
 
     texture_atlas_regenerate(arena, atlas);
 
     return texture;
-}
-
-void texture_atlas_sort_textures_per_height(OpenglTextureAtlas *atlas) {
-
-    for(u32 i = 0; i < atlas->texture_count; ++i) {
-
-        for(u32 j = i; j < atlas->texture_count; ++j) {
-
-            if(i == j) continue;
-
-            u32 *bucket = atlas->buckets + i;
-            OpenglTexture *texture = atlas->textures + (*bucket);
-            u32 h = texture->bitmap->h;
-
-            u32 *other_bucket = atlas->buckets + j;
-            OpenglTexture *other_texture = atlas->textures + (*other_bucket);
-            u32 other_h = other_texture->bitmap->h;
-
-            if(h < other_h) {
-                u32 temp = *bucket;
-                *bucket = *other_bucket;
-                *other_bucket = temp;
-            }
-        }
-    }
 }
 
 void texture_atlas_calculate_size_and_alloc(Arena *arena, OpenglTextureAtlas *atlas) {
@@ -138,7 +138,7 @@ void texture_atlas_insert_textures(OpenglTextureAtlas *atlas) {
 void texture_atlas_regenerate(Arena *arena, OpenglTextureAtlas *atlas) {
     TempArena  temp = temp_arena_begin(arena);
 
-    texture_atlas_sort_textures_per_height(atlas);
+    //texture_atlas_sort_textures_per_height(atlas);
     texture_atlas_calculate_size_and_alloc(arena, atlas);
     texture_atlas_insert_textures(atlas);
 

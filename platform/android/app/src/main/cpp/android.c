@@ -122,7 +122,7 @@ void gpu_frame_end(Gpu gpu) {
     OpenglGPU *renderer = (OpenglGPU *)gpu;
 
     // draw texture atlas test
-#if 0
+#if 1
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     float angle = 0;
