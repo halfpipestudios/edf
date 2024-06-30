@@ -24,10 +24,9 @@ AssetManager *am_load(Arena *arena, Gpu gpu) {
     return am;
 }
 
-Texture am_get_texture(AssetManager *am, char *path) {
+Asset *am_get_asset(AssetManager *am, u32 hash) {
     assert(am->assets_table_used <= (u32)(MAX_ASSET_TABLE_SIZE*0.7f));
 
-    u32 hash = djb2(path);
     u32 index = hash % MAX_ASSET_TABLE_SIZE;
 
     u32 start_index = index;
@@ -37,6 +36,13 @@ Texture am_get_texture(AssetManager *am, char *path) {
         asset = am->assets_table + index;
         assert(index != start_index);
     }
+
+    return  asset;
+}
+
+Texture am_get_texture(AssetManager *am, char *path) {
+    u32 hash = djb2(path);
+    Asset *asset = am_get_asset(am, hash);
 
     if(asset->header.hash == hash) {
         assert(asset->header.type == ASSET_TYPE_TEXTURE);
@@ -50,9 +56,24 @@ Texture am_get_texture(AssetManager *am, char *path) {
         am->assets_table_used++;
         return  asset->texture.texutre;
     }
-
 }
 
+Font *am_get_font(AssetManager *am, char *path, u32 size) {
+    u32 hash = djb2(path) + (size << 3);
+    Asset *asset = am_get_asset(am, hash);
+
+    if(asset->header.hash == hash) {
+        assert(asset->header.type == ASSET_TYPE_FONT);
+        return asset->font.font;
+    } else {
+        assert(asset->header.hash == ASSET_TABLE_INVALID_HASH);
+        asset->header.type = ASSET_TYPE_FONT;
+        asset->header.hash = hash;
+        asset->font.font = font_load(am->gpu, am->arena, path, (f32)size);
+        am->assets_table_used++;
+        return  asset->font.font;
+    }
+}
 
 void game_init(Memory *memory) {
     game_state_init(memory);
@@ -63,15 +84,11 @@ void game_init(Memory *memory) {
     gs->platform_arena = arena_create(memory, mb(20));
     gs->game_arena     = arena_create(memory, mb(50));
 
-    gs->gpu   = gpu_load(&gs->platform_arena);
-    gs->spu   = spu_load(&gs->platform_arena);
+    gs->gpu = gpu_load(&gs->platform_arena);
+    gs->spu = spu_load(&gs->platform_arena);
+    gs->am  = am_load(&gs->game_arena, gs->gpu);
 
-    gs->am = am_load(&gs->game_arena, gs->gpu);
-
-    gs->liberation = font_load(gs->gpu, &gs->platform_arena, "LiberationMono-Regular.ttf", 32);
-    gs->times = font_load(gs->gpu, &gs->platform_arena, "times.ttf", 64);
-
-    gs->cs = cs_init(gs->liberation, -VIRTUAL_RES_X/2, -40, 600, VIRTUAL_RES_Y/2);
+    gs->cs = cs_init(am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), -VIRTUAL_RES_X/2, -40, 600, VIRTUAL_RES_Y/2);
     gcs = &gs->cs;
 
     gs->em = entity_manager_load(&gs->game_arena, 1000);
@@ -218,7 +235,6 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     }
 
     cs_print(gcs, "asset used: %d\n", gs->am->assets_table_used);
-
 }
 
 
@@ -248,19 +264,18 @@ void game_render(Memory *memory) {
         cs_render(gs->gpu, &gs->cs);
         static char fps_text[1024];
         snprintf(fps_text, 1024, "FPS: %d", gs->FPS);
-        R2 dim = font_size_text(gs->liberation, fps_text);
+        R2 dim = font_size_text(am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), fps_text);
         f32 pos_x = -VIRTUAL_RES_X*0.5f;
         f32 pos_y = VIRTUAL_RES_Y*0.5f - r2_height(dim);
-        font_draw_text(gs->gpu, gs->liberation, fps_text, pos_x, pos_y, v4(1, 1, 1, 1));
+        font_draw_text(gs->gpu, am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), fps_text, pos_x, pos_y, v4(1, 1, 1, 1));
     }
 
-    
     if(gs->paused) {
         char *text = "Pause";
-        R2 dim = font_size_text(gs->times, text);
+        R2 dim = font_size_text(am_get_font(gs->am, "times.ttf", 64), text);
         f32 pos_x = 0 - r2_width(dim)*0.5f;
         f32 pos_y = 0 - r2_height(dim)*0.5f + VIRTUAL_RES_Y*0.25f;
-        font_draw_text(gs->gpu, gs->times, text, pos_x, pos_y, v4(1, 1, 1, 1));
+        font_draw_text(gs->gpu, am_get_font(gs->am, "times.ttf", 64), text, pos_x, pos_y, v4(1, 1, 1, 1));
     }
 
     gpu_frame_end(gs->gpu);

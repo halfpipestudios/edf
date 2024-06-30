@@ -40,7 +40,7 @@ typedef struct AssetSound {
 
 typedef struct AssetFont {
     AssetHeader header;
-    Font font;
+    Font *font;
 } AssetFont;
 
 typedef union Asset {
@@ -69,6 +69,7 @@ typedef struct AssetManager {
 
 AssetManager *am_load(Arena *arena, Gpu gpu);
 Texture am_get_texture(AssetManager *am, char *path);
+Font *am_get_font(AssetManager *am, char *path, u32 size);
 
 typedef struct GameState {
 
@@ -111,9 +112,6 @@ typedef struct GameState {
     i32 fps_counter;
     i32 FPS;
     Console cs;
-
-    Font *liberation;
-    Font *times;
 
 #define MAX_STARS 1000
 #define MAX_GALAXY 6
