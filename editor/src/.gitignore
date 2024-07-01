@@ -3,3 +3,5 @@
 compile_flags.txt
 build.bat
 .vscode
+a.pdb
+imgui.ini

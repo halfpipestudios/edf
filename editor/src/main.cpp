@@ -120,7 +120,7 @@ i32 main(void) {
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
     
     // Setup Dear ImGui style
-    ImGui::StyleColorsDark();
+    ImGui::StyleColorsClassic();
     ImGui_ImplSDL2_InitForSDLRenderer(g_window, g_renderer);
     ImGui_ImplSDLRenderer2_Init(g_renderer);
     
