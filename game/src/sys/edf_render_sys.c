@@ -7,6 +7,7 @@
 
 #include "edf_render_sys.h"
 #include "../edf_entity.h"
+#include "../edf_asset.h"
 #include "../edf.h"
 
 SYSTEM_UPDATE(render_system) {

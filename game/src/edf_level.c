@@ -10,6 +10,7 @@
 
 #include "edf_entity.h"
 #include "edf_memory.h"
+#include "edf_asset.h"
 #include "edf.h"
 
 static inline void add_entity(Level *level, i32 screen_x, i32 screen_y, V2 scale, Texture texture) {

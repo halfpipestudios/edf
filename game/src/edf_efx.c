@@ -8,6 +8,7 @@
 #include "edf_level.h"
 #include "edf_entity.h"
 #include "edf_particles.h"
+#include "edf_asset.h"
 
 void stars_init(GameState *gs) {
     static u32 star_colors[4] = {
