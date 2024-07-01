@@ -58,7 +58,19 @@ Texture am_get_texture(AssetManager *am, char *path) {
     }
 }
 
+static inline b32 find_font_info(AssetManager *am, char *path, FontInfo *font_info) {
+    for(u32 i = 0; i < am->loaded_font_count; ++i) {
+        FontInfo font_info_to_test = am->loaded_font_cache[i];
+        if(strcmp(path, font_info_to_test.name) == 0) {
+            *font_info = font_info_to_test;
+            return true;
+        }
+    }
+    return false;
+}
+
 Font *am_get_font(AssetManager *am, char *path, u32 size) {
+
     u32 hash = djb2(path) + (size << 3);
     Asset *asset = am_get_asset(am, hash);
 
@@ -66,10 +78,19 @@ Font *am_get_font(AssetManager *am, char *path, u32 size) {
         assert(asset->header.type == ASSET_TYPE_FONT);
         return asset->font.font;
     } else {
+        FontInfo font_info;
+        b32 found = find_font_info(am, path, &font_info);
+        if(!found) {
+            font_info = font_info_load(am->arena, path);
+            if(am->loaded_font_count++ < array_len(am->loaded_font_cache)) {
+                am->loaded_font_cache[am->loaded_font_count++] = font_info;
+            }
+        }
+
         assert(asset->header.hash == ASSET_TABLE_INVALID_HASH);
         asset->header.type = ASSET_TYPE_FONT;
         asset->header.hash = hash;
-        asset->font.font = font_load(am->gpu, am->arena, path, (f32)size);
+        asset->font.font = font_load(am->gpu, am->arena, font_info.info, (f32)size);
         am->assets_table_used++;
         return  asset->font.font;
     }
@@ -158,6 +179,9 @@ void game_init(Memory *memory) {
 
     stars_init(gs);
 
+    // Preload assets
+    am_get_font(gs->am, "times.ttf", 64);
+
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {
@@ -234,7 +258,7 @@ void game_update(Memory *memory, Input *input, f32 dt) {
         gs->time_per_frame = gs->time_per_frame - 1.0f;
     }
 
-    cs_print(gcs, "asset used: %d\n", gs->am->assets_table_used);
+    //cs_print(gcs, "asset used: %d\n", gs->am->assets_table_used);
 }
 
 

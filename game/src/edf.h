@@ -65,6 +65,11 @@ typedef struct AssetManager {
     #define MAX_ASSET_TABLE_SIZE 1024
     Asset assets_table[MAX_ASSET_TABLE_SIZE];
     u32 assets_table_used;
+
+    #define MAX_LOADED_FONT_CACHE 10
+    FontInfo loaded_font_cache[MAX_LOADED_FONT_CACHE];
+    u32 loaded_font_count;
+
 } AssetManager;
 
 AssetManager *am_load(Arena *arena, Gpu gpu);

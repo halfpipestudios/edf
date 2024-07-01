@@ -37,7 +37,15 @@ typedef struct Font {
 
 } Font;
 
-Font *font_load(Gpu gpu, struct Arena *arena, char *path, float size);
+typedef struct FontInfo {
+    #define MAX_FONT_INFO_NAME 256
+    char name[MAX_FONT_INFO_NAME];
+    stbtt_fontinfo info;
+} FontInfo;
+
+FontInfo font_info_load(struct Arena *arena, char *path);
+
+Font *font_load(Gpu gpu, struct Arena *arena, stbtt_fontinfo stbfont, float size);
 void font_unload(Gpu gpu, Font *font);
 
 R2 font_size_text(Font *font, const char *text);
