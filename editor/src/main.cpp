@@ -4,9 +4,9 @@
 #include <imgui_impl_sdl2.h>
 #include <imgui_impl_sdlrenderer2.h>
 
+#define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
-#include <SDL2/SDL_ttf.h>
 
 #include <edf_common.h>
 
@@ -14,7 +14,7 @@ struct Input {
     i32 mouse_x;
     i32 mouse_y;
     bool keys[350];
-    bool mouse_buttons[0];
+    bool mouse_buttons[3];
 };
 
 static SDL_Window   *g_window;
@@ -167,13 +167,15 @@ i32 main(void) {
             }
         }
         SDL_SetRenderTarget(g_renderer, 0);
+        SDL_SetRenderDrawColor(g_renderer, 255, 0, 255, SDL_ALPHA_OPAQUE);
+        SDL_RenderClear(g_renderer);
 
         ImGui_ImplSDLRenderer2_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
         // Start ImGui Docking
-        ImGuiWindowFlags windowFlags;
+        ImGuiWindowFlags windowFlags = {};
         const ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->WorkPos);
         ImGui::SetNextWindowSize(viewport->WorkSize);
