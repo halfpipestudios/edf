@@ -19,6 +19,7 @@ typedef void * Gpu;
 typedef struct Touch {
     V2i pos;
     u64 uid;
+    u64 hash;
     i32 location;
 } Touch;
 

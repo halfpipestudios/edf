@@ -94,6 +94,8 @@ static Input g_input;
 static i32 touches_index_array[MAX_TOUCHES];
 static i32 touches_free_list;
 
+static u64 g_uid;
+
 
 // temporal globals (after the gpu_load this variables are set to nil)
 static MTKView *tmp_view;
@@ -881,7 +883,7 @@ void spu_sound_restart(Spu spu, Sound sound) {
 
 - (i32) find_touch_index:(u64) hash {
     for(i32 j = 0; j < MAX_TOUCHES; j++) {
-        if(hash == g_input.touches[j].uid) {
+        if(hash == g_input.touches[j].hash) {
             return j;
         }
     }
@@ -905,6 +907,9 @@ void spu_sound_restart(Spu spu, Sound sound) {
         if(free_index == -1) {
             return;
         }
+        
+        g_uid = (g_uid + 1) == 0 ? 1 : (g_uid + 1);
+        
         touches_free_list = touches_index_array[free_index];
         g_input.locations[g_input.count] = free_index;
         
@@ -914,8 +919,8 @@ void spu_sound_restart(Spu spu, Sound sound) {
         touch.location = g_input.count;
         touch.pos.x = (i32)(((f32)location.x / w) * r2_width(g_device_rect));
         touch.pos.y = (i32)(((f32)location.y / h) * r2_height(g_device_rect));
-        touch.uid = (u64)uitouch.hash;
-
+        touch.hash = (u64)uitouch.hash;
+        touch.uid = g_uid;
         touches_index_array[free_index] = -1;
         g_input.touches[free_index] = touch;
         

@@ -10,16 +10,67 @@
 
 #include <edf_common.h>
 
+struct Input {
+    i32 mouse_x;
+    i32 mouse_y;
+    bool keys[350];
+    bool mouse_buttons[0];
+};
+
 static SDL_Window   *g_window;
 static SDL_Renderer *g_renderer;
 static bool g_running;
+static Input g_input[2];
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
 
-struct Input {
-};
+i32 get_mouse_x() {
+    return g_input[0].mouse_x;
+}
 
+i32 get_mouse_y() {
+    return g_input[0].mouse_y;
+}
+
+i32 get_mouse_last_x() {
+    return g_input[1].mouse_x;
+}
+
+i32 get_mouse_last_y() {
+    return g_input[1].mouse_y;
+}
+
+bool mouse_button_down(i32 button) {
+    if(button >= 3) return false;
+    ImGuiIO& io = ImGui::GetIO();
+    if(io.WantCaptureMouse) return false;
+    return g_input[0].mouse_buttons[button];
+}
+
+bool mouse_button_just_down(i32 button) {
+    if(button >= 3) return false;
+    ImGuiIO& io = ImGui::GetIO();
+    if(io.WantCaptureMouse) return false;
+    return g_input[0].mouse_buttons[button] && !g_input[1].mouse_buttons[button];
+}
+
+bool mouse_button_just_up(i32 button) {
+    if(button >= 3) return false;
+    ImGuiIO& io = ImGui::GetIO();
+    if(io.WantCaptureMouse) return false;
+    return !g_input[0].mouse_buttons[button] && g_input[1].mouse_buttons[button];
+}
+
+static i32 sdl_mouse_event_to_index(SDL_MouseButtonEvent event) {
+    i32 index = -1;
+    switch(event.button) {
+        case SDL_BUTTON_LEFT: index = 0; break; 
+        case SDL_BUTTON_MIDDLE: index = 1; break; 
+        case SDL_BUTTON_RIGHT: index = 2; break; 
+    }
+    return index;
+}
 
 i32 main(void) {
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -50,7 +101,7 @@ i32 main(void) {
     ImGui::StyleColorsDark();
     ImGui_ImplSDL2_InitForSDLRenderer(g_window, g_renderer);
     ImGui_ImplSDLRenderer2_Init(g_renderer);
-
+    
     g_running = true;
     while(g_running) {
         SDL_Event event;
@@ -59,7 +110,27 @@ i32 main(void) {
             if(event.type == SDL_QUIT) {
                 g_running = false;
             }
+            if(event.type == SDL_KEYDOWN) {
+                g_input[0].keys[event.key.keysym.sym] = true;
+            }
+            if(event.type == SDL_KEYUP) {
+                g_input[0].keys[event.key.keysym.sym] = false;
+            }
+            if(event.type == SDL_MOUSEBUTTONDOWN) {
+                g_input[0].mouse_buttons[sdl_mouse_event_to_index(event.button)] = true;
+            }
+            if(event.type == SDL_MOUSEBUTTONUP) {
+                g_input[0].mouse_buttons[sdl_mouse_event_to_index(event.button)] = false;
+            }
         }
+        SDL_GetMouseState(&g_input->mouse_x, &g_input->mouse_y);
+
+
+
+        if(mouse_button_just_down(0)) {
+            printf("mouse just down\n");
+        }
+
 
         SDL_SetRenderTarget(g_renderer, back_buffer);
         SDL_SetRenderDrawColor(g_renderer, 180, 200, 180, SDL_ALPHA_OPAQUE);
@@ -135,6 +206,10 @@ i32 main(void) {
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), g_renderer);
 
         SDL_RenderPresent(g_renderer); 
+
+        // swap the input pointer
+        g_input[1] = g_input[0];
+
     }
 
     ImGui_ImplSDLRenderer2_Shutdown();
