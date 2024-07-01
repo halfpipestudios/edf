@@ -126,8 +126,6 @@ class GameView extends GLSurfaceView {
     @Override
     public boolean onTouchEvent(final MotionEvent event) {
 
-        uid = (uid + 1) == 0 ? 1 : (uid + 1);
-
         int action = event.getAction() &  MotionEvent.ACTION_MASK;
         int action_index = event.getActionIndex();
         int index = event.getPointerId(action_index);
@@ -138,6 +136,9 @@ class GameView extends GLSurfaceView {
 
             case  MotionEvent.ACTION_DOWN:
             case  MotionEvent.ACTION_POINTER_DOWN: {
+
+                uid = (uid + 1) == 0 ? 1 : (uid + 1);
+
                 input.indices[input.indices_count++] = index;
                 input.touches[index].index = uid;
                 input.touches[index].x = event.getX(action_index);
