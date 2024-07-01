@@ -71,10 +71,11 @@ Console cs_init(struct Font *font, i32 x, i32 y, i32 w, i32 h) {
 
     Console c = (Console){0};
 
+    c.padding = 4;
+
     c.font = font;
     c.line = 0;
     c.next_line = 1;
-    
     c.rect = r2_from_wh(x, y, w, h);
 
     i32 max_advance_w = found_max_glyph_advance_w(font);
@@ -82,8 +83,8 @@ Console cs_init(struct Font *font, i32 x, i32 y, i32 w, i32 h) {
     c.pixels_per_col = max_advance_w;
     c.pixels_per_row = found_max_glyph_h(font);
 
-    c.visible_cols = (r2_width(c.rect) / c.pixels_per_col);
-    c.visible_rows = r2_height(c.rect) / c.pixels_per_row;
+    c.visible_cols = (w - c.padding*2) / c.pixels_per_col;
+    c.visible_rows = (h - c.padding*2) / c.pixels_per_row;
 
     assert(c.visible_cols <= MAX_CONSOLE_BUFFER_SIZE);
 
@@ -118,8 +119,8 @@ void cs_draw_line(Gpu gpu, Console *c, i32 line, i32 index) {
     char *line_buffer = &c->buffer[line * c->max_cols];
     char *text = cs_get_nullterminated(temp.arena, c, line_buffer);
     
-    i32 pos_x = c->rect.min.x;
-    i32 pos_y = c->rect.max.y + -index * c->pixels_per_row - c->pixels_per_row;
+    i32 pos_x = c->padding + c->rect.min.x;
+    i32 pos_y = c->padding + c->rect.max.y + -index * c->pixels_per_row - c->pixels_per_row;
     font_draw_text(gpu, c->font, text, (f32)pos_x, (f32)pos_y, v4(1,1,1,1));
 
     temp_arena_end(temp);
@@ -129,7 +130,7 @@ void cs_render(Gpu gpu, Console *c) {
 
     V2 center = r2_center(c->rect);
 
-    gpu_draw_quad_color(gpu, center.x, center.y, (f32)r2_width(c->rect), (f32)r2_height(c->rect), 0, v4(0.5f, 0.5f, 0.5f, 0.5f));
+    gpu_draw_quad_color(gpu, center.x, center.y, (f32)r2_width(c->rect), (f32)r2_height(c->rect), 0, v4(0.0f, 0.0f, 0.0f, 0.4f));
 
     i32 line = c->next_line - c->visible_rows;
     if(line < 0) {
