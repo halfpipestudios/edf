@@ -124,6 +124,8 @@ i32 main(void) {
     ImGui_ImplSDL2_InitForSDLRenderer(g_window, g_renderer);
     ImGui_ImplSDLRenderer2_Init(g_renderer);
     
+    f32 col1[3] = { 0, 0, 0 };
+
     g_running = true;
     while(g_running) {
         SDL_Event event;
@@ -171,8 +173,9 @@ i32 main(void) {
                 SDL_RenderCopyEx(g_renderer, rocks_full, 0, &dst, 0, 0, SDL_FLIP_NONE);
             }
         }
+
         SDL_SetRenderTarget(g_renderer, 0);
-        SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+        SDL_SetRenderDrawColor(g_renderer, col1[0]*255, col1[1]*255, col1[2]*255, SDL_ALPHA_OPAQUE);
         SDL_RenderClear(g_renderer);
 
         ImGui_ImplSDLRenderer2_NewFrame();
@@ -221,6 +224,8 @@ i32 main(void) {
                 counter++;
             ImGui::SameLine();
             ImGui::Text("counter = %d", counter);
+
+            ImGui::ColorEdit3("background color", col1);
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
             ImGui::End();
