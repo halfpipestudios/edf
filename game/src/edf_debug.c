@@ -120,7 +120,7 @@ void cs_draw_line(Gpu gpu, Console *c, i32 line, i32 index) {
     char *text = cs_get_nullterminated(temp.arena, c, line_buffer);
     
     i32 pos_x = c->padding + c->rect.min.x;
-    i32 pos_y = c->padding + c->rect.max.y + -index * c->pixels_per_row - c->pixels_per_row;
+    i32 pos_y = -c->padding + c->rect.max.y + -index * c->pixels_per_row - c->pixels_per_row;
     font_draw_text(gpu, c->font, text, (f32)pos_x, (f32)pos_y, v4(1,1,1,1));
 
     temp_arena_end(temp);

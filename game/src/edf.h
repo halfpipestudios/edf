@@ -116,6 +116,7 @@ typedef struct GameState {
     f32 time_per_frame;
     i32 fps_counter;
     i32 FPS;
+    f32 MS;
     Console cs;
 
 #define MAX_STARS 1000

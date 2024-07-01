@@ -109,7 +109,7 @@ void game_init(Memory *memory) {
     gs->spu = spu_load(&gs->platform_arena);
     gs->am  = am_load(&gs->game_arena, gs->gpu);
 
-    gs->cs = cs_init(am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), -VIRTUAL_RES_X/2, -40, 600, VIRTUAL_RES_Y/2);
+    gs->cs = cs_init(am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), -VIRTUAL_RES_X/2, -60, 600, VIRTUAL_RES_Y/2);
     gcs = &gs->cs;
 
     gs->em = entity_manager_load(&gs->game_arena, 1000);
@@ -257,6 +257,9 @@ void game_update(Memory *memory, Input *input, f32 dt) {
         gs->time_per_frame = gs->time_per_frame - 1.0f;
     }
 
+    f32 ms = (dt * 1000);
+    gs->MS = ms;
+
     //cs_print(gcs, "asset used: %d\n", gs->am->assets_table_used);
 }
 
@@ -285,12 +288,13 @@ void game_render(Memory *memory) {
 
     if(gs->debug_show) {
         cs_render(gs->gpu, &gs->cs);
-        static char fps_text[1024];
-        snprintf(fps_text, 1024, "FPS: %d", gs->FPS);
-        R2 dim = font_size_text(am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), fps_text);
+        static char text[1024];
+
+        snprintf(text, 1024, "FPS: %d | MS %.2f", gs->FPS, gs->MS);
+        R2 fps_dim = font_size_text(am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text);
         f32 pos_x = -VIRTUAL_RES_X*0.5f;
-        f32 pos_y = VIRTUAL_RES_Y*0.5f - r2_height(dim);
-        font_draw_text(gs->gpu, am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), fps_text, pos_x, pos_y, v4(1, 1, 1, 1));
+        f32 pos_y = VIRTUAL_RES_Y*0.5f - r2_height(fps_dim);
+        font_draw_text(gs->gpu, am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text, pos_x, pos_y, v4(1, 1, 1, 1));
     }
 
     if(gs->paused) {
