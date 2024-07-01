@@ -62,6 +62,27 @@ bool mouse_button_just_up(i32 button) {
     return !g_input[0].mouse_buttons[button] && g_input[1].mouse_buttons[button];
 }
 
+bool key_down(i32 key) {
+    if(key >= 350) return false;
+    ImGuiIO& io = ImGui::GetIO();
+    if(io.WantCaptureKeyboard) return false;
+    return g_input[0].keys[key];
+}
+
+bool key_just_down(i32 key) {
+    if(key >= 350) return false;
+    ImGuiIO& io = ImGui::GetIO();
+    if(io.WantCaptureKeyboard) return false;
+    return g_input[0].keys[key] && !g_input[1].keys[key];
+}
+
+bool key_just_up(i32 key) {
+    if(key >= 350) return false;
+    ImGuiIO& io = ImGui::GetIO();
+    if(io.WantCaptureKeyboard) return false;
+    return !g_input[0].keys[key] && g_input[1].keys[key];
+}
+
 static i32 sdl_mouse_event_to_index(SDL_MouseButtonEvent event) {
     i32 index = -1;
     switch(event.button) {
@@ -98,7 +119,7 @@ i32 main(void) {
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
     
     // Setup Dear ImGui style
-    ImGui::StyleColorsDark();
+    ImGui::StyleColorsClassic();
     ImGui_ImplSDL2_InitForSDLRenderer(g_window, g_renderer);
     ImGui_ImplSDLRenderer2_Init(g_renderer);
     
