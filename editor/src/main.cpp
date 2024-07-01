@@ -172,7 +172,7 @@ i32 main(void) {
             }
         }
         SDL_SetRenderTarget(g_renderer, 0);
-        SDL_SetRenderDrawColor(g_renderer, 255, 0, 255, SDL_ALPHA_OPAQUE);
+        SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
         SDL_RenderClear(g_renderer);
 
         ImGui_ImplSDLRenderer2_NewFrame();
