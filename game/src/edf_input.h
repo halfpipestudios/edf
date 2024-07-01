@@ -30,10 +30,12 @@ typedef struct Input {
     u32 count;
 } Input;
 
+#define TOUCH_INVALID_UID 0
+
 typedef struct Multitouch {
     Input *input;
     Input last_input;
-    int *registry[MAX_TOUCHES];
+    i32 *registry[MAX_TOUCHES];
 } Multitouch;
 
 void mt_begin(Multitouch *mt, Input *input);
@@ -49,7 +51,7 @@ b32 mt_touch_just_in_rect(Multitouch *mt, i32 *touch, R2 rect);
 V2 mt_touch_pos(Multitouch *mt, int touch);
 V2 mt_touch_last_pos(Multitouch *mt, int touch);
 
-b32 mt_touch_down(Multitouch *mt, int touch);
+b32 mt_touch_down(Multitouch *mt, int *touch);
 
 // ----------------------------------------------
 //             UI system

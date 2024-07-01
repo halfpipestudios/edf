@@ -5,56 +5,140 @@
 #include "android_opengl.h"
 #include "android.h"
 
-OpenglTexture *texture_atlas_add_bitmap(Arena *arena, OpenglTextureAtlas *atlas, Bitmap *bitmap) {
+#include <unistd.h>
+
+OpenglTexture *texture_atlas_add_bitmap(OpenglGPU *renderer, Arena *arena, OpenglTextureAtlas *atlas, Bitmap *bitmap) {
 
     assert(atlas->texture_count <= array_len(atlas->textures));
 
-    u32 *bucket = atlas->buckets + atlas->texture_count;
-    *bucket = atlas->texture_count;
-    ++atlas->texture_count;
-
-    OpenglTexture *texture = atlas->textures + (*bucket);
-
+    OpenglTexture *texture = atlas->textures + atlas->texture_count;
     texture->bitmap = bitmap;
     texture->dim = r2_set_invalid();
+    texture->loaded = false;
+
+    // NOTE: insert the texture in sorted order
+
+    u32 start = 0;
+    u32 end = atlas->texture_count;
+    u32 mid = start + (end - start)/2;
+    u32 range = end - start;
+    OpenglTexture *other_texture = atlas->textures + atlas->buckets[mid];
+
+    while(range > 1) {
+        if(texture->bitmap->h > other_texture->bitmap->h) {
+            end = mid;
+            mid = start + (end - start)/2;
+        } else {
+            start = mid;
+            mid = start + (end - start)/2;
+        }
+        range = end - start;
+        other_texture = atlas->textures + atlas->buckets[mid];
+    }
+
+    if(other_texture->bitmap->h > texture->bitmap->h) {
+        mid++;
+    }
+
+#if 0
+    memmove((atlas->buckets + (mid+1)), atlas->buckets + mid, (atlas->texture_count - mid)*sizeof(u32));
+#else
+    for(u32 i = atlas->texture_count; i > mid; --i) {
+        assert(i > 0);
+        atlas->buckets[i] = atlas->buckets[i-1];
+    }
+#endif
+
+    u32 *bucket = atlas->buckets + mid;
+    *bucket = atlas->texture_count++;
+
+    renderer->atlas_need_to_be_regenerate = true;
 
     return texture;
 }
 
-void texture_atlas_sort_textures_per_height(OpenglTextureAtlas *atlas) {
+void texture_atlas_regenerate(Arena *arena, OpenglTextureAtlas *atlas) {
 
+    atlas->current_x = 0;
+    atlas->current_y = 0;
+    atlas->last_row_added_height = 0;
+
+    // NOTE: Clear textures
+    TempArena tmp = temp_arena_begin(arena);
+    void *empty = arena_push(arena, sizeof(u32)*atlas->w*atlas->h, 8);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, atlas->w, atlas->h, GL_RGBA, GL_UNSIGNED_BYTE, empty);
+    temp_arena_end(tmp);
+
+    // NOTE: Set up first white pixel;
+    u32 white = 0xffffffff;
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, (void *)&white);
+    atlas->current_x += (1 + TEXTURE_ATLAS_DEFAULT_PADDING);
+
+    // NOTE: Copy textures
     for(u32 i = 0; i < atlas->texture_count; ++i) {
 
-        for(u32 j = i; j < atlas->texture_count; ++j) {
+        OpenglTexture *texture = atlas->textures + atlas->buckets[i];
+        texture->loaded = true;
 
-            if(i == j) continue;
-
-            u32 *bucket = atlas->buckets + i;
-            OpenglTexture *texture = atlas->textures + (*bucket);
-            u32 h = texture->bitmap->h;
-
-            u32 *other_bucket = atlas->buckets + j;
-            OpenglTexture *other_texture = atlas->textures + (*other_bucket);
-            u32 other_h = other_texture->bitmap->h;
-
-            if(h < other_h) {
-                u32 temp = *bucket;
-                *bucket = *other_bucket;
-                *other_bucket = temp;
+        if(i == 0) {
+            atlas->last_row_added_height = texture->bitmap->h;
+        } else {
+            i32 width_left = (i32)atlas->w - (i32)atlas->current_x;
+            if(width_left < (i32)texture->bitmap->w) {
+                i32 new_row_height = texture->bitmap->h + TEXTURE_ATLAS_DEFAULT_PADDING;
+                atlas->current_x = 0;
+                atlas->current_y += atlas->last_row_added_height;
+                atlas->last_row_added_height = new_row_height;
             }
         }
+
+        assert((atlas->current_y + texture->bitmap->h + TEXTURE_ATLAS_DEFAULT_PADDING) <= atlas->h);
+
+        texture->dim = r2_from_wh(atlas->current_x, atlas->current_y, texture->bitmap->w, texture->bitmap->h);
+        texture->min = (V2){(f32)texture->dim.min.x / (f32)atlas->w, (f32)texture->dim.min.y / (f32)atlas->h};
+        texture->max = (V2){(f32)(texture->dim.max.x + 1) / (f32)atlas->w, ((f32)texture->dim.max.y + 1) / (f32)atlas->h};
+
+        glTexSubImage2D(GL_TEXTURE_2D, 0,
+                        texture->dim.min.x, texture->dim.min.y,
+                        r2_width(texture->dim), r2_height(texture->dim),
+                        GL_RGBA, GL_UNSIGNED_BYTE, texture->bitmap->data);
+
+        atlas->current_x += (texture->bitmap->w + TEXTURE_ATLAS_DEFAULT_PADDING);
     }
 
-    u32 break_here = 0;
-    unused(break_here);
+    if(gcs) {
+        static u32 count = 0;
+        cs_print(gcs, "atlas regeneration count: %d\n", ++count);
+    }
+}
+
+void texture_atlas_init(OpenglTextureAtlas *atlas) {
+    atlas->w  = TEXTURE_ATLAS_WIDTH;
+    atlas->h  = TEXTURE_ATLAS_HEIGHT;
+    atlas->current_x = TEXTURE_ATLAS_DEFAULT_PADDING;
+    atlas->current_y = TEXTURE_ATLAS_DEFAULT_PADDING;
+
+    glGenTextures(1, &atlas->id);
+    glBindTexture(GL_TEXTURE_2D, atlas->id);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 5);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, atlas->w, atlas->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
 }
 
+#if 0
 void texture_atlas_calculate_size_and_alloc(Arena *arena, OpenglTextureAtlas *atlas) {
     atlas->bitmap.w = TEXTURE_ATLAS_START_WIDTH;
     atlas->bitmap.h = 1;
     atlas->current_x = 1 + TEXTURE_ATLAS_DEFAULT_PADDING;
-
+    atlas->current_y = 0;
 
     for(u32 i = 0; i < atlas->texture_count; ++i) {
 
@@ -88,9 +172,19 @@ void texture_atlas_calculate_size_and_alloc(Arena *arena, OpenglTextureAtlas *at
 
     ((u32 *)atlas->bitmap.data)[0] = 0xffffffff;
     atlas->current_x = 1 + TEXTURE_ATLAS_DEFAULT_PADDING;
+
+    if(atlas->bitmap.h > atlas->last_h) {
+        atlas->need_to_be_regenerated = true;
+        atlas->last_h = atlas->bitmap.h;
+    }
 }
 
 void texture_atlas_insert_textures(OpenglTextureAtlas *atlas) {
+
+    if(atlas->bitmap.h >= 185) {
+        i32 break_here = 0;
+        unused(break_here);
+    }
 
     for(u32 i = 0; i < atlas->texture_count; ++i) {
 
@@ -127,25 +221,42 @@ void texture_atlas_insert_textures(OpenglTextureAtlas *atlas) {
     }
 }
 
-void texture_atlas_generate(Arena *arena, OpenglTextureAtlas *atlas) {
-    texture_atlas_sort_textures_per_height(atlas);
+void texture_atlas_regenerate(Arena *arena, OpenglTextureAtlas *atlas) {
+    TempArena  temp = temp_arena_begin(arena);
+
     texture_atlas_calculate_size_and_alloc(arena, atlas);
     texture_atlas_insert_textures(atlas);
 
-    glGenTextures(1, &atlas->id);
-    glBindTexture(GL_TEXTURE_2D, atlas->id);
+    if(atlas->need_to_be_regenerated) {
+        atlas->need_to_be_regenerated = false;
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        if(!atlas->id) {
+            glDeleteTextures(1, &atlas->id);
+        }
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 5);
+        glGenTextures(1, &atlas->id);
+        glBindTexture(GL_TEXTURE_2D, atlas->id);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, atlas->bitmap.w, atlas->bitmap.h, 0, GL_RGBA,
-                 GL_UNSIGNED_BYTE, atlas->bitmap.data);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 5);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, atlas->bitmap.w, atlas->bitmap.h, 0, GL_RGBA,
+                     GL_UNSIGNED_BYTE, atlas->bitmap.data);
+
+    } else {
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, atlas->bitmap.w, atlas->bitmap.h, GL_RGBA,
+                        GL_UNSIGNED_BYTE, atlas->bitmap.data);
+    };
+
+    temp_arena_end(temp);
 }
+
+#endif
 
 void quad_batch_flush(OpenglGPU *renderer) {
     glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo);

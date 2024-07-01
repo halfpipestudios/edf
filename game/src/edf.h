@@ -15,8 +15,66 @@ struct EntityManager;
 struct ParticleSystem;
 struct Level;
 
-#define MAX_STARS 1000
-#define MAX_GALAXY 6
+typedef enum AssetType {
+    ASSET_TYPE_TEXTURE,
+    ASSET_TYPE_SOUND,
+    ASSET_TYPE_FONT,
+} AssetType;
+
+typedef struct AssetHeader {
+    AssetType type;
+    u32 hash;
+} AssetHeader;
+
+typedef struct AssetTexture {
+    AssetHeader header;
+    Texture texutre;
+    Bitmap bitmap;
+} AssetTexture;
+
+typedef struct AssetSound {
+    AssetHeader header;
+    Sound sound;
+    Wave wave;
+} AssetSound;
+
+typedef struct AssetFont {
+    AssetHeader header;
+    Font *font;
+} AssetFont;
+
+typedef union Asset {
+    AssetHeader header;
+    AssetTexture texture;
+    AssetSound sound;
+    AssetFont font;
+} Asset;
+
+static inline u32 djb2(char *str) {
+    u32 hash = 5381;
+    int c;
+    while ((c = *str++))
+        hash = ((hash << 5) + hash) + c;
+    return hash;
+}
+
+typedef struct AssetManager {
+    Arena *arena;
+    Gpu gpu;
+    #define ASSET_TABLE_INVALID_HASH ((u32)-1)
+    #define MAX_ASSET_TABLE_SIZE 1024
+    Asset assets_table[MAX_ASSET_TABLE_SIZE];
+    u32 assets_table_used;
+
+    #define MAX_LOADED_FONT_CACHE 10
+    FontInfo loaded_font_cache[MAX_LOADED_FONT_CACHE];
+    u32 loaded_font_count;
+
+} AssetManager;
+
+AssetManager *am_load(Arena *arena, Gpu gpu);
+Texture am_get_texture(AssetManager *am, char *path);
+Font *am_get_font(AssetManager *am, char *path, u32 size);
 
 typedef struct GameState {
 
@@ -24,7 +82,7 @@ typedef struct GameState {
     Spu spu;
     Multitouch mt;
     Ui ui;
-
+    
     Arena platform_arena;
     Arena game_arena;
 
@@ -37,11 +95,16 @@ typedef struct GameState {
 
     b32 paused;
     b32 debug_show;
-
+    
+    struct AssetManager *am;
     struct EntityManager *em;
     struct Entity *hero;
 
     struct Level *level;
+    Texture ship_texture[2];
+    Texture explotion_textures[11];
+    Texture confeti_texture[5];
+    Animation *explotion_anim;
 
     struct ParticleSystem *fire;
     struct ParticleSystem *confeti;
@@ -49,58 +112,15 @@ typedef struct GameState {
     struct ParticleSystem *smoke;
     struct ParticleSystem *pixel;
     struct ParticleSystem *ps;
-
-    struct Animation *explotion_anim;
  
     f32 time_per_frame;
     i32 fps_counter;
     i32 FPS;
+    f32 MS;
     Console cs;
 
-    Font *liberation;
-    Font *times;
-
-    Bitmap ship_bitmap[2];
-    Bitmap move_outer_bitmap;
-    Bitmap move_inner_bitmap;
-    Bitmap boost_bitmap;
-    Bitmap star_bitmap;
-    Bitmap galaxy_bitmap;
-    Bitmap planet1_bitmap;
-    Bitmap planet2_bitmap;
-    Bitmap satelite_bitmap;
-    Bitmap meteorito_bitmap;
-    Bitmap deathstar_bitmap;
-    Bitmap orbe_bitmap;
-    Bitmap confeti_bitmap[5];
-    Bitmap pause_bitmap;
-    Bitmap rocks_bitmap;
-    Bitmap rocks_full_bitmap;
-    Bitmap rocks_corner_bitmap;
-    Bitmap explotion_bitmaps[11];
-    Bitmap square_bitmap;
-    
-    Texture ship_texture[2];
-    Texture move_outer_texture;
-    Texture move_inner_texture;
-    Texture boost_texture;
-    Texture star_texture;
-    Texture galaxy_texture;
-    Texture planet1_texture;
-    Texture planet2_texture;
-    Texture satelite_texture;
-    Texture meteorito_texture;
-    Texture deathstar_texture;
-    Texture orbe_texture;
-    Texture confeti_texture[5];
-    Texture pause_texture;
-    Texture rocks_texutre;
-    Texture rocks_full_texture;
-    Texture rocks_corner_texture;
-    Texture explotion_textures[11];
-    Texture square_texture;
-    
-
+#define MAX_STARS 1000
+#define MAX_GALAXY 6
     Sprite stars[MAX_STARS];
     Sprite galaxy[MAX_GALAXY];
 

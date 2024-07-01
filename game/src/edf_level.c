@@ -45,44 +45,44 @@ void add_screen(GameState *gs, Level *level, i32 screen_index, const char *posit
 
             switch (c) {
                 case 't': {
-                    texture = gs->rocks_texutre;
+                    texture = am_get_texture(gs->am, "rocks_flat.png");
                     scale.y = -scale.y;
                     add_entity(level, screen_x, screen_y, scale, texture);
                 } break;
                 case 'b': {
-                    texture = gs->rocks_texutre;
+                    texture = am_get_texture(gs->am, "rocks_flat.png");
                     add_entity(level, screen_x, screen_y, scale, texture);
                 } break;
                 case 'q': {
-                    texture = gs->rocks_corner_texture;
+                    texture = am_get_texture(gs->am, "rocks_corner.png");
                     scale.x = -scale.x;
                     scale.y = -scale.y;
                     add_entity(level, screen_x, screen_y, scale, texture);
                 } break;
                 case 'e': {
-                    texture = gs->rocks_corner_texture;
+                    texture = am_get_texture(gs->am, "rocks_corner.png");
                     scale.y = -scale.y;
                     add_entity(level, screen_x, screen_y, scale, texture);
                 } break;
                 case 'a': {
-                    texture = gs->rocks_corner_texture;
+                    texture = am_get_texture(gs->am, "rocks_corner.png");
                     scale.x = -scale.x;
                     add_entity(level, screen_x, screen_y, scale, texture);
                 } break;
                 case 'd': {
-                    texture = gs->rocks_corner_texture;
+                    texture = am_get_texture(gs->am, "rocks_corner.png");
                     add_entity(level, screen_x, screen_y, scale, texture);
                 } break;
                 case 'f': {
-                    texture = gs->rocks_full_texture;
+                    texture = am_get_texture(gs->am, "rock_full.png");
                     add_entity(level, screen_x, screen_y, scale, texture);
                 } break;
                 case 'x': {
-                    texture = gs->meteorito_texture;
+                    texture = am_get_texture(gs->am, "Meteorito.png");
                     add_entity(level, screen_x, screen_y, scale, texture);
                 } break;
                 case '!': {
-                    texture = gs->rocks_texutre;
+                    texture = am_get_texture(gs->am, "rocks_flat.png");
                     V3 pos = v3(screen_x, screen_y, 0);
                     last_trigger = entity_manager_add_entity(level->em);
                     entity_add_render_component(last_trigger, pos, scale, texture, v4(1, 1, 1, 0));
@@ -95,7 +95,7 @@ void add_screen(GameState *gs, Level *level, i32 screen_index, const char *posit
                     entity_add_trigger_component(last_trigger);
                 } break;
                 case '*': {
-                    texture = gs->meteorito_texture;
+                    texture = am_get_texture(gs->am, "Meteorito.png");
                     V3 pos = v3(screen_x, screen_y, 0);
                     Entity *asteroid = entity_manager_add_entity(level->em);
                     asteroid->save_pos = pos;
@@ -136,8 +136,6 @@ Level *load_level(GameState *gs, struct Arena *arena, struct EntityManager *em) 
     hero_collision.circle.r = gs->hero->scale.x*0.4f;
     entity_add_collision_component(gs->hero, hero_collision, true);
     entity_add_animation_component(gs->hero, gs->explotion_anim);
-
-
 
     {
         static char asteroids[] = {

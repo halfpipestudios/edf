@@ -24,6 +24,7 @@ typedef struct Console {
     i32 visible_cols;
     i32 visible_rows;
 
+    i32 padding;
 } Console;
 
 Console cs_init(struct Font *font, i32 x, i32 y, i32 w, i32 h);

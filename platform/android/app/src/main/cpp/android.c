@@ -35,6 +35,7 @@ R2 os_device_rect(void) {
 
 File os_file_read(struct Arena *arena, char *path) {
     AAsset *asset = AAssetManager_open(asset_manager, path, AASSET_MODE_BUFFER);
+    assert(asset);
     File file = {0};
     file.size = AAsset_getLength(asset);
     file.data = arena_push(arena, file.size+1, 8);
@@ -65,7 +66,7 @@ Gpu gpu_load(struct Arena *arena) {
 
     OpenglGPU *renderer = arena_push(arena, sizeof(*renderer), 8);
     renderer->arena = arena;
-    renderer->load_textures = true;
+    texture_atlas_init(&renderer->atlas);
 
     File vert_src = os_file_read(arena, "shader.vert");
     File frag_src = os_file_read(arena, "shader.frag");
@@ -107,11 +108,6 @@ void gpu_unload(Gpu gpu) {
 
 void gpu_frame_begin(Gpu gpu) {
     OpenglGPU *renderer = (OpenglGPU *)gpu;
-    if(renderer->load_textures) {
-        texture_atlas_generate(renderer->arena, &renderer->atlas);
-        renderer->load_textures = false;
-        logd("Game", "Total platform memory used: %zuKB\n", renderer->arena->used/1024);
-    }
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -123,11 +119,8 @@ void gpu_frame_begin(Gpu gpu) {
     renderer->draw_calls = 0;
 }
 
-void gpu_frame_end(Gpu gpu) {
-    OpenglGPU *renderer = (OpenglGPU *)gpu;
-
+static void draw_texture_atlas(OpenglGPU *renderer) {
     // draw texture atlas test
-#if 0
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     float angle = 0;
@@ -135,9 +128,9 @@ void gpu_frame_end(Gpu gpu) {
     float window_w = (f32)r2_width(os_display_rect());
     float window_h = (f32) r2_height(os_display_rect());
 
-    float ratio = (f32)renderer->atlas.bitmap.h / (f32)renderer->atlas.bitmap.w;
+    float ratio = (f32)renderer->atlas.h / (f32)renderer->atlas.w;
     float render_scale = 1;
-    float w = (f32)renderer->atlas.bitmap.w  * render_scale;
+    float w = (f32)renderer->atlas.w  * render_scale;
     float h = w * ratio;
 
     float padding = 64;
@@ -169,15 +162,24 @@ void gpu_frame_end(Gpu gpu) {
     quad_batch_push(renderer, quad);
 
     // -----------------------------------------------
-#endif
+}
+
+void gpu_frame_end(Gpu gpu) {
+    OpenglGPU *renderer = (OpenglGPU *)gpu;
+
+    //draw_texture_atlas(renderer);
     quad_batch_flush(renderer);
 
-    cs_print(gcs, "Draw calls: %d\n", renderer->draw_calls);
+    if(renderer->atlas_need_to_be_regenerate) {
+        texture_atlas_regenerate(renderer->arena, &renderer->atlas);
+        renderer->atlas_need_to_be_regenerate = false;
+    }
+    //cs_print(gcs, "Draw calls: %d\n", renderer->draw_calls);
 }
 
 Texture gpu_texture_load(Gpu gpu, Bitmap *bitmap) {
     OpenglGPU *renderer = (OpenglGPU *)gpu;
-    OpenglTexture *texture = texture_atlas_add_bitmap(renderer->arena, &renderer->atlas, bitmap);
+    OpenglTexture *texture = texture_atlas_add_bitmap(renderer, renderer->arena, &renderer->atlas, bitmap);
     return (Texture)texture;
 }
 
@@ -206,13 +208,16 @@ void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V4 colo
 
 void gpu_draw_quad_texture_tinted(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Texture texture, V4 color) {
     OpenglGPU *renderer = (OpenglGPU *)gpu;
+    OpenglTexture *tex = (OpenglTexture *)texture;
+    if(!tex->loaded) {
+        return;
+    }
 
     M4 translate = m4_translate(v3(x, y, 0));
     M4 rotate = m4_rotate_z(angle);
     M4 scale = m4_scale(v3(w, h, 1));
     M4 world = m4_mul(translate, m4_mul(rotate, scale));
 
-    OpenglTexture *tex = (OpenglTexture *)texture;
     OpenglQuad quad;
     V2 uvs[array_len(quad.vertex)] = {
         {tex->max.x, tex->max.y}, // bottom right

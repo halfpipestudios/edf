@@ -14,6 +14,88 @@
 
 Console *gcs;
 
+AssetManager *am_load(Arena *arena, Gpu gpu) {
+    AssetManager *am = (AssetManager *)arena_push(arena, sizeof(*am), 8);
+    am->arena = arena;
+    am->gpu = gpu;
+    for(u32 i = 0; i < array_len(am->assets_table); ++i) {
+        am->assets_table[i].header.hash = ASSET_TABLE_INVALID_HASH;
+    }
+    return am;
+}
+
+Asset *am_get_asset(AssetManager *am, u32 hash) {
+    assert(am->assets_table_used <= (u32)(MAX_ASSET_TABLE_SIZE*0.7f));
+
+    u32 index = hash % MAX_ASSET_TABLE_SIZE;
+
+    u32 start_index = index;
+    Asset *asset = am->assets_table + index;
+    while((asset->header.hash != ASSET_TABLE_INVALID_HASH) && (asset->header.hash != hash)) {
+        index = (index + 1) % MAX_ASSET_TABLE_SIZE;
+        asset = am->assets_table + index;
+        assert(index != start_index);
+    }
+
+    return  asset;
+}
+
+Texture am_get_texture(AssetManager *am, char *path) {
+    u32 hash = djb2(path);
+    Asset *asset = am_get_asset(am, hash);
+
+    if(asset->header.hash == hash) {
+        assert(asset->header.type == ASSET_TYPE_TEXTURE);
+        return asset->texture.texutre;
+    } else {
+        assert(asset->header.hash == ASSET_TABLE_INVALID_HASH);
+        asset->header.type = ASSET_TYPE_TEXTURE;
+        asset->header.hash = hash;
+        asset->texture.bitmap = bitmap_load(am->arena, path);
+        asset->texture.texutre = gpu_texture_load(am->gpu, &asset->texture.bitmap);
+        am->assets_table_used++;
+        return  asset->texture.texutre;
+    }
+}
+
+static inline b32 find_font_info(AssetManager *am, char *path, FontInfo *font_info) {
+    for(u32 i = 0; i < am->loaded_font_count; ++i) {
+        FontInfo font_info_to_test = am->loaded_font_cache[i];
+        if(strcmp(path, font_info_to_test.name) == 0) {
+            *font_info = font_info_to_test;
+            return true;
+        }
+    }
+    return false;
+}
+
+Font *am_get_font(AssetManager *am, char *path, u32 size) {
+
+    u32 hash = djb2(path) + (size << 3);
+    Asset *asset = am_get_asset(am, hash);
+
+    if(asset->header.hash == hash) {
+        assert(asset->header.type == ASSET_TYPE_FONT);
+        return asset->font.font;
+    } else {
+        FontInfo font_info;
+        b32 found = find_font_info(am, path, &font_info);
+        if(!found) {
+            font_info = font_info_load(am->arena, path);
+            if(am->loaded_font_count++ < array_len(am->loaded_font_cache)) {
+                am->loaded_font_cache[am->loaded_font_count++] = font_info;
+            }
+        }
+
+        assert(asset->header.hash == ASSET_TABLE_INVALID_HASH);
+        asset->header.type = ASSET_TYPE_FONT;
+        asset->header.hash = hash;
+        asset->font.font = font_load(am->gpu, am->arena, font_info.info, (f32)size);
+        am->assets_table_used++;
+        return  asset->font.font;
+    }
+}
+
 void game_init(Memory *memory) {
     game_state_init(memory);
     GameState *gs = game_state(memory);
@@ -23,118 +105,32 @@ void game_init(Memory *memory) {
     gs->platform_arena = arena_create(memory, mb(20));
     gs->game_arena     = arena_create(memory, mb(50));
 
-    gs->gpu   = gpu_load(&gs->platform_arena);
-    gs->spu   = spu_load(&gs->platform_arena);
-    gs->liberation = font_load(gs->gpu, &gs->platform_arena, "LiberationMono-Regular.ttf", 32);
-    gs->times = font_load(gs->gpu, &gs->platform_arena, "times.ttf", 64);
+    gs->gpu = gpu_load(&gs->platform_arena);
+    gs->spu = spu_load(&gs->platform_arena);
+    gs->am  = am_load(&gs->game_arena, gs->gpu);
 
-    gs->cs = cs_init(gs->liberation, -VIRTUAL_RES_X/2, -40, 600, VIRTUAL_RES_Y/2);
+    gs->cs = cs_init(am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), -VIRTUAL_RES_X/2, -60, 600, VIRTUAL_RES_Y/2);
     gcs = &gs->cs;
 
-    gs->ship_bitmap[0]    = bitmap_load(&gs->game_arena, "Player.png");
-    gs->ship_bitmap[1]    = bitmap_load(&gs->game_arena, "OG Es.png");
-    gs->move_outer_bitmap = bitmap_load(&gs->game_arena, "move_outer.png");
-    gs->move_inner_bitmap = bitmap_load(&gs->game_arena, "move_inner.png");
-    gs->boost_bitmap      = bitmap_load(&gs->game_arena, "boost.png");
-    gs->star_bitmap       = bitmap_load(&gs->game_arena, "star.png");
-    gs->galaxy_bitmap     = bitmap_load(&gs->game_arena, "stb_image.png");
-    gs->planet1_bitmap    = bitmap_load(&gs->game_arena, "planet1.png");
-    gs->planet2_bitmap    = bitmap_load(&gs->game_arena, "planet2.png");
-    gs->satelite_bitmap   = bitmap_load(&gs->game_arena, "Satelite.png");
-    gs->meteorito_bitmap  = bitmap_load(&gs->game_arena, "Meteorito.png");
-    gs->deathstar_bitmap  = bitmap_load(&gs->game_arena, "deathstar.png");
-    gs->orbe_bitmap       = bitmap_load(&gs->game_arena, "orbe_shot.png");
-    gs->confeti_bitmap[0] = bitmap_load(&gs->game_arena, "confeti1.png");
-    gs->confeti_bitmap[1] = bitmap_load(&gs->game_arena, "confeti2.png");
-    gs->confeti_bitmap[2] = bitmap_load(&gs->game_arena, "confeti3.png");
-    gs->confeti_bitmap[3] = bitmap_load(&gs->game_arena, "confeti4.png");
-    gs->confeti_bitmap[4] = bitmap_load(&gs->game_arena, "confeti5.png");
-    gs->pause_bitmap      = bitmap_load(&gs->game_arena, "pause.png");
-    gs->rocks_bitmap      = bitmap_load(&gs->game_arena, "rocks_flat.png");
-    gs->rocks_full_bitmap = bitmap_load(&gs->game_arena, "rock_full.png");
-    gs->rocks_corner_bitmap = bitmap_load(&gs->game_arena, "rocks_corner.png");
-    gs->square_bitmap     = bitmap_load(&gs->game_arena, "square.png");
-    static char explotion_name_buffer[256];
-    for(u32 i = 0; i < array_len(gs->explotion_bitmaps); ++i) {
-        sprintf(explotion_name_buffer, "destroyed/destroyed%d.png", (i+1));
-        gs->explotion_bitmaps[i] = bitmap_load(&gs->game_arena, explotion_name_buffer);
-        
-    }
-
-    gs->ship_texture[0]      = gpu_texture_load(gs->gpu, &gs->ship_bitmap[0]);
-    gs->ship_texture[1]      = gpu_texture_load(gs->gpu, &gs->ship_bitmap[1]);
-    gs->move_outer_texture   = gpu_texture_load(gs->gpu, &gs->move_outer_bitmap);
-    gs->move_inner_texture   = gpu_texture_load(gs->gpu, &gs->move_inner_bitmap);
-    gs->boost_texture        = gpu_texture_load(gs->gpu, &gs->boost_bitmap);
-    gs->star_texture         = gpu_texture_load(gs->gpu, &gs->star_bitmap);
-    gs->galaxy_texture       = gpu_texture_load(gs->gpu, &gs->galaxy_bitmap);
-    gs->planet1_texture      = gpu_texture_load(gs->gpu, &gs->planet1_bitmap);
-    gs->planet2_texture      = gpu_texture_load(gs->gpu, &gs->planet2_bitmap);
-    gs->satelite_texture     = gpu_texture_load(gs->gpu, &gs->satelite_bitmap);
-    gs->meteorito_texture    = gpu_texture_load(gs->gpu, &gs->meteorito_bitmap);
-    gs->deathstar_texture    = gpu_texture_load(gs->gpu, &gs->deathstar_bitmap);
-    gs->orbe_texture         = gpu_texture_load(gs->gpu, &gs->orbe_bitmap);
-    gs->confeti_texture[0]   = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[0]);
-    gs->confeti_texture[1]   = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[1]);
-    gs->confeti_texture[2]   = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[2]);
-    gs->confeti_texture[3]   = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[3]);
-    gs->confeti_texture[4]   = gpu_texture_load(gs->gpu, &gs->confeti_bitmap[4]);
-    gs->pause_texture        = gpu_texture_load(gs->gpu, &gs->pause_bitmap);
-    gs->rocks_texutre        = gpu_texture_load(gs->gpu, &gs->rocks_bitmap);
-    gs->rocks_full_texture   = gpu_texture_load(gs->gpu, &gs->rocks_full_bitmap);
-    gs->rocks_corner_texture = gpu_texture_load(gs->gpu, &gs->rocks_corner_bitmap);
-    gs->square_texture       = gpu_texture_load(gs->gpu, &gs->square_bitmap);
-    for(u32 i = 0; i < array_len(gs->explotion_textures); ++i) {
-        gs->explotion_textures[i] = gpu_texture_load(gs->gpu, &gs->explotion_bitmaps[i]);
-        
-    }
-
-    gs->explotion_anim = animation_load(&gs->game_arena,
-                           gs->explotion_textures, array_len(gs->explotion_textures),
-                           0.1f, false, false);
-
-
     gs->em = entity_manager_load(&gs->game_arena, 1000);
-
-    gs->level = load_level(gs, &gs->game_arena, gs->em);
-
-    stars_init(gs);
     
     gs->fire    = particle_system_create(&gs->game_arena, 100, 10,
-                                         0.05f, v2(0, 0), gs->orbe_texture,
+                                         0.05f, v2(0, 0), am_get_texture(gs->am, "orbe.png"),
                                          ship_ps_update, GPU_BLEND_STATE_ADDITIVE);
     gs->confeti = particle_system_create(&gs->game_arena, 1000, 10,
                                          0.05f, v2(0, 0), 0,
                                          confeti_ps_update, GPU_BLEND_STATE_ALPHA);
     gs->neon    = particle_system_create(&gs->game_arena, 200, 20,
-                                         0.05f, v2(0, 0), gs->orbe_texture,
+                                         0.05f, v2(0, 0), am_get_texture(gs->am, "orbe.png"),
                                          neon_ps_update, GPU_BLEND_STATE_ADDITIVE);
     gs->smoke    = particle_system_create(&gs->game_arena, 1000, 5,
-                                         0.05f, v2(0, 0), gs->star_texture,
+                                         0.05f, v2(0, 0), am_get_texture(gs->am, "star.png"),
                                          smoke_ps_update, GPU_BLEND_STATE_ALPHA);
     gs->pixel    = particle_system_create(&gs->game_arena, 100, 10,
-                                          0.05f, v2(0, 0), gs->square_texture,
+                                          0.05f, v2(0, 0), am_get_texture(gs->am, "square.png"),
                                           pixel_ps_update, GPU_BLEND_STATE_ADDITIVE);
 
     gs->ps = gs->fire;
-
-    /*
-    u32 ship_rand_texture = rand_range(0, 1);
-
-    V3 hero_position = v3((f32)gs->level->dim.min.x, 0, 0);
-    gs->hero = entity_manager_add_entity(gs->em);
-    entity_add_input_component(gs->hero);
-    entity_add_render_component(gs->hero, hero_position, v2(32*3, 32*3), gs->ship_texture[ship_rand_texture], v4(1, 1, 1, 1));
-    entity_add_physics_component(gs->hero, v2(0, 0), v2(0, 0), 0.4f);
-    Collision hero_collision;
-    hero_collision.type = COLLISION_TYPE_CIRLCE;
-    hero_collision.circle.c = gs->hero->pos.xy;
-    hero_collision.circle.r = gs->hero->scale.x*0.4f;
-    entity_add_collision_component(gs->hero, hero_collision, true);
-
-    entity_add_animation_component(gs->hero, &gs->game_arena,
-        gs->explotion_textures, array_len(gs->explotion_textures), 0.1f, false, false);
-    */
 
     i32 hw = VIRTUAL_RES_X * 0.5f;
     i32 hh = VIRTUAL_RES_Y * 0.5f;
@@ -144,21 +140,47 @@ void game_init(Memory *memory) {
     window_rect.min.y = -hh;
     window_rect.max.y = hh;
     gs->joystick = ui_joystick_alloc(&gs->ui, &gs->game_arena, v2(-740, -250), window_rect, 
-                                    140, 220, gs->move_inner_texture, gs->move_outer_texture, v4(1,1,1,0.3f));
+                                    140, 220, am_get_texture(gs->am, "move_inner.png"), am_get_texture(gs->am, "move_outer.png"), v4(1,1,1,0.3f));
 
-    gs->boost_button = ui_button_alloc(&gs->ui, &gs->game_arena, v2(740, -250), 135, gs->boost_texture, v4(1,1,1,0.3f));
+    gs->boost_button = ui_button_alloc(&gs->ui, &gs->game_arena, v2(740, -250), 135, am_get_texture(gs->am, "boost.png"), v4(1,1,1,0.3f));
 
     f32 paddin_top = 80;
     f32 pause_buttom_dim = 140;
     V2 pause_button_pos = v2(0, VIRTUAL_RES_Y*0.5f-pause_buttom_dim*0.5f-paddin_top);
-    gs->pause_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, gs->pause_texture, v4(1,0,0,0.3f));
+    gs->pause_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, am_get_texture(gs->am, "pause.png"), v4(1,0,0,0.3f));
     pause_button_pos.x += 220;
-    gs->next_ship_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, gs->pause_texture, v4(0,1,0,0.3f));
+    gs->next_ship_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, am_get_texture(gs->am, "pause.png"), v4(0,1,0,0.3f));
     pause_button_pos.x += 220;
-    gs->next_boost_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, gs->pause_texture, v4(0,0,1,0.3f));
+    gs->next_boost_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, am_get_texture(gs->am, "pause.png"), v4(0,0,1,0.3f));
     pause_button_pos.x += 220;
-    gs->debug_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, gs->pause_texture, v4(1,0,1,0.3f));
+    gs->debug_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, am_get_texture(gs->am, "pause.png"), v4(1,0,1,0.3f));
 
+    gs->ship_texture[0] = am_get_texture(gs->am, "Player.png");
+    gs->ship_texture[1] = am_get_texture(gs->am, "OG Es.png");
+
+    static char name_buffer[256];
+    for(u32 i = 0; i < array_len(gs->explotion_textures); ++i) {
+        sprintf(name_buffer, "destroyed/destroyed%d.png", (i+1));
+        gs->explotion_textures[i] = am_get_texture(gs->am, name_buffer);
+        
+    }
+
+    for(u32 i = 0; i < array_len(gs->confeti_texture); ++i) {
+        sprintf(name_buffer, "confeti%d.png", (i+1));
+        gs->confeti_texture[i] = am_get_texture(gs->am, name_buffer);
+        
+    }
+
+    gs->explotion_anim = animation_load(&gs->game_arena,
+                                        gs->explotion_textures, array_len(gs->explotion_textures),
+                                        0.1f, false, false);
+
+    gs->level = load_level(gs, &gs->game_arena, gs->em);
+
+    stars_init(gs);
+
+    cs_print(gcs, "test 1: dhsajhd dsahdjksha dshajkdhs dshkajdshak\n");
+    cs_print(gcs, "test 2: ----------------------------------------\n");
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {
@@ -234,6 +256,11 @@ void game_update(Memory *memory, Input *input, f32 dt) {
         gs->fps_counter = 0;
         gs->time_per_frame = gs->time_per_frame - 1.0f;
     }
+
+    f32 ms = (dt * 1000);
+    gs->MS = ms;
+
+    //cs_print(gcs, "asset used: %d\n", gs->am->assets_table_used);
 }
 
 
@@ -261,21 +288,21 @@ void game_render(Memory *memory) {
 
     if(gs->debug_show) {
         cs_render(gs->gpu, &gs->cs);
-        static char fps_text[1024];
-        snprintf(fps_text, 1024, "FPS: %d", gs->FPS);
-        R2 dim = font_size_text(gs->liberation, fps_text);
+        static char text[1024];
+
+        snprintf(text, 1024, "FPS: %d | MS %.2f", gs->FPS, gs->MS);
+        R2 fps_dim = font_size_text(am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text);
         f32 pos_x = -VIRTUAL_RES_X*0.5f;
-        f32 pos_y = VIRTUAL_RES_Y*0.5f - r2_height(dim);
-        font_draw_text(gs->gpu, gs->liberation, fps_text, pos_x, pos_y, v4(1, 1, 1, 1));
+        f32 pos_y = VIRTUAL_RES_Y*0.5f - r2_height(fps_dim);
+        font_draw_text(gs->gpu, am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text, pos_x, pos_y, v4(1, 1, 1, 1));
     }
 
-    
     if(gs->paused) {
         char *text = "Pause";
-        R2 dim = font_size_text(gs->times, text);
+        R2 dim = font_size_text(am_get_font(gs->am, "times.ttf", 64), text);
         f32 pos_x = 0 - r2_width(dim)*0.5f;
         f32 pos_y = 0 - r2_height(dim)*0.5f + VIRTUAL_RES_Y*0.25f;
-        font_draw_text(gs->gpu, gs->times, text, pos_x, pos_y, v4(1, 1, 1, 1));
+        font_draw_text(gs->gpu, am_get_font(gs->am, "times.ttf", 64), text, pos_x, pos_y, v4(1, 1, 1, 1));
     }
 
     gpu_frame_end(gs->gpu);

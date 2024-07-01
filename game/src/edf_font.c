@@ -8,16 +8,26 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
-Font *font_load(Gpu gpu, Arena *arena, char *path, float size) {
+FontInfo font_info_load(struct Arena *arena, char *path) {
+    FontInfo font_info;
+    File file = os_file_read(arena, path);
+    stbtt_InitFont(&font_info.info, file.data, stbtt_GetFontOffsetForIndex(file.data, 0));
+    
+    sz len = strlen(path);
+    assert(len < array_len(font_info.name));
+    memcpy(font_info.name, path, len);
+    font_info.name[len] = 0;
+    
+    return  font_info;
+}
+
+Font *font_load(Gpu gpu, Arena *arena, stbtt_fontinfo stbfont, float size) {
     Font *result         = arena_push(arena, sizeof(*result), 8);
     result->size = (u32)size;
     result->glyphs_count = (FONT_CODEPOINT_RANGE_END - FONT_CODEPOINT_RANGE_START + 1);
     result->glyphs       = arena_push(arena, sizeof(*result->glyphs) * result->glyphs_count, 8);
 
-    File file = os_file_read(arena, path);
-
-    stbtt_InitFont(&result->stbfont, file.data, stbtt_GetFontOffsetForIndex(file.data, 0));
-    stbtt_fontinfo *font = &result->stbfont;
+    stbtt_fontinfo *font = &stbfont;
 
     i32 ascent_i, decent_i, line_gap_i;
     stbtt_GetFontVMetrics(font, &ascent_i, &decent_i, &line_gap_i);
@@ -119,12 +129,13 @@ void font_draw_text(Gpu gpu, Font *font, const char *text, f32 x, f32 y, V4 colo
                                      0, glyph->texture, color);
 
         current_x += glyph->advance_w;
-
+#if 1
         if(text[i + 1]) {
             i32 kerning =
                 stbtt_GetCodepointKernAdvance(&font->stbfont, (i32)text[i], (i32)text[i + 1]);
             f32 scale_kerning = (f32)kerning * font->scale;
             current_x += scale_kerning;
         }
+#endif
     }
 }
