@@ -119,16 +119,8 @@ void gpu_frame_begin(Gpu gpu) {
     renderer->draw_calls = 0;
 }
 
-void gpu_frame_end(Gpu gpu) {
-    OpenglGPU *renderer = (OpenglGPU *)gpu;
-
-    if(renderer->atlas_need_to_be_regenerate) {
-        texture_atlas_regenerate(renderer->arena, &renderer->atlas);
-        renderer->atlas_need_to_be_regenerate = false;
-    }
-
+static void draw_texture_atlas(OpenglGPU *renderer) {
     // draw texture atlas test
-#if 1
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     float angle = 0;
@@ -170,9 +162,18 @@ void gpu_frame_end(Gpu gpu) {
     quad_batch_push(renderer, quad);
 
     // -----------------------------------------------
-#endif
+}
+
+void gpu_frame_end(Gpu gpu) {
+    OpenglGPU *renderer = (OpenglGPU *)gpu;
+
+    //draw_texture_atlas(renderer);
     quad_batch_flush(renderer);
 
+    if(renderer->atlas_need_to_be_regenerate) {
+        texture_atlas_regenerate(renderer->arena, &renderer->atlas);
+        renderer->atlas_need_to_be_regenerate = false;
+    }
     //cs_print(gcs, "Draw calls: %d\n", renderer->draw_calls);
 }
 
@@ -208,7 +209,7 @@ void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V4 colo
 void gpu_draw_quad_texture_tinted(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Texture texture, V4 color) {
     OpenglGPU *renderer = (OpenglGPU *)gpu;
     OpenglTexture *tex = (OpenglTexture *)texture;
-    if(r2_invalid(tex->dim)) {
+    if(!tex->loaded) {
         return;
     }
 

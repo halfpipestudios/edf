@@ -31,6 +31,7 @@ typedef struct OpenglTexture {
     V2 min, max;
     R2 dim;
     Bitmap *bitmap;
+    b32 loaded;
 } OpenglTexture;
 
 #define TEXTURE_ATLAS_WIDTH 1024

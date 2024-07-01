@@ -5,6 +5,8 @@
 #include "android_opengl.h"
 #include "android.h"
 
+#include <unistd.h>
+
 OpenglTexture *texture_atlas_add_bitmap(OpenglGPU *renderer, Arena *arena, OpenglTextureAtlas *atlas, Bitmap *bitmap) {
 
     assert(atlas->texture_count <= array_len(atlas->textures));
@@ -12,6 +14,7 @@ OpenglTexture *texture_atlas_add_bitmap(OpenglGPU *renderer, Arena *arena, Openg
     OpenglTexture *texture = atlas->textures + atlas->texture_count;
     texture->bitmap = bitmap;
     texture->dim = r2_set_invalid();
+    texture->loaded = false;
 
     // NOTE: insert the texture in sorted order
 
@@ -75,6 +78,7 @@ void texture_atlas_regenerate(Arena *arena, OpenglTextureAtlas *atlas) {
     for(u32 i = 0; i < atlas->texture_count; ++i) {
 
         OpenglTexture *texture = atlas->textures + atlas->buckets[i];
+        texture->loaded = true;
 
         if(i == 0) {
             atlas->last_row_added_height = texture->bitmap->h;
@@ -85,7 +89,6 @@ void texture_atlas_regenerate(Arena *arena, OpenglTextureAtlas *atlas) {
                 atlas->current_x = 0;
                 atlas->current_y += atlas->last_row_added_height;
                 atlas->last_row_added_height = new_row_height;
-
             }
         }
 
