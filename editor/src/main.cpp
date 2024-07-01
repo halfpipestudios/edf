@@ -89,6 +89,7 @@ static i32 sdl_mouse_event_to_index(SDL_MouseButtonEvent event) {
         case SDL_BUTTON_LEFT: index = 0; break; 
         case SDL_BUTTON_MIDDLE: index = 1; break; 
         case SDL_BUTTON_RIGHT: index = 2; break; 
+        default: index = 0;
     }
     return index;
 }
@@ -132,10 +133,14 @@ i32 main(void) {
                 g_running = false;
             }
             if(event.type == SDL_KEYDOWN) {
-                g_input[0].keys[event.key.keysym.sym] = true;
+                if(event.key.keysym.sym < 350) {
+                    g_input[0].keys[event.key.keysym.sym] = true;
+                }
             }
             if(event.type == SDL_KEYUP) {
-                g_input[0].keys[event.key.keysym.sym] = false;
+                if(event.key.keysym.sym < 350) {
+                    g_input[0].keys[event.key.keysym.sym] = false;
+                }
             }
             if(event.type == SDL_MOUSEBUTTONDOWN) {
                 g_input[0].mouse_buttons[sdl_mouse_event_to_index(event.button)] = true;
