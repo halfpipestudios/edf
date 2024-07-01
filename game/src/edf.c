@@ -180,7 +180,7 @@ void game_init(Memory *memory) {
     stars_init(gs);
 
     // Preload assets
-    am_get_font(gs->am, "times.ttf", 64);
+    //am_get_font(gs->am, "times.ttf", 64);
 
 }
 
@@ -288,10 +288,10 @@ void game_render(Memory *memory) {
         cs_render(gs->gpu, &gs->cs);
         static char fps_text[1024];
         snprintf(fps_text, 1024, "FPS: %d", gs->FPS);
-        R2 dim = font_size_text(am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), fps_text);
+        R2 dim = font_size_text(am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), fps_text);
         f32 pos_x = -VIRTUAL_RES_X*0.5f;
         f32 pos_y = VIRTUAL_RES_Y*0.5f - r2_height(dim);
-        font_draw_text(gs->gpu, am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), fps_text, pos_x, pos_y, v4(1, 1, 1, 1));
+        font_draw_text(gs->gpu, am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), fps_text, pos_x, pos_y, v4(1, 1, 1, 1));
     }
 
     if(gs->paused) {
