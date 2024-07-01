@@ -178,6 +178,9 @@ void game_init(Memory *memory) {
     gs->level = load_level(gs, &gs->game_arena, gs->em);
 
     stars_init(gs);
+
+    cs_print(gcs, "test 1: dhsajhd dsahdjksha dshajkdhs dshkajdshak\n");
+    cs_print(gcs, "test 2: ----------------------------------------\n");
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {

@@ -46,21 +46,13 @@ void cs_print(Console *c, char *format, ...) {
     va_end(args);
 }
 
+#if 1
 static i32 found_max_glyph_advance_w(Font *font) {
     i32 result = 0;
     for(u32 i = 0; i < font->glyphs_count; ++i) {
         Glyph *glyph = font->glyphs + i;
-        result = max(result, glyph->advance_w);
-    }
-    return result;
-}
-
-#if 0
-static i32 found_max_glyph_w(Font *font) {
-    i32 result = 0;
-    for(u32 i = 0; i < font->glyphs_count; ++i) {
-        Glyph *glyph = font->glyphs + i;
-        result = max(result, r2_width(glyph->bounds));
+        i32 advance_w  = (i32)(glyph->advance_w+0.5f);
+        result = max(result, advance_w);
     }
     return result;
 }
@@ -84,10 +76,13 @@ Console cs_init(struct Font *font, i32 x, i32 y, i32 w, i32 h) {
     c.next_line = 1;
     
     c.rect = r2_from_wh(x, y, w, h);
-    c.pixels_per_col = found_max_glyph_advance_w(font);
+
+    i32 max_advance_w = found_max_glyph_advance_w(font);
+    
+    c.pixels_per_col = max_advance_w;
     c.pixels_per_row = found_max_glyph_h(font);
 
-    c.visible_cols = r2_width(c.rect) / c.pixels_per_col;
+    c.visible_cols = (r2_width(c.rect) / c.pixels_per_col);
     c.visible_rows = r2_height(c.rect) / c.pixels_per_row;
 
     assert(c.visible_cols <= MAX_CONSOLE_BUFFER_SIZE);

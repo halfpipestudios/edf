@@ -40,9 +40,7 @@ void mt_touch_unregister(Multitouch *mt, i32 *touch) {
         *(mt->registry[index]) = -1;
     }
     mt->registry[index] = 0;
-
     mt->last_input.touches[index].uid = TOUCH_INVALID_UID;
-    mt->input->touches[index].uid = TOUCH_INVALID_UID;
 }
 
 void mt_begin(Multitouch *mt, Input *input) {

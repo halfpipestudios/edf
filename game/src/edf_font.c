@@ -129,12 +129,13 @@ void font_draw_text(Gpu gpu, Font *font, const char *text, f32 x, f32 y, V4 colo
                                      0, glyph->texture, color);
 
         current_x += glyph->advance_w;
-
+#if 1
         if(text[i + 1]) {
             i32 kerning =
                 stbtt_GetCodepointKernAdvance(&font->stbfont, (i32)text[i], (i32)text[i + 1]);
             f32 scale_kerning = (f32)kerning * font->scale;
             current_x += scale_kerning;
         }
+#endif
     }
 }
