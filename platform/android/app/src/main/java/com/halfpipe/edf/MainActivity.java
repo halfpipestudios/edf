@@ -92,6 +92,7 @@ class GameView extends GLSurfaceView {
 
     private final GameRenderer renderer;
     private GameInput input;
+    private static int uid;
 
     public GameView(Context context) {
         super(context);
@@ -101,6 +102,7 @@ class GameView extends GLSurfaceView {
 
         input = new GameInput();
         renderer = new GameRenderer(context.getAssets(), input);
+        uid = 0;
 
         setRenderer(renderer);
 
@@ -124,6 +126,8 @@ class GameView extends GLSurfaceView {
     @Override
     public boolean onTouchEvent(final MotionEvent event) {
 
+        uid = (uid + 1) == 0 ? 1 : (uid + 1);
+
         int action = event.getAction() &  MotionEvent.ACTION_MASK;
         int action_index = event.getActionIndex();
         int index = event.getPointerId(action_index);
@@ -135,7 +139,7 @@ class GameView extends GLSurfaceView {
             case  MotionEvent.ACTION_DOWN:
             case  MotionEvent.ACTION_POINTER_DOWN: {
                 input.indices[input.indices_count++] = index;
-                input.touches[index].index = index;
+                input.touches[index].index = uid;
                 input.touches[index].x = event.getX(action_index);
                 input.touches[index].y = event.getY(action_index);
 
@@ -153,6 +157,7 @@ class GameView extends GLSurfaceView {
                     }
                 }
                 assert(index_to_remove != -1);
+                input.touches[input.indices[index_to_remove]].index = 0;
                 input.indices[index_to_remove] = input.indices[--input.indices_count];
                 input.indices[input.indices_count] = -1;
             } break;

@@ -172,16 +172,12 @@ void game_init(Memory *memory) {
     }
 
     gs->explotion_anim = animation_load(&gs->game_arena,
-                        gs->explotion_textures, array_len(gs->explotion_textures),
-                        0.1f, false, false);
+                                        gs->explotion_textures, array_len(gs->explotion_textures),
+                                        0.1f, false, false);
 
     gs->level = load_level(gs, &gs->game_arena, gs->em);
 
     stars_init(gs);
-
-    // Preload assets
-    //am_get_font(gs->am, "times.ttf", 64);
-
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {
