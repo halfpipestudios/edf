@@ -270,8 +270,9 @@ void av_render(Gpu gpu, ArenaViewer *av) {
         
         char *used_text = calculate_used_text(view->arena);
         R2 use_size = font_size_text(av->font, used_text);
-        i32 use_pos_y = pos_y - view_hh + r2_height(use_size)/2;
-        font_draw_text(gpu, av->font, used_text, av->rect.min.x + av->padding_l_r, use_pos_y, v4(1, 1, 1, 0.4));
+        i32 use_pos_y = (pos_y - view_hh) + (view_hh - r2_height(use_size)/2);
+
+        font_draw_text(gpu, av->font, used_text, av->rect.min.x + av->padding_l_r, use_pos_y-use_size.min.y, v4(1, 1, 1, 0.4));
 
         ++index;
         view = view->next;
