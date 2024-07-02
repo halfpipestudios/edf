@@ -51,10 +51,10 @@ void game_init(Memory *memory) {
     gs->neon    = particle_system_create(&gs->game_arena, 200, 20,
                                          0.05f, v2(0, 0), am_get_texture(gs->am, "orbe.png"),
                                          neon_ps_update, GPU_BLEND_STATE_ADDITIVE);
-    gs->smoke    = particle_system_create(&gs->game_arena, 1000, 5,
+    gs->smoke   = particle_system_create(&gs->game_arena, 1000, 5,
                                          0.05f, v2(0, 0), am_get_texture(gs->am, "star.png"),
                                          smoke_ps_update, GPU_BLEND_STATE_ALPHA);
-    gs->pixel    = particle_system_create(&gs->game_arena, 100, 10,
+    gs->pixel   = particle_system_create(&gs->game_arena, 100, 10,
                                           0.05f, v2(0, 0), am_get_texture(gs->am, "square.png"),
                                           pixel_ps_update, GPU_BLEND_STATE_ADDITIVE);
 
@@ -214,6 +214,14 @@ void game_render(Memory *memory) {
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
     ui_render(gs->gpu, &gs->ui);
 
+    if(gs->paused) {
+        char *text = "Pause";
+        R2 dim = font_size_text(am_get_font(gs->am, "times.ttf", 64), text);
+        f32 pos_x = 0 - r2_width(dim)*0.5f;
+        f32 pos_y = 0 - r2_height(dim)*0.5f + VIRTUAL_RES_Y*0.25f;
+        font_draw_text(gs->gpu, am_get_font(gs->am, "times.ttf", 64), text, pos_x, pos_y, v4(1, 1, 1, 1));
+    }
+
     if(gs->debug_show) {
         cs_render(gs->gpu, &gs->cs);
         av_render(gs->gpu, &gs->av);
@@ -224,14 +232,6 @@ void game_render(Memory *memory) {
         f32 pos_x = -VIRTUAL_RES_X*0.5f;
         f32 pos_y = VIRTUAL_RES_Y*0.5f - r2_height(fps_dim);
         font_draw_text(gs->gpu, am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text, pos_x, pos_y, v4(1, 1, 1, 1));
-    }
-
-    if(gs->paused) {
-        char *text = "Pause";
-        R2 dim = font_size_text(am_get_font(gs->am, "times.ttf", 64), text);
-        f32 pos_x = 0 - r2_width(dim)*0.5f;
-        f32 pos_y = 0 - r2_height(dim)*0.5f + VIRTUAL_RES_Y*0.25f;
-        font_draw_text(gs->gpu, am_get_font(gs->am, "times.ttf", 64), text, pos_x, pos_y, v4(1, 1, 1, 1));
     }
 
     gpu_frame_end(gs->gpu);
