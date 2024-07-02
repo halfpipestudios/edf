@@ -194,39 +194,51 @@ void av_add_arena(ArenaViewer *av, struct Arena *arena, char *name) {
 static inline char *calculate_used_text(Arena *arena) {
     static char buffer[1024];
     
-    u32 used = arena->used;
+    f32 used = arena->used;
     char *used_text = 0;
 
-    u32 size = arena->size;
+    f32 size = arena->size;
     char *size_text = 0;
     
+    
     if(used >= gb(1)) {
-        used = roundf((f32)used / (f32)gb(1));
+        used = (f32)used / (f32)gb(1);
         used_text = "GB";
     } else if(used >= mb(1)) {
-        used = roundf((f32)used / (f32)mb(1));
+        used = (f32)used / (f32)mb(1);
         used_text = "MB";
     } else if(used >= kb(1)){
-        used = roundf((f32)used / (f32)kb(1));
+        used = (f32)used / (f32)kb(1);
         used_text = "KB";
     } else {
         used_text = "B";
     }
 
     if(size >= gb(1)) {
-        size /= gb(1);
+        size = (f32)size / (f32)gb(1);
         size_text = "GB";
     } else if(size >= mb(1)) {
-        size /= mb(1);
+        size = (f32)size / (f32)mb(1);
         size_text = "MB";
     } else if(size >= kb(1)){
-        size /= kb(1);
+        size = (f32)size / (f32)kb(1);
         size_text = "KB";
     } else {
         size_text = "B";
     }
 
-    sprintf(buffer, "used: %d%s | size: %d%s", used, used_text, size, size_text);
+    f32 used_decimals = used - floorf(used);
+    f32 size_decimals = size - floorf(size);
+
+    if(used_decimals >= 0.1f && size_decimals >= 1.0f) {
+        sprintf(buffer, "used: %.2f%s | size: %.2f%s", used, used_text, size, size_text);
+    } else if (used_decimals < 0.1f && size_decimals < 1.0f) {
+        sprintf(buffer, "used: %d%s | size: %d%s", (i32)used, used_text, (i32)size, size_text);
+    } else if(used_decimals >= 0.1f) {
+        sprintf(buffer, "used: %.2f%s | size: %d%s", used, used_text, (i32)size, size_text);
+    } else {
+        sprintf(buffer, "used: %d%s | size: %.2f%s", (i32)used, used_text, size, size_text);    
+    }
 
     return buffer;
 }

@@ -34,7 +34,7 @@ void game_init(Memory *memory) {
     i32 debug_x_pos = -VIRTUAL_RES_X/2;
     gs->cs = cs_init(am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), debug_x_pos, debug_y_pos, 600, VIRTUAL_RES_Y/2);
     gcs = &gs->cs;
-    gs->av = av_init(&gs->platform_arena, am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), debug_x_pos+620, debug_y_pos, 500);
+    gs->av = av_init(&gs->platform_arena, am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), debug_x_pos+620, debug_y_pos, 600);
     av_add_arena(&gs->av, get_scratch_arena(0), "scratch_arena 0");
     av_add_arena(&gs->av, get_scratch_arena(1), "scratch_arena 1");
     av_add_arena(&gs->av, &gs->platform_arena, "platform arena");
@@ -190,7 +190,6 @@ void game_update(Memory *memory, Input *input, f32 dt) {
 
     //cs_print(gcs, "asset used: %d\n", gs->am->assets_table_used);
 }
-
 
 void game_render(Memory *memory) {
     GameState *gs = game_state(memory);
