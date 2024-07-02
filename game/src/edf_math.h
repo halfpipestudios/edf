@@ -365,10 +365,10 @@ static inline R2 r2_set_invalid(void) {
 
 static inline R2 r2_translate(R2 rect, i32 x, i32 y) {
     R2 result;
+    result.max.x = x + r2_width(rect) - 1;
+    result.max.y = y + r2_height(rect) - 1;
     result.min.x = x;
     result.min.y = y;
-    result.max.x = result.min.x + r2_width(rect) - 1;
-    result.max.y = result.min.y + r2_height(rect) - 1;
     return result;
 }
 

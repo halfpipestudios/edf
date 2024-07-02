@@ -6,6 +6,10 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+// -------------------------------------------------
+// Console
+// -------------------------------------------------
+
 static void cs_print_text(Console *c, char *text) {
     u32 len = strlen(text);
 
@@ -76,7 +80,7 @@ Console cs_init(struct Font *font, i32 x, i32 y, i32 w, i32 h) {
     c.font = font;
     c.line = 0;
     c.next_line = 1;
-    c.rect = r2_from_wh(x, y, w, h);
+    c.rect = r2_from_wh(x, y-h, w, h);
 
     f32 max_advance_w = found_max_glyph_advance_w(font);
     
@@ -158,4 +162,118 @@ void cs_render(Gpu gpu, Console *c) {
         }
     }
 
+}
+
+// -------------------------------------------------
+// Arena Viewer
+// -------------------------------------------------
+
+ArenaViewer av_init(struct Arena *arena, struct Font *font, i32 x, i32 y, i32 w) {
+    ArenaViewer av = {0};
+    av.x = x;
+    av.y = y;
+    av.w = w;
+    av.rect = r2_set_invalid();
+    av.arena = arena;
+    av.padding_t_b = 50;
+    av.padding_l_r = 20;
+    av.view_h = 40;
+    av.font = font;
+    return av;
+}
+
+void av_add_arena(ArenaViewer *av, struct Arena *arena, char *name) {
+    ArenaView *view = (ArenaView *)arena_push(av->arena, sizeof(*view), 8);
+    view->arena = arena;
+    view->name = name;
+    view->next = av->views;
+    av->views = view;
+    av->views_count++;
+}
+
+static inline char *calculate_used_text(Arena *arena) {
+    static char buffer[1024];
+    
+    u32 used = arena->used;
+    char *used_text = 0;
+
+    u32 size = arena->size;
+    char *size_text = 0;
+    
+    if(used >= gb(1)) {
+        used /= gb(1);
+        used_text = "GB";
+    } else if(used >= mb(1)) {
+        used /= mb(1);
+        used_text = "MB";
+    } else if(used >= kb(1)){
+        used /= kb(1);
+        used_text = "KB";
+    } else {
+        used_text = "B";
+    }
+
+    if(size >= gb(1)) {
+        size /= gb(1);
+        size_text = "GB";
+    } else if(size >= mb(1)) {
+        size /= mb(1);
+        size_text = "MB";
+    } else if(size >= kb(1)){
+        size /= kb(1);
+        size_text = "KB";
+    } else {
+        size_text = "B";
+    }
+
+    sprintf(buffer, "used: %d%s | size: %d%s", used, used_text, size, size_text);
+
+    return buffer;
+}
+
+void av_render(Gpu gpu, ArenaViewer *av) {
+    
+    // NOTE: calculate viewer height
+    i32 rect_h = av->views_count*(av->view_h+av->padding_t_b) + av->padding_t_b;
+    i32 y = av->y - rect_h;
+    av->rect = r2_from_wh(av->x, y, av->w, rect_h);
+    
+    V2 center = r2_center(av->rect);
+    i32 view_h = av->view_h;
+    i32 view_hh = av->view_h/2;
+    i32 view_w = r2_width(av->rect)-av->padding_l_r*2;
+
+    gpu_draw_quad_color(gpu, center.x, center.y, r2_width(av->rect), r2_height(av->rect), 0, v4(0, 0, 0, 0.4f));
+    i32 base_y = av->rect.max.y - av->padding_t_b;
+
+    u32 index = 0;
+    ArenaView *view = av->views;
+    while(view) {
+        
+        i32 pos_y = base_y - (view_h + av->padding_t_b)*index - view_hh;
+
+        R2 name_size = font_size_text(av->font, view->name);
+        i32 name_pos_y = pos_y+view_hh-name_size.min.y;
+        i32 name_pos_x = av->rect.min.x+av->padding_l_r;
+        
+        font_draw_text(gpu, av->font, view->name, name_pos_x, name_pos_y, v4(1, 1, 1, 1));
+
+        gpu_draw_quad_color(gpu, center.x, pos_y,
+                            view_w, view_h, 0, v4(1, 0, 0, 0.4f));
+        
+        f32 ratio = (f32)view->arena->used / (f32)view->arena->size;
+        i32 used_w = (i32)((f32)view_w * ratio) + ratio;
+
+        i32 used_pos_x = av->rect.min.x + av->padding_l_r + used_w/2;
+        gpu_draw_quad_color(gpu, used_pos_x, pos_y,
+                            used_w, view_h, 0, v4(0, 1, 0, 0.4f));
+        
+        char *used_text = calculate_used_text(view->arena);
+        R2 use_size = font_size_text(av->font, used_text);
+        i32 use_pos_y = pos_y - view_hh + r2_height(use_size)/2;
+        font_draw_text(gpu, av->font, used_text, av->rect.min.x + av->padding_l_r, use_pos_y, v4(1, 1, 1, 0.4));
+
+        ++index;
+        view = view->next;
+    }
 }

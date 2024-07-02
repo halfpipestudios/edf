@@ -30,8 +30,15 @@ void game_init(Memory *memory) {
     gs->spu = spu_load(&gs->platform_arena);
     gs->am  = am_load(&gs->game_arena, gs->gpu);
 
-    gs->cs = cs_init(am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), -VIRTUAL_RES_X/2, -60, 600, VIRTUAL_RES_Y/2);
+    i32 debug_y_pos = VIRTUAL_RES_Y/2-60;
+    i32 debug_x_pos = -VIRTUAL_RES_X/2;
+    gs->cs = cs_init(am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), debug_x_pos, debug_y_pos, 600, VIRTUAL_RES_Y/2);
     gcs = &gs->cs;
+    gs->av = av_init(&gs->platform_arena, am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), debug_x_pos+620, debug_y_pos, 500);
+    av_add_arena(&gs->av, get_scratch_arena(0), "scratch_arena 0");
+    av_add_arena(&gs->av, get_scratch_arena(1), "scratch_arena 1");
+    av_add_arena(&gs->av, &gs->platform_arena, "platform arena");
+    av_add_arena(&gs->av, &gs->game_arena, "game arena");
 
     gs->em = entity_manager_load(&gs->game_arena, 1000);
     
@@ -209,8 +216,9 @@ void game_render(Memory *memory) {
 
     if(gs->debug_show) {
         cs_render(gs->gpu, &gs->cs);
-        static char text[1024];
+        av_render(gs->gpu, &gs->av);
 
+        static char text[1024];
         snprintf(text, 1024, "FPS: %d | MS %.2f", gs->FPS, gs->MS);
         R2 fps_dim = font_size_text(am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text);
         f32 pos_x = -VIRTUAL_RES_X*0.5f;
