@@ -201,13 +201,13 @@ static inline char *calculate_used_text(Arena *arena) {
     char *size_text = 0;
     
     if(used >= gb(1)) {
-        used /= gb(1);
+        used = roundf((f32)used / (f32)gb(1));
         used_text = "GB";
     } else if(used >= mb(1)) {
-        used /= mb(1);
+        used = roundf((f32)used / (f32)mb(1));
         used_text = "MB";
     } else if(used >= kb(1)){
-        used /= kb(1);
+        used = roundf((f32)used / (f32)kb(1));
         used_text = "KB";
     } else {
         used_text = "B";
