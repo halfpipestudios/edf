@@ -9,14 +9,10 @@
 
 static inline V2 input_to_game_coords(V2i in_pos) {
     V2 pos = v2((f32)in_pos.x, (f32)in_pos.y);
-    pos.x -= (f32)game_view.min.x;
-    pos.y -= (f32)game_view.min.y;
-    pos.x /= (f32)r2_width(game_view);
-    pos.y /= (f32)r2_height(game_view);
-    pos.x -= 0.5f;
-    pos.y -= 0.5f;
-    pos.x *= VIRTUAL_RES_X;
-    pos.y *= -VIRTUAL_RES_Y;
+    os_print("x: %f, y: %f\n", pos.x, pos.y);
+    pos.x -= (r2_width(display) - 1) * 0.5f;
+    pos.y -= (r2_height(display) - 1) * 0.5f;
+    pos.y *= -1.0f;
     return pos;
 }
 

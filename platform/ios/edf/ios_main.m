@@ -86,6 +86,7 @@ typedef struct IosRenderer {
 
 
 // globals variables
+static g_game_initialized;
 static Memory g_memory;
 static AUAudioUnit *g_audio_unit;
 static CFAbsoluteTime g_last_time;
@@ -852,6 +853,13 @@ void spu_sound_restart(Spu spu, Sound sound) {
     f64 delta_time = current_time - g_last_time;
     g_last_time = current_time;
     
+    if(!g_game_initialized) {
+        game_init(&g_memory);
+        g_game_initialized = true;
+        tmp_view = nil;
+    }
+    
+    
     game_update(&g_memory, &g_input, delta_time);
     game_render(&g_memory);
 }
@@ -895,14 +903,10 @@ void spu_sound_restart(Spu spu, Sound sound) {
     g_memory.used = 0;
     g_memory.data = malloc(g_memory.size);
     
-    game_init(&g_memory);
+    g_game_initialized = false;
 
     [_metal_view_delegate mtkView:tmp_view drawableSizeWillChange:tmp_view.drawableSize];
-    
-    
-    
-    tmp_view = nil;
-    
+        
     // init the touches count array and free list
     ios_touch_reset();
 }

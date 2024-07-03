@@ -70,8 +70,8 @@ void game_init(Memory *memory) {
 
     gs->ps = gs->fire;
 
-    i32 hw = VIRTUAL_RES_X * 0.5f;
-    i32 hh = VIRTUAL_RES_Y * 0.5f;
+    i32 hw = r2_width(display) * 0.5f;
+    i32 hh = r2_height(display) * 0.5f;
     R2 window_rect;
     window_rect.min.x = -hw;
     window_rect.max.x = 0;
@@ -120,7 +120,7 @@ void game_init(Memory *memory) {
     cs_print(gcs, "test 1: dhsajhd dsahdjksha dshajkdhs dshkajdshak\n");
     cs_print(gcs, "test 2: ----------------------------------------\n");
     
-    gs->render_target = gpu_render_targte_load(gs->gpu, 1920, 1080);
+    gs->render_target = gpu_render_targte_load(gs->gpu, VIRTUAL_RES_X, VIRTUAL_RES_Y);
     
 }
 

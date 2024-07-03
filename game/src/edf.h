@@ -15,8 +15,8 @@ struct EntityManager;
 struct ParticleSystem;
 struct Level;
 
-#define VIRTUAL_RES_X 1920
-#define VIRTUAL_RES_Y 1080
+#define VIRTUAL_RES_X 1280
+#define VIRTUAL_RES_Y 720
 #define VIRTUAL_RATIO ((f32)VIRTUAL_RES_Y / (f32)VIRTUAL_RES_X)
 
 #define MAP_COORDS_X 10.0f
