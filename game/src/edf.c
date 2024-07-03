@@ -120,8 +120,7 @@ void game_init(Memory *memory) {
     cs_print(gcs, "test 1: dhsajhd dsahdjksha dshajkdhs dshkajdshak\n");
     cs_print(gcs, "test 2: ----------------------------------------\n");
     
-    gs->render_target0 = gpu_render_targte_load(gs->gpu, 1920, 1080);
-    gs->render_target1 = gpu_render_targte_load(gs->gpu, 1920, 1080);
+    gs->render_target = gpu_render_targte_load(gs->gpu, 1920, 1080);
     
 }
 
@@ -212,16 +211,16 @@ void game_render(Memory *memory) {
 
     {
         // render the back ground
-        f32 w = MAP_COORDS_X;
-        f32 h = MAP_COORDS_Y;
+        f32 w = VIRTUAL_RES_X;
+        f32 h = VIRTUAL_RES_Y;
 
-        gpu_render_target_begin(gs->gpu, gs->render_target0);
+        gpu_render_target_begin(gs->gpu, gs->render_target);
 
         gpu_viewport_set(gs->gpu, 0, 0, VIRTUAL_RES_X, VIRTUAL_RES_Y);
         gpu_projection_set(gs->gpu, (f32)(-w)*0.5f, (f32)w*0.5f, (f32)h*0.5f, (f32)(-h)*0.5f);
 
         gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
-        gpu_draw_quad_color(gs->gpu, 0, 0, (f32)w, (f32)h, 0, v4(0.05f, 0.2f, 0.1f, 1));
+        gpu_draw_quad_color(gs->gpu, 0, 0, (f32)w, (f32)h, 0, v4(0.05f, 0.05f, 0.1f, 1));
         
         // Entities draw
         gpu_camera_set(gs->gpu, gs->level->camera_pos, 0);
@@ -229,29 +228,7 @@ void game_render(Memory *memory) {
         particle_system_render(gs->gpu, gs->ps);
         render_system_update(gs, gs->em);
 
-        gpu_render_target_end(gs->gpu, gs->render_target0);
-    }
-
-   {
-        // render the back ground
-        f32 w = MAP_COORDS_X;
-        f32 h = MAP_COORDS_Y;
-
-        gpu_render_target_begin(gs->gpu, gs->render_target1);
-
-        gpu_viewport_set(gs->gpu, 0, 0, VIRTUAL_RES_X, VIRTUAL_RES_Y);
-        gpu_projection_set(gs->gpu, (f32)(-w)*0.5f, (f32)w*0.5f, (f32)h*0.5f, (f32)(-h)*0.5f);
-
-        gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
-        gpu_draw_quad_color(gs->gpu, 0, 0, (f32)w, (f32)h, 0, v4(0.05f, 0.2f, 0.1f, 1));
-        
-        // Entities draw
-        gpu_camera_set(gs->gpu, gs->level->camera_pos, 0);
-        stars_render(gs);
-        particle_system_render(gs->gpu, gs->ps);
-        render_system_update(gs, gs->em);
-
-        gpu_render_target_end(gs->gpu, gs->render_target1);
+        gpu_render_target_end(gs->gpu, gs->render_target);
     }
 
     i32 w = r2_width(display);
@@ -262,12 +239,12 @@ void game_render(Memory *memory) {
     gpu_viewport_set(gs->gpu, (f32)display.min.x, (f32)display.min.y, (f32)r2_width(display), (f32)r2_height(display));
     gpu_projection_set(gs->gpu, (f32)(-w)*0.5f, (f32)w*0.5f, (f32)h*0.5f, (f32)(-h)*0.5f);
 
-    // UI draw
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
     
-    gpu_render_target_draw(gs->gpu,  405, 0, 800, 600, 0, gs->render_target0);
-    gpu_render_target_draw(gs->gpu, -405, 0, 800, 600, 0, gs->render_target1);
+    // Game present
+    gpu_render_target_draw(gs->gpu, 0, 0, r2_width(game_view), r2_height(game_view), 0, gs->render_target);
     
+    // UI draw
     ui_render(gs->gpu, &gs->ui);
 
     if(gs->paused) {

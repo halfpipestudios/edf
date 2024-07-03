@@ -87,8 +87,6 @@ typedef struct IosRenderer {
 
 // globals variables
 static Memory g_memory;
-static R2 g_device_rect;
-static R2 g_display_rect;
 static AUAudioUnit *g_audio_unit;
 static CFAbsoluteTime g_last_time;
 
@@ -287,14 +285,6 @@ bool os_file_write(u8 *data, sz size, char *path) {
     return true;
 }
 
-R2 os_display_rect(void) {
-    return g_display_rect;
-}
-
-R2 os_device_rect(void) {
-    return g_device_rect;
-}
-
 
 void os_print(char *message, ...) {
     char buffer[32000];
@@ -483,11 +473,8 @@ void gpu_render_target_begin(Gpu gpu, RenderTarget rt) {
 
     renderer->command_buffer = [renderer->command_queue commandBuffer];
     renderer->command_encoder = [renderer->command_buffer renderCommandEncoderWithDescriptor:render_pass_descriptor];
-    [renderer->command_encoder setViewport:renderer->viewport];
     [renderer->command_encoder setRenderPipelineState: renderer->alpha_blend_state];
     [renderer->command_encoder setVertexBuffer: renderer->vbuffer offset:0 atIndex:VertexInputIndexVertices];
-    [renderer->command_encoder setVertexBytes:&renderer->view_m4 length:sizeof(matrix_float4x4) atIndex:VertexInputIndexView];
-    [renderer->command_encoder setVertexBytes:&renderer->proj_m4 length:sizeof(matrix_float4x4) atIndex:VertexInputIndexProj];
     [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[IOS_TEXTURE_SIZE_8x8].array atIndex:IOS_TEXTURE_SIZE_8x8];
     [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[IOS_TEXTURE_SIZE_16x16].array atIndex:IOS_TEXTURE_SIZE_16x16];
     [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[IOS_TEXTURE_SIZE_32x32].array atIndex:IOS_TEXTURE_SIZE_32x32];
@@ -510,7 +497,7 @@ void gpu_viewport_set(Gpu gpu, f32 x, f32 y, f32 w, f32 h) {
     renderer->viewport.height = h;
     renderer->viewport.znear = 0;
     renderer->viewport.zfar = 1.0f;
-    g_display_rect = r2_from_wh(x, y, w, h);
+    [renderer->command_encoder setViewport:renderer->viewport];
 }
 
 Texture gpu_texture_load(Gpu gpu, Bitmap *bitmap) {
@@ -706,19 +693,17 @@ void gpu_blend_state_set(Gpu gpu, GpuBlendState blend_state) {
     }
 }
 
+void gpu_projection_set(Gpu gpu, f32 l, f32 r, f32 t, f32 b) {
+    IosRenderer *renderer = (IosRenderer *)gpu;
+    renderer->proj_m4 = matrix_ortho(l, r, b, t, 0, 100.0f);
+    [renderer->command_encoder setVertexBytes:&renderer->proj_m4 length:sizeof(matrix_float4x4) atIndex:VertexInputIndexProj];
+}
+
 void gpu_camera_set(Gpu gpu, V3 pos, f32 angle) {
     IosRenderer *renderer = (IosRenderer *)gpu;
     gpu_draw_call(renderer); 
     renderer->view_m4 = matrix4x4_translation(-pos.x, -pos.y, -pos.z);
     [renderer->command_encoder setVertexBytes:&renderer->view_m4 length:sizeof(matrix_float4x4) atIndex:VertexInputIndexView];
-}
-
-void gpu_resize(Gpu gpu, u32 w, u32 h) {
-    IosRenderer *renderer = (IosRenderer *)gpu;
-    f32 hw = (f32)w * 0.5f;
-    f32 hh = (f32)h * 0.5f;
-    renderer->proj_m4 = matrix_ortho(-hw, hw, -hh, hh, 0, 100.0f);
-    
 }
 
 Spu spu_load(struct Arena *arena) {
@@ -872,7 +857,6 @@ void spu_sound_restart(Spu spu, Sound sound) {
 }
 
 - (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size {
-    g_device_rect = r2_from_wh(0, 0, size.width, size.height);
     game_resize(&g_memory, size.width, size.height);
 }
 @end
@@ -959,8 +943,8 @@ void spu_sound_restart(Spu spu, Sound sound) {
         CGPoint location = [uitouch locationInView:self.view];
         Touch touch = {0};
         touch.location = g_input.count;
-        touch.pos.x = (i32)(((f32)location.x / w) * r2_width(g_device_rect));
-        touch.pos.y = (i32)(((f32)location.y / h) * r2_height(g_device_rect));
+        touch.pos.x = (i32)(((f32)location.x / w) * r2_width(display));
+        touch.pos.y = (i32)(((f32)location.y / h) * r2_height(display));
         touch.hash = (u64)uitouch.hash;
         touch.uid = g_uid;
         touches_index_array[free_index] = -1;
@@ -986,8 +970,8 @@ void spu_sound_restart(Spu spu, Sound sound) {
             UITouch *uitouch = touches.allObjects[i];
             CGPoint location = [uitouch locationInView:self.view];
             Touch *touch = g_input.touches + index_to_update;
-            touch->pos.x = (i32)(((f32)location.x / w) * r2_width(g_device_rect));
-            touch->pos.y = (i32)(((f32)location.y / h) * r2_height(g_device_rect));
+            touch->pos.x = (i32)(((f32)location.x / w) * r2_width(display));
+            touch->pos.y = (i32)(((f32)location.y / h) * r2_height(display));
         }
     }
 }

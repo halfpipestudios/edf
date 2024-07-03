@@ -74,9 +74,7 @@ typedef struct GameState {
     Sprite stars[MAX_STARS];
     Sprite galaxy[MAX_GALAXY];
     
-    RenderTarget render_target0;
-    RenderTarget render_target1;
-
+    RenderTarget render_target;
 } GameState;
 
 #define game_state(memory) ((GameState *)(memory)->data);
