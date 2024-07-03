@@ -15,13 +15,13 @@ struct EntityManager;
 struct ParticleSystem;
 struct Level;
 
-#define VIRTUAL_RES_X 1280
-#define VIRTUAL_RES_Y 720
+#define VIRTUAL_RES_X (1920/6)
+#define VIRTUAL_RES_Y (1080/6)
 #define VIRTUAL_RATIO ((f32)VIRTUAL_RES_Y / (f32)VIRTUAL_RES_X)
 
 #define MAP_COORDS_X 10.0f
 #define MAP_COORDS_Y MAP_COORDS_X*VIRTUAL_RATIO
-
+  
 extern R2 display;
 extern R2 game_view;
 

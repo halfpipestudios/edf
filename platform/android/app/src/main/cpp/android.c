@@ -163,7 +163,7 @@ void gpu_frame_end(Gpu gpu) {
         texture_atlas_regenerate(renderer->arena, &renderer->atlas);
         renderer->atlas_need_to_be_regenerate = false;
     }
-    cs_print(gcs, "Draw calls: %d\n", renderer->draw_calls);
+    //cs_print(gcs, "Draw calls: %d\n", renderer->draw_calls);
 }
 
 Texture gpu_texture_load(Gpu gpu, Bitmap *bitmap) {

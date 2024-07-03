@@ -27,6 +27,9 @@ R2 game_view;
 // Game
 // ------------------------
 
+#define DEBUG_PADDING_X 120
+#define DEBUG_PADDING_Y 40
+
 void game_init(Memory *memory) {
     game_state_init(memory);
     GameState *gs = game_state(memory);
@@ -40,8 +43,8 @@ void game_init(Memory *memory) {
     gs->spu = spu_load(&gs->platform_arena);
     gs->am  = am_load(&gs->game_arena, gs->gpu);
 
-    i32 debug_y_pos = r2_height(display)/2-60;
-    i32 debug_x_pos = -r2_width(display)/2;
+    i32 debug_y_pos = -DEBUG_PADDING_Y + r2_height(display)/2-60;
+    i32 debug_x_pos = DEBUG_PADDING_X + -r2_width(display)/2;
     gs->cs = cs_init(am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), debug_x_pos, debug_y_pos, 600, r2_height(display)/2);
     gcs = &gs->cs;
     gs->av = av_init(&gs->platform_arena, am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), debug_x_pos+620, debug_y_pos, 600);
@@ -262,8 +265,8 @@ void game_render(Memory *memory) {
         static char text[1024];
         snprintf(text, 1024, "FPS: %d | MS %.2f", gs->FPS, gs->MS);
         R2 fps_dim = font_size_text(am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text);
-        f32 pos_x = -r2_width(display)*0.5f;
-        f32 pos_y = r2_height(display)*0.5f - (f32)r2_height(fps_dim);
+        f32 pos_x = DEBUG_PADDING_X + -r2_width(display)*0.5f;
+        f32 pos_y = -DEBUG_PADDING_Y + r2_height(display)*0.5f - (f32)r2_height(fps_dim);
         font_draw_text(gs->gpu, am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text, pos_x, pos_y, v4(1, 1, 1, 1));
     }
     gpu_render_target_end(gs->gpu, 0);
