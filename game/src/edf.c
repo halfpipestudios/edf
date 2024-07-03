@@ -30,8 +30,15 @@ void game_init(Memory *memory) {
     gs->spu = spu_load(&gs->platform_arena);
     gs->am  = am_load(&gs->game_arena, gs->gpu);
 
-    gs->cs = cs_init(am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), -VIRTUAL_RES_X/2, -60, 600, VIRTUAL_RES_Y/2);
+    i32 debug_y_pos = VIRTUAL_RES_Y/2-60;
+    i32 debug_x_pos = -VIRTUAL_RES_X/2;
+    gs->cs = cs_init(am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), debug_x_pos, debug_y_pos, 600, VIRTUAL_RES_Y/2);
     gcs = &gs->cs;
+    gs->av = av_init(&gs->platform_arena, am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), debug_x_pos+620, debug_y_pos, 600);
+    av_add_arena(&gs->av, get_scratch_arena(0), "scratch_arena 0");
+    av_add_arena(&gs->av, get_scratch_arena(1), "scratch_arena 1");
+    av_add_arena(&gs->av, &gs->platform_arena, "platform arena");
+    av_add_arena(&gs->av, &gs->game_arena, "game arena");
 
     gs->em = entity_manager_load(&gs->game_arena, 1000);
     
@@ -44,10 +51,10 @@ void game_init(Memory *memory) {
     gs->neon    = particle_system_create(&gs->game_arena, 200, 20,
                                          0.05f, v2(0, 0), am_get_texture(gs->am, "orbe.png"),
                                          neon_ps_update, GPU_BLEND_STATE_ADDITIVE);
-    gs->smoke    = particle_system_create(&gs->game_arena, 1000, 5,
+    gs->smoke   = particle_system_create(&gs->game_arena, 1000, 5,
                                          0.05f, v2(0, 0), am_get_texture(gs->am, "star.png"),
                                          smoke_ps_update, GPU_BLEND_STATE_ALPHA);
-    gs->pixel    = particle_system_create(&gs->game_arena, 100, 10,
+    gs->pixel   = particle_system_create(&gs->game_arena, 100, 10,
                                           0.05f, v2(0, 0), am_get_texture(gs->am, "square.png"),
                                           pixel_ps_update, GPU_BLEND_STATE_ADDITIVE);
 
@@ -188,7 +195,6 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     //cs_print(gcs, "asset used: %d\n", gs->am->assets_table_used);
 }
 
-
 void game_render(Memory *memory) {
     GameState *gs = game_state(memory);
 
@@ -264,17 +270,6 @@ void game_render(Memory *memory) {
     
     ui_render(gs->gpu, &gs->ui);
 
-    if(gs->debug_show) {
-        cs_render(gs->gpu, &gs->cs);
-        static char text[1024];
-
-        snprintf(text, 1024, "FPS: %d | MS %.2f", gs->FPS, gs->MS);
-        R2 fps_dim = font_size_text(am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text);
-        f32 pos_x = -VIRTUAL_RES_X*0.5f;
-        f32 pos_y = VIRTUAL_RES_Y*0.5f - r2_height(fps_dim);
-        font_draw_text(gs->gpu, am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text, pos_x, pos_y, v4(1, 1, 1, 1));
-    }
-
     if(gs->paused) {
         char *text = "Pause";
         R2 dim = font_size_text(am_get_font(gs->am, "times.ttf", 64), text);
@@ -283,7 +278,19 @@ void game_render(Memory *memory) {
         font_draw_text(gs->gpu, am_get_font(gs->am, "times.ttf", 64), text, pos_x, pos_y, v4(1, 1, 1, 1));
     }
 
+    if(gs->debug_show) {
+        cs_render(gs->gpu, &gs->cs);
+        av_render(gs->gpu, &gs->av);
+
+        static char text[1024];
+        snprintf(text, 1024, "FPS: %d | MS %.2f", gs->FPS, gs->MS);
+        R2 fps_dim = font_size_text(am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text);
+        f32 pos_x = -VIRTUAL_RES_X*0.5f;
+        f32 pos_y = VIRTUAL_RES_Y*0.5f - r2_height(fps_dim);
+        font_draw_text(gs->gpu, am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text, pos_x, pos_y, v4(1, 1, 1, 1));
+    }
     gpu_render_target_end(gs->gpu, 0);
+
     gpu_frame_end(gs->gpu);
 }
 

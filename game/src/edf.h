@@ -57,6 +57,7 @@ typedef struct GameState {
     i32 FPS;
     f32 MS;
     Console cs;
+    ArenaViewer av;
 
 #define MAX_STARS 1000
 #define MAX_GALAXY 6
