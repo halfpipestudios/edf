@@ -18,8 +18,8 @@ void stars_init(GameState *gs) {
         0xFFC0DBEA
     };
 
-    i32 hw = (r2f_width(gs->level->dim) * 0.5f) * 1.25f;
-    i32 hh = (MAP_COORDS_Y * 0.5f) * 1.25f;
+    f32 hw = (r2f_width(gs->level->dim) * 0.5f) * 1.25f;
+    f32 hh = (MAP_COORDS_Y * 0.5f) * 1.25f;
     
     Texture planet_textures[MAX_GALAXY] = {
         am_get_texture(gs->am, "galaxy.png"),
@@ -35,10 +35,10 @@ void stars_init(GameState *gs) {
     for(i32 i = 0; i < MAX_GALAXY; i++) {
         Sprite *galaxy = gs->galaxy + i;
         galaxy->texture = planet_textures[color_index];
-        galaxy->pos.x = rand_range(-hw, hw);
-        galaxy->pos.y = rand_range(-hh, hh);
+        galaxy->pos.x = rand_range_f32(-hw, hw);
+        galaxy->pos.y = rand_range_f32(-hh, hh);
         galaxy->z = rand_range(2, 10);
-        f32 ratio = ((f32)rand_range(50, 100) / 500.0f);
+        f32 ratio = ((f32)rand_range(50, 100) / 100.0f);
         galaxy->scale = v2(ratio, ratio);
         galaxy->tint = v4(0.4f, 0.4f, 0.4f, 1);
         galaxy->angle = 0;
@@ -50,11 +50,11 @@ void stars_init(GameState *gs) {
     for(i32 i = 0; i < MAX_STARS; i++) {
         Sprite *star = gs->stars + i;
         star->texture = am_get_texture(gs->am, "star.png");
-        star->pos.x = rand_range(-hw, hw);
-        star->pos.y = rand_range(-hh, hh);
-        star->z = (f32)rand_range(1, 10);
-        star->scale.x = 1/star->z;
-        star->scale.y = 1/star->z;
+        star->pos.x = rand_range_f32(-hw, hw);
+        star->pos.y = rand_range_f32(-hh, hh);
+        star->z = rand_range_f32(1, 10);
+        star->scale.x = 0.1/star->z;
+        star->scale.y = 0.1/star->z;
         star->tint = hex_to_v4(star_colors[color_index]);
         star->angle = 0;
         

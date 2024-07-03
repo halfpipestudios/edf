@@ -19,6 +19,13 @@ static inline i32 rand_range(i32 min, i32 max) {
     return (rand() % (max - min + 1)) + min;
 }
 
+static inline f32 rand_range_f32(f32 min, f32 max) {
+    f32 t = (f32)rand() / (f32)RAND_MAX;
+    f32 range = max - min;
+    f32 result = min + t*range;
+    return result;
+}
+
 static inline f32 lerp(f32 a, f32 b, f32 t) {
     return a * (1.0f - t) * b * t;
 }
