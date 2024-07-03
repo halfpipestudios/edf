@@ -23,6 +23,7 @@ typedef enum GpuBlendState {
     GPU_BLEND_STATE_ADDITIVE
 } GpuBlendState;
 
+typedef void *RenderTarget;
 typedef void *Texture;
 typedef void *Sound;
 typedef void *Gpu;
@@ -48,7 +49,11 @@ void gpu_draw_quad_texture_tinted(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle
 void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V4 color);
 void gpu_camera_set(Gpu gpu, V3 pos, f32 angle);
 void gpu_resize(Gpu gpu, u32 w, u32 h);
-
+RenderTarget gpu_render_targte_load(Gpu gpu, i32 width, i32 height);
+void gpu_render_target_begin(Gpu gpu, RenderTarget rt);
+void gpu_render_target_end(Gpu gpu, RenderTarget rt);
+void gpu_render_target_draw(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, RenderTarget rt);
+void gpu_viewport_set(Gpu gpu, f32 x, f32 y, f32 w, f32 h);
 
 Spu spu_load(struct Arena *arena);
 void spu_unload(Spu spu);

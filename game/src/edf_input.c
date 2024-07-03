@@ -361,11 +361,11 @@ void ui_render(Gpu gpu, Ui *ui) {
             case WIDGET_TYPE_JOYSTICK: {
                 Joystick *joystick = &widget->joystick;
 
-                gpu_draw_quad_texture_tinted(gpu, joystick->pos.x, joystick->pos.y, 
+                gpu_draw_quad_texture_tinted(gpu, joystick->pos.x, joystick->pos.y,
                                              joystick->outer_radii * 2, joystick->outer_radii * 2,
                                              0, joystick->outer_texture, joystick->widget_tint);
 
-                gpu_draw_quad_texture_tinted(gpu, joystick->c_pos.x, joystick->c_pos.y, 
+                gpu_draw_quad_texture_tinted(gpu, joystick->c_pos.x, joystick->c_pos.y,
                                              joystick->inner_radii * 2, joystick->inner_radii * 2,
                                              0, joystick->inner_texture, joystick->widget_tint);
 

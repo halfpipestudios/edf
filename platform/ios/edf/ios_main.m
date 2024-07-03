@@ -47,7 +47,6 @@ typedef struct IosTexture {
     f32 v_ratio;
 } IosTexture;
 
-
 typedef struct IosTextureArray {
     id<MTLTexture> array;
     IosTexture textures[IOS_MAX_TEXTURE_COUNT];
@@ -60,13 +59,15 @@ typedef struct IosRenderer {
     MTKView *view;
     id<MTLDevice> device;
     id<MTLCommandQueue> command_queue;
-
     id<MTLCommandBuffer> command_buffer;
     id<MTLRenderCommandEncoder> command_encoder;
+    MTLViewport viewport;
 
+    i32 render_target_to_draw_this_frame;
+    
     dispatch_semaphore_t in_flight_semaphore;
     u32 current_buffer;
-
+    
     id<MTLRenderPipelineState> alpha_blend_state;    
     id<MTLRenderPipelineState> additive_blend_state;    
     id<MTLBuffer> vbuffer;
@@ -79,6 +80,7 @@ typedef struct IosRenderer {
     matrix_float4x4 view_m4;
     
     IosTextureArray texture_arrays[IOS_TEXTURE_SIZE_COUNT];
+    Arena *arena;
 
 } IosRenderer;
 
@@ -303,16 +305,31 @@ void os_print(char *message, ...) {
     NSLog(@"%@", [NSString stringWithUTF8String:buffer]);
 }
 
+static void gpu_draw_call(IosRenderer *renderer) {
+    if((renderer->quad_count - renderer->quad_offset) > 0) {
+        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[renderer->current_buffer]
+                                            offset:renderer->quad_offset * sizeof(Uniform)
+                                           atIndex:VertexInputIndexWorld];
+        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6
+                                    instanceCount:renderer->quad_count - renderer->quad_offset];
+        renderer->quad_offset = renderer->quad_count;
+    }
+}
+
 Gpu gpu_load(struct Arena *arena) {
 
     IosRenderer *renderer = (IosRenderer *)arena_push(arena, sizeof(*renderer), 8);
     renderer->view = tmp_view;
     renderer->device = tmp_view.device;
     renderer->command_queue = [renderer->device newCommandQueue];
+    renderer->arena = arena;
     
+    renderer->render_target_to_draw_this_frame = 0;
     renderer->in_flight_semaphore = dispatch_semaphore_create(IOS_MAX_FRAMES_IN_FLIGHT);
-    renderer->current_buffer = 0;
 
+
+
+    renderer->current_buffer = 0;
 
     id<MTLLibrary> shaderLib = [renderer->device newDefaultLibrary];
     if(!shaderLib) {
@@ -373,7 +390,7 @@ Gpu gpu_load(struct Arena *arena) {
         NSLog(@"Error: Failed aquiring pipeline state: %@", error);
         return nil;
     }
-
+    
     renderer->quad_count = 0;
     renderer->quad_offset = 0;
 
@@ -416,45 +433,57 @@ void gpu_unload(Gpu gpu) {
 
 void gpu_frame_begin(Gpu gpu) {
     IosRenderer *renderer = (IosRenderer *)gpu;
-        
     dispatch_semaphore_wait(renderer->in_flight_semaphore, DISPATCH_TIME_FOREVER);
     renderer->current_buffer = (renderer->current_buffer + 1) % IOS_MAX_FRAMES_IN_FLIGHT;
+    
+    // reset the instance renderer
     renderer->quad_count = 0;
     renderer->quad_offset = 0;
+}
 
+void gpu_frame_end(Gpu gpu) {
+    IosRenderer *renderer = (IosRenderer *)gpu;
+    renderer->command_buffer = [renderer->command_queue commandBuffer];
+    
+    id<MTLDrawable> drawable = renderer->view.currentDrawable;
+    [renderer->command_buffer presentDrawable:drawable];
+    
+    __block dispatch_semaphore_t block_semaphore = renderer->in_flight_semaphore;
+    [renderer->command_buffer addCompletedHandler:^(id<MTLCommandBuffer> buffer) {
+        dispatch_semaphore_signal(block_semaphore);
+    }];
+    [renderer->command_buffer commit];
+}
+
+RenderTarget gpu_render_targte_load(Gpu gpu, i32 width, i32 height) {
+    IosRenderer *renderer = (IosRenderer *)gpu;
+    MTLTextureDescriptor *texture_desc;
+    texture_desc = [[MTLTextureDescriptor alloc] init];
+    texture_desc.pixelFormat = renderer->view.colorPixelFormat;
+    texture_desc.width = width;
+    texture_desc.height = height;
+    texture_desc.usage = MTLTextureUsageRenderTarget|MTLTextureUsageShaderRead;
+    texture_desc.arrayLength = 1;
+    texture_desc.textureType = MTLTextureType2DArray;
+    id<MTLTexture> texture = [renderer->device newTextureWithDescriptor:texture_desc];
+    return (void *)CFBridgingRetain(texture);
+}
+
+void gpu_render_target_begin(Gpu gpu, RenderTarget rt) {
+    IosRenderer *renderer = (IosRenderer *)gpu;
+        
+    id<MTLTexture> render_target = (__bridge id<MTLTexture>)(rt);
+    
+    renderer->render_target_to_draw_this_frame = 0;
 
     MTLRenderPassDescriptor *render_pass_descriptor = renderer->view.currentRenderPassDescriptor;
-    if (render_pass_descriptor == nil) {
-        return;
+    if(render_target != nil) {
+        render_pass_descriptor.colorAttachments[0].texture = render_target;
     }
+
     renderer->command_buffer = [renderer->command_queue commandBuffer];
     renderer->command_encoder = [renderer->command_buffer renderCommandEncoderWithDescriptor:render_pass_descriptor];
-
-    f32 vw = VIRTUAL_RES_X;
-    f32 vh = VIRTUAL_RES_Y;
-    f32 w = (f32)r2_width(g_device_rect);
-    f32 h = (f32)r2_height(g_device_rect);
-    f32 wvr = vw/vh;
-    f32 hvr = vh/vw;
-    vw = w;
-    vh = w * hvr;
-    if(vh > h) {
-        vw = h * wvr;
-        vh = h;
-    }
-    f32 x = w*0.5f - vw*0.5f;
-    f32 y = h*0.5f - vh*0.5f;
-
-    g_display_rect = r2_from_wh(x, y, vw, vh);
-        
-    MTLViewport viewport;
-    viewport.originX = x;
-    viewport.originY = y;
-    viewport.width = vw;
-    viewport.height = vh;
-    viewport.znear = 0;
-    viewport.zfar = 1.0f;
-    [renderer->command_encoder setViewport:viewport];
+    [renderer->command_encoder setViewport:renderer->viewport];
     [renderer->command_encoder setRenderPipelineState: renderer->alpha_blend_state];
     [renderer->command_encoder setVertexBuffer: renderer->vbuffer offset:0 atIndex:VertexInputIndexVertices];
     [renderer->command_encoder setVertexBytes:&renderer->view_m4 length:sizeof(matrix_float4x4) atIndex:VertexInputIndexView];
@@ -464,34 +493,24 @@ void gpu_frame_begin(Gpu gpu) {
     [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[IOS_TEXTURE_SIZE_32x32].array atIndex:IOS_TEXTURE_SIZE_32x32];
     [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[IOS_TEXTURE_SIZE_64x64].array atIndex:IOS_TEXTURE_SIZE_64x64];
     [renderer->command_encoder setFragmentTexture:renderer->texture_arrays[IOS_TEXTURE_SIZE_128x128].array atIndex:IOS_TEXTURE_SIZE_128x128];
-
 }
 
-static void gpu_draw_call(IosRenderer *renderer) {
-    if((renderer->quad_count - renderer->quad_offset) > 0) {
-        [renderer->command_encoder setVertexBuffer:renderer->ubuffer[renderer->current_buffer]
-                                            offset:renderer->quad_offset * sizeof(Uniform)
-                                           atIndex:VertexInputIndexWorld];
-        [renderer->command_encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6
-                                    instanceCount:renderer->quad_count - renderer->quad_offset];
-        renderer->quad_offset = renderer->quad_count;
-    }
-}
-
-void gpu_frame_end(Gpu gpu) {
+void gpu_render_target_end(Gpu gpu, RenderTarget rt) {
     IosRenderer *renderer = (IosRenderer *)gpu;
     gpu_draw_call(renderer);
-    
     [renderer->command_encoder endEncoding];
-    id<MTLDrawable> drawable = renderer->view.currentDrawable;
-    [renderer->command_buffer presentDrawable:drawable]; 
-
-    __block dispatch_semaphore_t block_semaphore = renderer->in_flight_semaphore;
-    [renderer->command_buffer addCompletedHandler:^(id<MTLCommandBuffer> buffer) {
-        dispatch_semaphore_signal(block_semaphore);
-    }];
-
     [renderer->command_buffer commit];
+}
+
+void gpu_viewport_set(Gpu gpu, f32 x, f32 y, f32 w, f32 h) {
+    IosRenderer *renderer = (IosRenderer *)gpu;
+    renderer->viewport.originX = x;
+    renderer->viewport.originY = y;
+    renderer->viewport.width = w;
+    renderer->viewport.height = h;
+    renderer->viewport.znear = 0;
+    renderer->viewport.zfar = 1.0f;
+    g_display_rect = r2_from_wh(x, y, w, h);
 }
 
 Texture gpu_texture_load(Gpu gpu, Bitmap *bitmap) {
@@ -569,7 +588,34 @@ void gpu_texture_unload(Gpu gpu, Texture texture) {
     array->free_list = texture_index_to_free;
     array->count--;
 }
+void gpu_render_target_draw(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, RenderTarget rt) {
+    IosRenderer *renderer = (IosRenderer *)gpu;
+    
+    assert((renderer->quad_count + 1) <= IOS_MAX_QUAD_COUNT);
 
+    matrix_float4x4 trans = matrix4x4_translation(x, y, 0);
+    matrix_float4x4 rot = matrix4x4_rotation_z(angle);
+    matrix_float4x4 scale = matrix4x4_scale(w, h, 1);
+    matrix_float4x4 world = matrix_multiply(trans, matrix_multiply(rot, scale));
+        
+    Uniform *dst = renderer->ubuffer[renderer->current_buffer].contents + (sizeof(Uniform) * renderer->quad_count);
+    memcpy(&dst->world, &world, sizeof(matrix_float4x4));
+    dst->u_ratio = 1.0f;
+    dst->v_ratio = 1.0f;
+    dst->array_index = IOS_TEXTURE_SIZE_COUNT + renderer->render_target_to_draw_this_frame;
+    dst->texture_index = 0;
+    dst->color.x = 1.0;
+    dst->color.y = 1.0;
+    dst->color.z = 1.0;
+    dst->color.w = 1.0f;
+    renderer->quad_count++;
+    
+    id<MTLTexture> render_target = (__bridge id<MTLTexture>)(rt);
+    [renderer->command_encoder setFragmentTexture:render_target atIndex:dst->array_index];
+    
+    renderer->render_target_to_draw_this_frame++;
+    
+}
 
 void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Texture texture) {
     IosRenderer *renderer = (IosRenderer *)gpu;
@@ -579,7 +625,7 @@ void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Textu
     IosTexture *ios_texture = (IosTexture *)texture;
 
 
-    matrix_float4x4 trans = matrix4x4_translation(x, y, -20);
+    matrix_float4x4 trans = matrix4x4_translation(x, y, 0);
     matrix_float4x4 rot = matrix4x4_rotation_z(angle);
     matrix_float4x4 scale = matrix4x4_scale(w, h, 1);
     matrix_float4x4 world = matrix_multiply(trans, matrix_multiply(rot, scale));
@@ -605,7 +651,7 @@ void gpu_draw_quad_texture_tinted(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle
 
     IosTexture *ios_texture = (IosTexture *)texture;
 
-    matrix_float4x4 trans = matrix4x4_translation(x, y, -20);
+    matrix_float4x4 trans = matrix4x4_translation(x, y, 0);
     matrix_float4x4 rot = matrix4x4_rotation_z(angle);
     matrix_float4x4 scale = matrix4x4_scale(w, h, 1);
     matrix_float4x4 world = matrix_multiply(trans, matrix_multiply(rot, scale));
@@ -629,7 +675,7 @@ void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V4 colo
     
     assert((renderer->quad_count + 1) <= IOS_MAX_QUAD_COUNT);
     
-    matrix_float4x4 trans = matrix4x4_translation(x, y, -20);
+    matrix_float4x4 trans = matrix4x4_translation(x, y, 0);
     matrix_float4x4 rot = matrix4x4_rotation_z(angle);
     matrix_float4x4 scale = matrix4x4_scale(w, h, 1);
     matrix_float4x4 world = matrix_multiply(trans, matrix_multiply(rot, scale));
@@ -646,8 +692,6 @@ void gpu_draw_quad_color(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, V4 colo
     dst->color.w = color.w;
     renderer->quad_count++;
 }
-
-
 
 void gpu_blend_state_set(Gpu gpu, GpuBlendState blend_state) {
     IosRenderer *renderer = (IosRenderer *)gpu;
@@ -669,15 +713,13 @@ void gpu_camera_set(Gpu gpu, V3 pos, f32 angle) {
     [renderer->command_encoder setVertexBytes:&renderer->view_m4 length:sizeof(matrix_float4x4) atIndex:VertexInputIndexView];
 }
 
-
 void gpu_resize(Gpu gpu, u32 w, u32 h) {
     IosRenderer *renderer = (IosRenderer *)gpu;
     f32 hw = (f32)w * 0.5f;
     f32 hh = (f32)h * 0.5f;
-    renderer->proj_m4 = matrix_ortho(-hw, hw, -hh, hh, 0, -100.0f);
+    renderer->proj_m4 = matrix_ortho(-hw, hw, -hh, hh, 0, 100.0f);
     
 }
-
 
 Spu spu_load(struct Arena *arena) {
     IosSoundSystem *sound_sys = arena_push(arena, sizeof(IosSoundSystem), 8);

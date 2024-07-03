@@ -102,6 +102,10 @@ void game_init(Memory *memory) {
 
     cs_print(gcs, "test 1: dhsajhd dsahdjksha dshajkdhs dshkajdshak\n");
     cs_print(gcs, "test 2: ----------------------------------------\n");
+    
+    gs->render_target0 = gpu_render_targte_load(gs->gpu, 1920, 1080);
+    gs->render_target1 = gpu_render_targte_load(gs->gpu, 1920, 1080);
+    
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {
@@ -189,22 +193,75 @@ void game_render(Memory *memory) {
     GameState *gs = game_state(memory);
 
     gpu_frame_begin(gs->gpu);
+    
 
-    // render the back ground
-    i32 w = (i32)VIRTUAL_RES_X;
-    i32 h = (i32)VIRTUAL_RES_Y;
-    gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
-    gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v4(0.05f, 0.05f, 0.1f, 1));
+    
+    
+    {
+        gpu_render_target_begin(gs->gpu, gs->render_target0);
+                
+        // render the back ground
+        i32 w = (i32)VIRTUAL_RES_X;
+        i32 h = (i32)VIRTUAL_RES_Y;
+        gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
+        gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v4(0.05f, 0.2f, 0.1f, 1));
+        
+        // Entities draw
+        gpu_camera_set(gs->gpu, gs->level->camera_pos, 1);
+        
+        stars_render(gs);
+        particle_system_render(gs->gpu, gs->ps);
+        render_system_update(gs, gs->em);
+        
+        
+        gpu_render_target_end(gs->gpu, gs->render_target0);
+    }
 
-    // Entities draw
-    gpu_camera_set(gs->gpu, gs->level->camera_pos, 0);
+    {
+        gpu_render_target_begin(gs->gpu, gs->render_target1);
+        
+        // render the back ground
+        i32 w = (i32)VIRTUAL_RES_X;
+        i32 h = (i32)VIRTUAL_RES_Y;
+        gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
+        gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v4(0.05f, 0.05f, 0.2f, 1));
+        
+        // Entities draw
+        gpu_camera_set(gs->gpu, gs->level->camera_pos, 1);
+        
+        stars_render(gs);
+        particle_system_render(gs->gpu, gs->ps);
+        render_system_update(gs, gs->em);
+    
+        gpu_render_target_end(gs->gpu, gs->render_target1);
+    }
 
-    stars_render(gs);
-    particle_system_render(gs->gpu, gs->ps);
-    render_system_update(gs, gs->em);
-
+    // set the viewport
+    {
+        f32 vw = VIRTUAL_RES_X;
+        f32 vh = VIRTUAL_RES_Y;
+        f32 w = (f32)r2_width(os_device_rect());
+        f32 h = (f32)r2_height(os_device_rect());
+        f32 wvr = vw/vh;
+        f32 hvr = vh/vw;
+        vw = w;
+        vh = w * hvr;
+        if(vh > h) {
+            vw = h * wvr;
+            vh = h;
+        }
+        f32 x = w*0.5f - vw*0.5f;
+        f32 y = h*0.5f - vh*0.5f;
+        gpu_viewport_set(gs->gpu, x, y, vw, vh);
+    }
+    
+    gpu_render_target_begin(gs->gpu, 0);
     // UI draw
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
+    
+    gpu_render_target_draw(gs->gpu,  405, 0, 800, 600, 0, gs->render_target0);
+    gpu_render_target_draw(gs->gpu, -405, 0, 800, 600, 0, gs->render_target1);
+    
     ui_render(gs->gpu, &gs->ui);
 
     if(gs->debug_show) {
@@ -226,6 +283,7 @@ void game_render(Memory *memory) {
         font_draw_text(gs->gpu, am_get_font(gs->am, "times.ttf", 64), text, pos_x, pos_y, v4(1, 1, 1, 1));
     }
 
+    gpu_render_target_end(gs->gpu, 0);
     gpu_frame_end(gs->gpu);
 }
 

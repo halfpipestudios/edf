@@ -62,6 +62,9 @@ typedef struct GameState {
 #define MAX_GALAXY 6
     Sprite stars[MAX_STARS];
     Sprite galaxy[MAX_GALAXY];
+    
+    RenderTarget render_target0;
+    RenderTarget render_target1;
 
 } GameState;
 
