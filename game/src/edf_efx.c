@@ -19,7 +19,7 @@ void stars_init(GameState *gs) {
     };
 
     i32 hw = (r2f_width(gs->level->dim) * 0.5f) * 1.25f;
-    i32 hh = (VIRTUAL_RES_Y * 0.5f) * 1.25f;
+    i32 hh = (MAP_COORDS_Y * 0.5f) * 1.25f;
     
     Texture planet_textures[MAX_GALAXY] = {
         am_get_texture(gs->am, "galaxy.png"),
@@ -38,7 +38,7 @@ void stars_init(GameState *gs) {
         galaxy->pos.x = rand_range(-hw, hw);
         galaxy->pos.y = rand_range(-hh, hh);
         galaxy->z = rand_range(2, 10);
-        f32 ratio = ((f32)rand_range(50, 100) / 100.0f);
+        f32 ratio = ((f32)rand_range(50, 100) / 500.0f);
         galaxy->scale = v2(ratio, ratio);
         galaxy->tint = v4(0.4f, 0.4f, 0.4f, 1);
         galaxy->angle = 0;
