@@ -27,9 +27,6 @@ SYSTEM_UPDATE(animation_system) {
                     entity->tex = entity->save_tex;
                     animation->current_time = 0.0f;
 
-                    gs->hero->pos.x = gs->level->dim.min.x;
-                    gs->hero->pos.y = 0.0f;
-                    gs->level->camera_pos.x = gs->level->dim.min.x;
                     asteroid_system_reset(gs->em);
                     particle_system_reset(gs->ps);
 

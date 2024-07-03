@@ -127,10 +127,10 @@ Level *load_level(GameState *gs, struct Arena *arena, struct EntityManager *em) 
     
     level->dim = r2f_from_wh(-level_horizontal_size*0.5f, -MAP_COORDS_Y*0.5f, level_horizontal_size, MAP_COORDS_Y);
     level->camera_vel = v3(2.0f, 0, 0);
-    level->camera_pos.x = level->dim.min.x;
+    level->camera_pos.x = level->dim.min.x + MAP_COORDS_X*0.5f;
 
     u32 ship_rand_texture = rand_range(0, 1);
-    V3 hero_position = v3((f32)level->dim.min.x, 0, 0);
+    V3 hero_position = v3((f32)level->dim.min.x+MAP_COORDS_X*0.5f, 0, 0);
     gs->hero = entity_manager_add_entity(gs->em);
     entity_add_input_component(gs->hero);
     entity_add_render_component(gs->hero, hero_position, v2(0.5, 0.5), gs->ship_texture[ship_rand_texture], v4(1, 1, 1, 1));
