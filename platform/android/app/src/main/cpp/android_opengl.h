@@ -58,6 +58,11 @@ void texture_atlas_init(OpenglTextureAtlas *atlas);
 OpenglTexture *texture_atlas_add_bitmap(struct OpenglGPU *renderer, Arena *arena, OpenglTextureAtlas *atlas, Bitmap *bitmap);
 void texture_atlas_regenerate(Arena *arena, OpenglTextureAtlas *atlas);
 
+typedef struct OpenglFrameBuffer {
+    u32 id;
+    u32 texture;
+} OpenglFrameBuffer;
+
 #define MAX_QUADS_PER_BATCH 1024
 typedef struct OpenglGPU {
     Arena *arena;
@@ -66,9 +71,8 @@ typedef struct OpenglGPU {
     OpenglQuad quad_buffer[MAX_QUADS_PER_BATCH];
     u32 quad_count;
     OpenglTextureAtlas atlas;
-    u32 draw_calls;
-
     b32 atlas_need_to_be_regenerate;
+    u32 draw_calls;
 } OpenglGPU;
 
 void quad_batch_flush(OpenglGPU *renderer);

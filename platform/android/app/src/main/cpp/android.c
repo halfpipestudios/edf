@@ -167,14 +167,14 @@ static void draw_texture_atlas(OpenglGPU *renderer) {
 void gpu_frame_end(Gpu gpu) {
     OpenglGPU *renderer = (OpenglGPU *)gpu;
 
-    //draw_texture_atlas(renderer);
+    draw_texture_atlas(renderer);
     quad_batch_flush(renderer);
 
     if(renderer->atlas_need_to_be_regenerate) {
         texture_atlas_regenerate(renderer->arena, &renderer->atlas);
         renderer->atlas_need_to_be_regenerate = false;
     }
-    //cs_print(gcs, "Draw calls: %d\n", renderer->draw_calls);
+    cs_print(gcs, "Draw calls: %d\n", renderer->draw_calls);
 }
 
 Texture gpu_texture_load(Gpu gpu, Bitmap *bitmap) {
@@ -278,6 +278,81 @@ void gpu_blend_state_set(Gpu gpu, GpuBlendState blend_state) {
     }
 }
 
+RenderTarget gpu_render_targte_load(Gpu gpu, i32 width, i32 height) {
+    OpenglGPU *renderer = (OpenglGPU *)gpu;
+
+    OpenglFrameBuffer *frame_buffer = (OpenglFrameBuffer *) arena_push(renderer->arena, sizeof(*frame_buffer), 8);
+    glGenFramebuffers(1, &frame_buffer->id);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer->id);
+
+    glGenTextures(1, &frame_buffer->texture);
+    glBindTexture(GL_TEXTURE_2D, frame_buffer->texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frame_buffer->texture, 0);
+
+    assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindTexture(GL_TEXTURE_2D, renderer->atlas.id);
+    return (RenderTarget *)frame_buffer;
+}
+
+void gpu_render_target_begin(Gpu gpu, RenderTarget rt) {
+    OpenglFrameBuffer *frame_buffer = (OpenglFrameBuffer *)rt;
+    if(frame_buffer) {
+        glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer->id);
+    } else {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+}
+
+void gpu_render_target_end(Gpu gpu, RenderTarget rt) {
+    OpenglGPU *renderer = (OpenglGPU *)gpu;
+    quad_batch_flush(renderer);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void gpu_render_target_draw(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, RenderTarget rt) {
+    OpenglGPU *renderer = (OpenglGPU *)gpu;
+    OpenglFrameBuffer *frame_buffer = (OpenglFrameBuffer *)rt;
+    glBindTexture(GL_TEXTURE_2D, frame_buffer->texture);
+
+    M4 translate = m4_translate(v3(x, y, 0));
+    M4 rotate = m4_rotate_z(angle);
+    M4 scale = m4_scale(v3(w, h, 1));
+    M4 world = m4_mul(translate, m4_mul(rotate, scale));
+
+    OpenglQuad quad;
+    V2 uvs[array_len(quad.vertex)] = {
+            {1, 0}, // bottom right
+            {0, 0}, // bottom left
+            {0, 1}, // top left
+            {1, 0}, // bottom right
+            {0, 1}, // bottom right
+            {1, 1}  // top right
+    };
+
+    for(u32 i = 0; i < array_len(quad.vertex); ++i) {
+        V3 vertex = m4_mul_v3(world, vertices[i]);
+        quad.vertex[i].pos = v2(vertex.x, vertex.y);
+        quad.vertex[i].color = v4(1, 1, 1, 1);
+        quad.vertex[i].uvs = uvs[i];
+    }
+
+    quad_batch_push(renderer, quad);
+    quad_batch_flush(renderer);
+
+    glBindTexture(GL_TEXTURE_2D, renderer->atlas.id);
+}
+
+void gpu_viewport_set(Gpu gpu, f32 x, f32 y, f32 w, f32 h) {
+    glViewport((i32)x, (i32)y, (i32)w, (i32)h);
+}
+
 Input input_from_java(JNIEnv *env, jint touches_count, jintArray  indices, jobjectArray touches) {
     Input input = { 0 };
 
@@ -331,6 +406,7 @@ JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameRender(JNIEnv *env
 
 JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameResize(JNIEnv *env, jobject thiz, jint x, jint y, jint w, jint h) {
 
+#if 0
     f32 ratio = ((f32)VIRTUAL_RES_Y / (f32)VIRTUAL_RES_X);
     i32 virtual_w = w;
     i32 virtual_h = (i32)((f32)w * ratio);
@@ -341,16 +417,9 @@ JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameResize(JNIEnv *env
         virtual_w = (i32)((f32)h * ratio);
 
     }
-
-#if 0
-    if(virtual_w > w) {
-        f32 ratio_w = ((f32)VIRTUAL_RES_Y / (f32)VIRTUAL_RES_X);
-        f32 ratio_h = ((f32)VIRTUAL_RES_X / (f32)VIRTUAL_RES_Y);
-        virtual_h = (i32)((f32)w * ratio);
-        virtual_w = (i32)((f32)h * ratio);
-    }
 #endif
 
+#if 0
     i32 pos_y = (i32)((f32)h*0.5f-(f32)virtual_h*0.5f);
     i32 pos_x = (i32)((f32)w*0.5f-(f32)virtual_w*0.5f);
 
@@ -359,6 +428,19 @@ JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameResize(JNIEnv *env
 
     glViewport(pos_x, pos_y, virtual_w, virtual_h);
     game_resize(&global_memory, virtual_w, virtual_h);
+#endif
+
+    i32 virtual_w = VIRTUAL_RES_X;
+    i32 virtual_h = VIRTUAL_RES_Y;
+
+    i32 pos_y = (i32)((f32)h*0.5f-(f32)virtual_h*0.5f);
+    i32 pos_x = (i32)((f32)w*0.5f-(f32)virtual_w*0.5f);
+    global_display_rect = r2_from_wh(pos_x, pos_y, virtual_w, virtual_h);
+    global_device_rect = r2_from_wh(0, 0, w, h);
+
+
+    glViewport(x, y, w, h);
+    game_resize(&global_memory, w, h);
 }
 
 

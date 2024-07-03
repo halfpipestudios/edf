@@ -199,10 +199,7 @@ void game_render(Memory *memory) {
     GameState *gs = game_state(memory);
 
     gpu_frame_begin(gs->gpu);
-    
 
-    
-    
     {
         gpu_render_target_begin(gs->gpu, gs->render_target0);
                 
@@ -213,8 +210,7 @@ void game_render(Memory *memory) {
         gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v4(0.05f, 0.2f, 0.1f, 1));
         
         // Entities draw
-        gpu_camera_set(gs->gpu, gs->level->camera_pos, 1);
-        
+        gpu_camera_set(gs->gpu, gs->level->camera_pos, 0);
         stars_render(gs);
         particle_system_render(gs->gpu, gs->ps);
         render_system_update(gs, gs->em);
@@ -233,8 +229,7 @@ void game_render(Memory *memory) {
         gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v4(0.05f, 0.05f, 0.2f, 1));
         
         // Entities draw
-        gpu_camera_set(gs->gpu, gs->level->camera_pos, 1);
-        
+        gpu_camera_set(gs->gpu, gs->level->camera_pos, 0);
         stars_render(gs);
         particle_system_render(gs->gpu, gs->ps);
         render_system_update(gs, gs->em);
