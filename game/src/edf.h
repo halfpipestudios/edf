@@ -15,6 +15,11 @@ struct EntityManager;
 struct ParticleSystem;
 struct Level;
 
+#define VIRTUAL_RES_X 1920
+#define VIRTUAL_RES_Y 1080
+extern R2 display;
+extern R2 game_view;
+
 typedef struct GameState {
 
     Gpu gpu;

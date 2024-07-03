@@ -15,7 +15,17 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+// ------------------------
+// Globals
+// ------------------------
+
 Console *gcs;
+R2 display;
+R2 game_view;
+
+// ------------------------
+// Game
+// ------------------------
 
 void game_init(Memory *memory) {
     game_state_init(memory);
@@ -201,62 +211,59 @@ void game_render(Memory *memory) {
     gpu_frame_begin(gs->gpu);
 
     {
-        gpu_render_target_begin(gs->gpu, gs->render_target0);
-                
         // render the back ground
-        i32 w = (i32)VIRTUAL_RES_X;
-        i32 h = (i32)VIRTUAL_RES_Y;
+        i32 w = r2_width(game_view);
+        i32 h = r2_height(game_view);
+
+        gpu_render_target_begin(gs->gpu, gs->render_target0);
+
+        gpu_viewport_set(gs->gpu, (f32)game_view.min.x, (f32)game_view.min.y, (f32)r2_width(game_view), (f32)r2_height(game_view));
+        gpu_projection_set(gs->gpu, (f32)(-w)*0.5f, (f32)w*0.5f, (f32)h*0.5f, (f32)(-h)*0.5f);
+
         gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
-        gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v4(0.05f, 0.2f, 0.1f, 1));
+        gpu_draw_quad_color(gs->gpu, 0, 0, (f32)w, (f32)h, 0, v4(0.05f, 0.2f, 0.1f, 1));
         
         // Entities draw
         gpu_camera_set(gs->gpu, gs->level->camera_pos, 0);
         stars_render(gs);
         particle_system_render(gs->gpu, gs->ps);
         render_system_update(gs, gs->em);
-        
-        
+
         gpu_render_target_end(gs->gpu, gs->render_target0);
     }
 
     {
-        gpu_render_target_begin(gs->gpu, gs->render_target1);
-        
         // render the back ground
-        i32 w = (i32)VIRTUAL_RES_X;
-        i32 h = (i32)VIRTUAL_RES_Y;
+        i32 w = r2_width(game_view);
+        i32 h = r2_height(game_view);
+
+        gpu_render_target_begin(gs->gpu, gs->render_target1);
+
+        gpu_viewport_set(gs->gpu, (f32)game_view.min.x, (f32)game_view.min.y, (f32)r2_width(game_view), (f32)r2_height(game_view));
+        gpu_projection_set(gs->gpu, (f32)(-w)*0.5f, (f32)w*0.5f, (f32)h*0.5f, (f32)(-h)*0.5f);
+
         gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
-        gpu_draw_quad_color(gs->gpu, 0, 0, w, h, 0, v4(0.05f, 0.05f, 0.2f, 1));
-        
+        gpu_draw_quad_color(gs->gpu, 0, 0, (f32)w, (f32)h, 0, v4(0.05f, 0.05f, 0.2f, 1));
+
         // Entities draw
         gpu_camera_set(gs->gpu, gs->level->camera_pos, 0);
         stars_render(gs);
         particle_system_render(gs->gpu, gs->ps);
         render_system_update(gs, gs->em);
-    
+
         gpu_render_target_end(gs->gpu, gs->render_target1);
     }
 
-    // set the viewport
-    {
-        f32 vw = VIRTUAL_RES_X;
-        f32 vh = VIRTUAL_RES_Y;
-        f32 w = (f32)r2_width(os_device_rect());
-        f32 h = (f32)r2_height(os_device_rect());
-        f32 wvr = vw/vh;
-        f32 hvr = vh/vw;
-        vw = w;
-        vh = w * hvr;
-        if(vh > h) {
-            vw = h * wvr;
-            vh = h;
-        }
-        f32 x = w*0.5f - vw*0.5f;
-        f32 y = h*0.5f - vh*0.5f;
-        gpu_viewport_set(gs->gpu, x, y, vw, vh);
-    }
-    
+
+
+    i32 w = r2_width(display);
+    i32 h = r2_height(display);
+
     gpu_render_target_begin(gs->gpu, 0);
+
+    gpu_viewport_set(gs->gpu, (f32)display.min.x, (f32)display.min.y, (f32)r2_width(display), (f32)r2_height(display));
+    gpu_projection_set(gs->gpu, (f32)(-w)*0.5f, (f32)w*0.5f, (f32)h*0.5f, (f32)(-h)*0.5f);
+
     // UI draw
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
     
@@ -268,8 +275,8 @@ void game_render(Memory *memory) {
     if(gs->paused) {
         char *text = "Pause";
         R2 dim = font_size_text(am_get_font(gs->am, "times.ttf", 64), text);
-        f32 pos_x = 0 - r2_width(dim)*0.5f;
-        f32 pos_y = 0 - r2_height(dim)*0.5f + VIRTUAL_RES_Y*0.25f;
+        f32 pos_x = 0 - (f32)r2_width(dim)*0.5f;
+        f32 pos_y = 0 - (f32)r2_height(dim)*0.5f + VIRTUAL_RES_Y*0.25f;
         font_draw_text(gs->gpu, am_get_font(gs->am, "times.ttf", 64), text, pos_x, pos_y, v4(1, 1, 1, 1));
     }
 
@@ -281,7 +288,7 @@ void game_render(Memory *memory) {
         snprintf(text, 1024, "FPS: %d | MS %.2f", gs->FPS, gs->MS);
         R2 fps_dim = font_size_text(am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text);
         f32 pos_x = -VIRTUAL_RES_X*0.5f;
-        f32 pos_y = VIRTUAL_RES_Y*0.5f - r2_height(fps_dim);
+        f32 pos_y = VIRTUAL_RES_Y*0.5f - (f32)r2_height(fps_dim);
         font_draw_text(gs->gpu, am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text, pos_x, pos_y, v4(1, 1, 1, 1));
     }
     gpu_render_target_end(gs->gpu, 0);
@@ -296,6 +303,25 @@ void game_shutdown(Memory *memory) {
 
 void game_resize(Memory *memory, u32 w, u32 h) {
     GameState *gs = game_state(memory);
-    unused(w); unused(h);
-    gpu_resize(gs->gpu, VIRTUAL_RES_X, VIRTUAL_RES_Y);
+    unused(gs);
+
+    display = r2_from_wh(0, 0, (i32)w, (i32)h);
+
+    f32 vw = VIRTUAL_RES_X;
+    f32 vh = VIRTUAL_RES_Y;
+    f32 dw = (f32)r2_width(display);
+    f32 dh = (f32)r2_height(display);
+    f32 wvr = vw/vh;
+    f32 hvr = vh/vw;
+    vw = dw;
+    vh = dw * hvr;
+    if(vh > dh) {
+        vw = dh * wvr;
+        vh = dh;
+    }
+    f32 x = dw*0.5f - vw*0.5f;
+    f32 y = dh*0.5f - vh*0.5f;
+
+    game_view = r2_from_wh((i32)x, (i32)y, (i32)vw, (i32)vh);
+
 }

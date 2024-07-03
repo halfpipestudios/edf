@@ -15,22 +15,11 @@ static jobject *asset_manager_ref   = 0;
 static AAssetManager *asset_manager = 0;
 static Memory global_memory;
 
-static R2 global_display_rect;
-static R2 global_device_rect;
-
 void os_print(char *message, ...) {
     va_list args;
     va_start(args, message);
     logv("Game", message, args);
     va_end(args);
-}
-
-R2 os_display_rect(void) {
-    return global_display_rect;
-}
-
-R2 os_device_rect(void) {
-    return global_device_rect;
 }
 
 File os_file_read(struct Arena *arena, char *path) {
@@ -125,8 +114,8 @@ static void draw_texture_atlas(OpenglGPU *renderer) {
 
     float angle = 0;
 
-    float window_w = (f32)r2_width(os_display_rect());
-    float window_h = (f32) r2_height(os_display_rect());
+    float window_w = (f32)VIRTUAL_RES_X;
+    float window_h = (f32)VIRTUAL_RES_Y;
 
     float ratio = (f32)renderer->atlas.h / (f32)renderer->atlas.w;
     float render_scale = 1;
@@ -167,7 +156,7 @@ static void draw_texture_atlas(OpenglGPU *renderer) {
 void gpu_frame_end(Gpu gpu) {
     OpenglGPU *renderer = (OpenglGPU *)gpu;
 
-    draw_texture_atlas(renderer);
+    //draw_texture_atlas(renderer);
     quad_batch_flush(renderer);
 
     if(renderer->atlas_need_to_be_regenerate) {
@@ -241,11 +230,15 @@ void gpu_draw_quad_texture(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Textu
     gpu_draw_quad_texture_tinted(gpu, x, y, w, h, angle, texture, v4(1, 1, 1, 1));
 }
 
-void gpu_resize(Gpu gpu, u32 w, u32 h) {
+void gpu_viewport_set(Gpu gpu, f32 x, f32 y, f32 w, f32 h) {
+    glViewport((i32)x, (i32)y, (i32)w, (i32)h);
+}
+
+void gpu_projection_set(Gpu gpu, f32 l, f32 r, f32 t, f32 b) {
     OpenglGPU *renderer = (OpenglGPU *)gpu;
-    f32 hw = (f32)w*0.5f;
-    f32 hh = (f32)h*0.5f;
-    M4 projection = m4_ortho(-hw, hw, hh, -hh, 0, 100);
+    quad_batch_flush(renderer);
+
+    M4 projection = m4_ortho(l, r, t, b, 0, 100);
     glUseProgram(renderer->program);
     i32 location = glGetUniformLocation(renderer->program, "projection");
     glUniformMatrix4fv(location, 1, true, projection.m);
@@ -266,7 +259,6 @@ void gpu_camera_set(Gpu gpu, V3 pos, f32 angle) {
 
 void gpu_blend_state_set(Gpu gpu, GpuBlendState blend_state) {
     OpenglGPU *renderer = (OpenglGPU *)gpu;
-
     quad_batch_flush(renderer);
 
     if(blend_state == GPU_BLEND_STATE_ALPHA) {
@@ -349,10 +341,6 @@ void gpu_render_target_draw(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Rend
     glBindTexture(GL_TEXTURE_2D, renderer->atlas.id);
 }
 
-void gpu_viewport_set(Gpu gpu, f32 x, f32 y, f32 w, f32 h) {
-    glViewport((i32)x, (i32)y, (i32)w, (i32)h);
-}
-
 Input input_from_java(JNIEnv *env, jint touches_count, jintArray  indices, jobjectArray touches) {
     Input input = { 0 };
 
@@ -405,44 +393,8 @@ JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameRender(JNIEnv *env
 }
 
 JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameResize(JNIEnv *env, jobject thiz, jint x, jint y, jint w, jint h) {
-
-#if 0
-    f32 ratio = ((f32)VIRTUAL_RES_Y / (f32)VIRTUAL_RES_X);
-    i32 virtual_w = w;
-    i32 virtual_h = (i32)((f32)w * ratio);
-
-    if(virtual_h > h) {
-        ratio = ((f32)VIRTUAL_RES_X / (f32)VIRTUAL_RES_Y);
-        virtual_h = h;
-        virtual_w = (i32)((f32)h * ratio);
-
-    }
-#endif
-
-#if 0
-    i32 pos_y = (i32)((f32)h*0.5f-(f32)virtual_h*0.5f);
-    i32 pos_x = (i32)((f32)w*0.5f-(f32)virtual_w*0.5f);
-
-    global_display_rect = r2_from_wh(pos_x, pos_y, virtual_w, virtual_h);
-    global_device_rect = r2_from_wh(0, 0, w, h);
-
-    glViewport(pos_x, pos_y, virtual_w, virtual_h);
-    game_resize(&global_memory, virtual_w, virtual_h);
-#endif
-
-    i32 virtual_w = VIRTUAL_RES_X;
-    i32 virtual_h = VIRTUAL_RES_Y;
-
-    i32 pos_y = (i32)((f32)h*0.5f-(f32)virtual_h*0.5f);
-    i32 pos_x = (i32)((f32)w*0.5f-(f32)virtual_w*0.5f);
-    global_display_rect = r2_from_wh(pos_x, pos_y, virtual_w, virtual_h);
-    global_device_rect = r2_from_wh(0, 0, w, h);
-
-
-    glViewport(x, y, w, h);
     game_resize(&global_memory, w, h);
 }
-
 
 JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gpuSetViewport(JNIEnv *env, jobject thiz, jint x, jint y, jint w, jint h) {
     (void) env;
