@@ -40,9 +40,9 @@ void game_init(Memory *memory) {
     gs->spu = spu_load(&gs->platform_arena);
     gs->am  = am_load(&gs->game_arena, gs->gpu);
 
-    i32 debug_y_pos = VIRTUAL_RES_Y/2-60;
-    i32 debug_x_pos = -VIRTUAL_RES_X/2;
-    gs->cs = cs_init(am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), debug_x_pos, debug_y_pos, 600, VIRTUAL_RES_Y/2);
+    i32 debug_y_pos = r2_height(display)/2-60;
+    i32 debug_x_pos = -r2_width(display)/2;
+    gs->cs = cs_init(am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), debug_x_pos, debug_y_pos, 600, r2_height(display)/2);
     gcs = &gs->cs;
     gs->av = av_init(&gs->platform_arena, am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), debug_x_pos+620, debug_y_pos, 600);
     av_add_arena(&gs->av, get_scratch_arena(0), "scratch_arena 0");
@@ -70,21 +70,21 @@ void game_init(Memory *memory) {
 
     gs->ps = gs->fire;
 
-    i32 hw = r2_width(display) * 0.5f;
-    i32 hh = r2_height(display) * 0.5f;
+    i32 hw = r2_width(display)/2;
+    i32 hh = r2_height(display)/2;
     R2 window_rect;
     window_rect.min.x = -hw;
     window_rect.max.x = 0;
     window_rect.min.y = -hh;
     window_rect.max.y = hh;
-    gs->joystick = ui_joystick_alloc(&gs->ui, &gs->game_arena, v2(-740, -250), window_rect, 
+    gs->joystick = ui_joystick_alloc(&gs->ui, &gs->game_arena, v2((f32)-hw+220, (f32)-hh+220), window_rect,
                                     140, 220, am_get_texture(gs->am, "move_inner.png"), am_get_texture(gs->am, "move_outer.png"), v4(1,1,1,0.3f));
 
-    gs->boost_button = ui_button_alloc(&gs->ui, &gs->game_arena, v2(740, -250), 135, am_get_texture(gs->am, "boost.png"), v4(1,1,1,0.3f));
+    gs->boost_button = ui_button_alloc(&gs->ui, &gs->game_arena, v2((f32)hw-135, (f32)-hh+135), 135, am_get_texture(gs->am, "boost.png"), v4(1,1,1,0.3f));
 
     f32 paddin_top = 80;
     f32 pause_buttom_dim = 140;
-    V2 pause_button_pos = v2(0, VIRTUAL_RES_Y*0.5f-pause_buttom_dim*0.5f-paddin_top);
+    V2 pause_button_pos = v2(pause_buttom_dim*0.5f, (f32)hh-pause_buttom_dim*0.5f-paddin_top);
     gs->pause_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, am_get_texture(gs->am, "pause.png"), v4(1,0,0,0.3f));
     pause_button_pos.x += 220;
     gs->next_ship_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, am_get_texture(gs->am, "pause.png"), v4(0,1,0,0.3f));
@@ -211,8 +211,8 @@ void game_render(Memory *memory) {
 
     {
         // render the back ground
-        f32 w = VIRTUAL_RES_X;
-        f32 h = VIRTUAL_RES_Y;
+        f32 w = MAP_COORDS_X;
+        f32 h = MAP_COORDS_Y;
 
         gpu_render_target_begin(gs->gpu, gs->render_target);
 
@@ -288,12 +288,22 @@ void game_resize(Memory *memory, u32 w, u32 h) {
     f32 dh = (f32)r2_height(display);
     f32 wvr = vw/vh;
     f32 hvr = vh/vw;
+    
     vw = dw;
     vh = dw * hvr;
+    
     if(vh > dh) {
         vw = dh * wvr;
         vh = dh;
     }
+
+#if 0
+    if(vw > dw) {
+        vh = (i32)((f32)w * hvr);
+        vw = (i32)((f32)h * wvr);
+    }
+#endif
+
     f32 x = dw*0.5f - vw*0.5f;
     f32 y = dh*0.5f - vh*0.5f;
 

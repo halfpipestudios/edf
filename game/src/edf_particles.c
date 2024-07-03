@@ -43,7 +43,7 @@ void particle_system_update(struct GameState* gs, ParticleSystem *ps, f32 dt) {
                 particle->save_lifetime = 0.5f;//(f32)rand_range(25, 80) / 100.f;
                 particle->lifetime = particle->save_lifetime;
                 particle->pos = ps->pos;
-                particle->scale = 60;
+                particle->scale = 0.1;
                 particle->vel = v2(0, 0);
                 particle->tex = ps->tex;
                 particle->angle = 0;

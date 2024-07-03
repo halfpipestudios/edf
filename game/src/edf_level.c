@@ -13,7 +13,7 @@
 #include "edf_asset.h"
 #include "edf.h"
 
-static inline void add_entity(Level *level, i32 screen_x, i32 screen_y, V2 scale, Texture texture) {
+static inline void add_entity(Level *level, f32 screen_x, f32 screen_y, V2 scale, Texture texture) {
     V3 pos = v3(screen_x, screen_y, 0);
     Entity *asteroid = entity_manager_add_entity(level->em);
     entity_add_render_component(asteroid, pos, scale, texture, v4(1, 1, 1, 1));
@@ -27,77 +27,78 @@ static inline void add_entity(Level *level, i32 screen_x, i32 screen_y, V2 scale
 
 void add_screen(GameState *gs, Level *level, i32 screen_index, const char *positions, u32 row_count, u32 total_size) {
 
-    i32 asteroid_position_rows = row_count;
-    i32 asteroid_position_cols = total_size/asteroid_position_rows;
-    i32 tile_x = VIRTUAL_RES_X / asteroid_position_cols;
-    i32 tile_y = VIRTUAL_RES_Y / asteroid_position_rows;
+    i32 asteroid_position_rows = (i32)row_count;
+    i32 asteroid_position_cols = (i32)total_size/asteroid_position_rows;
+    f32 tile_x = MAP_COORDS_X / (f32)asteroid_position_cols;
+    f32 tile_y = MAP_COORDS_Y / (f32)asteroid_position_rows;
     static Entity *last_trigger = 0;
     for(i32 y = 0; y < asteroid_position_rows; ++y) {
         for(i32 x = 0; x < asteroid_position_cols; ++x) {
-            
-            i32 screen_x = (x-asteroid_position_cols/2) * tile_x + level->dim.min.x + (VIRTUAL_RES_X * screen_index) + tile_x/2;
-            i32 screen_y = (y-asteroid_position_rows/2) * tile_y + tile_y/2;
 
+            
+            f32 map_x = (f32)level->dim.min.x + (MAP_COORDS_X * (f32)screen_index) + tile_x*(f32)x + tile_x*0.5f;
+            f32 map_y = (f32)level->dim.min.y + tile_y*(f32)y + tile_y*0.5f;
+            
             i32 test_y = (asteroid_position_rows - 1) - y;
             char c = positions[test_y*asteroid_position_cols+x];
             
-            V2 scale = v2((f32)VIRTUAL_RES_X/(f32)asteroid_position_cols, (f32)VIRTUAL_RES_Y/(f32)asteroid_position_rows);
+            V2 scale = v2((f32)MAP_COORDS_X/(f32)asteroid_position_cols, (f32)MAP_COORDS_Y/(f32)asteroid_position_rows);
             Texture texture = 0;
 
             switch (c) {
                 case 't': {
                     texture = am_get_texture(gs->am, "rocks_flat.png");
                     scale.y = -scale.y;
-                    add_entity(level, screen_x, screen_y, scale, texture);
+                    add_entity(level, map_x, map_y, scale, texture);
                 } break;
                 case 'b': {
                     texture = am_get_texture(gs->am, "rocks_flat.png");
-                    add_entity(level, screen_x, screen_y, scale, texture);
+                    add_entity(level, map_x, map_y, scale, texture);
                 } break;
                 case 'q': {
                     texture = am_get_texture(gs->am, "rocks_corner.png");
                     scale.x = -scale.x;
                     scale.y = -scale.y;
-                    add_entity(level, screen_x, screen_y, scale, texture);
+                    add_entity(level, map_x, map_y, scale, texture);
                 } break;
                 case 'e': {
                     texture = am_get_texture(gs->am, "rocks_corner.png");
                     scale.y = -scale.y;
-                    add_entity(level, screen_x, screen_y, scale, texture);
+                    add_entity(level, map_x, map_y, scale, texture);
                 } break;
                 case 'a': {
                     texture = am_get_texture(gs->am, "rocks_corner.png");
                     scale.x = -scale.x;
-                    add_entity(level, screen_x, screen_y, scale, texture);
+                    add_entity(level, map_x, map_y, scale, texture);
                 } break;
                 case 'd': {
                     texture = am_get_texture(gs->am, "rocks_corner.png");
-                    add_entity(level, screen_x, screen_y, scale, texture);
+                    add_entity(level, map_x, map_y, scale, texture);
                 } break;
                 case 'f': {
                     texture = am_get_texture(gs->am, "rock_full.png");
-                    add_entity(level, screen_x, screen_y, scale, texture);
+                    add_entity(level, map_x, map_y, scale, texture);
                 } break;
                 case 'x': {
                     texture = am_get_texture(gs->am, "Meteorito.png");
-                    add_entity(level, screen_x, screen_y, scale, texture);
+                    add_entity(level, map_x, map_y, scale, texture);
                 } break;
                 case '!': {
                     texture = am_get_texture(gs->am, "rocks_flat.png");
-                    V3 pos = v3(screen_x, screen_y, 0);
+                    V3 pos = v3(map_x, map_y, 0);
                     last_trigger = entity_manager_add_entity(level->em);
                     entity_add_render_component(last_trigger, pos, scale, texture, v4(1, 1, 1, 0));
                     Collision collision;
                     collision.type = COLLISION_TYPE_AABB;
-                    V2 posv2 = v2(screen_x, screen_y);
-                    collision.aabb.min = v2_sub(posv2, v2(200, VIRTUAL_RES_Y*0.5f));
-                    collision.aabb.max = v2_add(posv2, v2(200, VIRTUAL_RES_Y*0.5f));
+                    V2 posv2 = v2(map_x, map_y);
+                    collision.aabb.min = v2_sub(posv2, v2(1, MAP_COORDS_X*0.5f));
+                    collision.aabb.max = v2_add(posv2, v2(1, MAP_COORDS_Y*0.5f));
                     entity_add_collision_component(last_trigger, collision, false);
                     entity_add_trigger_component(last_trigger);
                 } break;
                 case '*': {
                     texture = am_get_texture(gs->am, "Meteorito.png");
-                    V3 pos = v3(screen_x, screen_y, 0);
+                    V3 pos = v3(map_x, map_y, 0);
                     Entity *asteroid = entity_manager_add_entity(level->em);
                     asteroid->save_pos = pos;
                     entity_add_render_component(asteroid, pos, scale, texture, v4(1, 1, 1, 1));
@@ -106,7 +107,10 @@ void add_screen(GameState *gs, Level *level, i32 screen_index, const char *posit
                     asteriod_collision.circle.c = asteroid->pos.xy;
                     asteriod_collision.circle.r = fabsf(asteroid->scale.x)*0.5f;
                     entity_add_collision_component(asteroid, asteriod_collision, false);
-                    entity_add_asteroid_component(asteroid, v2(-400, 0), last_trigger);
+                    entity_add_asteroid_component(asteroid, v2(-4, 0), last_trigger);
+                } break;
+                default: {
+                    
                 } break;
             }
         }
@@ -119,17 +123,17 @@ Level *load_level(GameState *gs, struct Arena *arena, struct EntityManager *em) 
     level->em    = em;
     level->gs    = gs;
 
-    f32 level_horizontal_size = VIRTUAL_RES_X * 20;
+    f32 level_horizontal_size = MAP_COORDS_X * 20;
     
-    level->dim = r2_from_wh(-level_horizontal_size*0.5, -VIRTUAL_RES_Y*0.5f, level_horizontal_size, VIRTUAL_RES_Y);
-    level->camera_vel = v3(300*0.75f, 0, 0);
+    level->dim = r2f_from_wh(-level_horizontal_size*0.5f, -MAP_COORDS_Y*0.5f, level_horizontal_size, MAP_COORDS_Y);
+    level->camera_vel = v3(2.0f, 0, 0);
     level->camera_pos.x = level->dim.min.x;
 
     u32 ship_rand_texture = rand_range(0, 1);
     V3 hero_position = v3((f32)level->dim.min.x, 0, 0);
     gs->hero = entity_manager_add_entity(gs->em);
     entity_add_input_component(gs->hero);
-    entity_add_render_component(gs->hero, hero_position, v2(32*3, 32*3), gs->ship_texture[ship_rand_texture], v4(1, 1, 1, 1));
+    entity_add_render_component(gs->hero, hero_position, v2(0.5, 0.5), gs->ship_texture[ship_rand_texture], v4(1, 1, 1, 1));
     entity_add_physics_component(gs->hero, v2(0, 0), v2(0, 0), 0.4f);
     Collision hero_collision;
     hero_collision.type = COLLISION_TYPE_CIRLCE;
@@ -141,12 +145,12 @@ Level *load_level(GameState *gs, struct Arena *arena, struct EntityManager *em) 
     {
         static char asteroids[] = {
             "..............."
-            ".....x........."
+            "x..x..........."
             "..............."
             "..............."
             "..............."
-            "..............."
-            "..x............"
+            "...........x..."
+            "...x.....x....."
             "..............."
         };
 
@@ -323,8 +327,8 @@ Level *load_level(GameState *gs, struct Arena *arena, struct EntityManager *em) 
 
 void level_update(Level *level, f32 dt) {
     level->camera_pos = v3_add(level->camera_pos, v3_scale(level->camera_vel, dt));
-    if(level->camera_pos.x + VIRTUAL_RES_X*0.5f >= level->dim.max.x) {
-        level->camera_pos.x = level->dim.max.x - VIRTUAL_RES_X*0.5f;
+    if(level->camera_pos.x + MAP_COORDS_X*0.5f >= level->dim.max.x) {
+        level->camera_pos.x = level->dim.max.x - MAP_COORDS_Y*0.5f;
     }
 }
 

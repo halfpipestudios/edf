@@ -194,10 +194,12 @@ class GameRenderer implements GLSurfaceView.Renderer {
     private long lastTime;
     private final AssetManager assetManager;
     private final GameInput input;
+    private boolean gameIsInit;
 
     public GameRenderer(AssetManager assetManager, GameInput input) {
         this.assetManager = assetManager;
         this.input = input;
+        this.gameIsInit = false;
     }
 
     public void onPause() {
@@ -210,7 +212,7 @@ class GameRenderer implements GLSurfaceView.Renderer {
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         lastTime = System.nanoTime();
-        gameInit(this.assetManager);
+        //gameInit(this.assetManager);
     }
 
     @Override
@@ -220,6 +222,12 @@ class GameRenderer implements GLSurfaceView.Renderer {
 
     @Override
     public void onDrawFrame(GL10 gl) {
+
+        if(!this.gameIsInit) {
+            gameInit(this.assetManager);
+            gameIsInit = true;
+        }
+
         long currentTime = System.nanoTime();
         double dt = (currentTime - lastTime) / NANOS_PER_SECOND;
         lastTime = currentTime;

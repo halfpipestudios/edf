@@ -25,8 +25,8 @@ SYSTEM_UPDATE(input_system) {
         dir.y = sinf(entity->angle + (PI / 2.0f));
         if(v2_len(dir) > 0) {
             dir = v2_normalized(dir);
-            entity->acc.x += dir.x * 800.0f;
-            entity->acc.y += dir.y * 800.0f;
+            entity->acc.x += dir.x * 5.0f;
+            entity->acc.y += dir.y * 5.0f;
         }
         particle_system_start(gs->ps);
     }

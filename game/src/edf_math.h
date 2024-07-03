@@ -372,4 +372,75 @@ static inline R2 r2_translate(R2 rect, i32 x, i32 y) {
     return result;
 }
 
+typedef struct R2f {
+    V2 min, max;
+} R2f;
+
+static inline R2f r2f_from_wh(f32 x, f32 y, f32 w, f32 h) {
+    R2f result;
+    result.min.x = x;
+    result.max.x = x + w - 1;
+    result.min.y = y;
+    result.max.y = y + h - 1;
+    return result;
+}
+
+static inline f32 r2f_width(R2f a) {
+    return (a.max.x - a.min.x) + 1;
+}
+
+static inline f32 r2f_height(R2f a) {
+    return (a.max.y - a.min.y) + 1;
+}
+
+static inline V2 r2f_center(R2f a) {
+    V2 center;
+    center.x = a.min.x + r2f_width(a)*0.5f;
+    center.y = a.min.y + r2f_height(a)*0.5f;
+    return center;
+}
+
+static inline R2f r2f_intersection(R2f a, R2f b) {
+    R2f result;
+    result.min.x = max(a.min.x, b.min.x);
+    result.min.y = max(a.min.y, b.min.y);
+    result.max.x = min(a.max.x, b.max.x);
+    result.max.y = min(a.max.y, b.max.y);
+    return result;
+}
+
+static inline R2f r2f_union(R2f a, R2f b) {
+    R2f result;
+    result.min.x = min(a.min.x, b.min.x);
+    result.min.y = min(a.min.y, b.min.y);
+    result.max.x = max(a.max.x, b.max.x);
+    result.max.y = max(a.max.y, b.max.y);
+    return result;
+}
+
+static inline b32 r2f_inside(R2f a, R2f b) {
+    return ((a.min.x >= b.min.x) && (a.min.y >= b.min.y) && (a.max.x <= b.max.x) &&
+            (a.max.y <= b.max.y));
+}
+
+static inline b32 r2f_equals(R2f a, R2f b) {
+    return ((a.min.x == b.min.x) && (a.max.x == b.max.x) && (a.min.y == b.min.y) &&
+            (a.max.y == b.max.y));
+}
+
+static inline b32 r2f_invalid(R2f a) {
+    return ((a.max.x < a.min.x) || (a.max.y < a.min.y));
+}
+
+static inline b32 r2f_point_overlaps(R2f a, i32 x, i32 y) {
+    return (a.min.x <= x && x <= a.max.x && a.min.y <= y && y <= a.max.y);
+}
+
+static inline R2f r2f_set_invalid(void) {
+    R2f result = (R2f){ 1, 1, -1, -1 };
+    assert(r2f_invalid(result));
+    return result;
+}
+
+
 #endif /* EDF_MATH_H */

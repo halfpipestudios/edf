@@ -18,7 +18,7 @@ void stars_init(GameState *gs) {
         0xFFC0DBEA
     };
 
-    i32 hw = (r2_width(gs->level->dim) * 0.5f) * 1.25f;
+    i32 hw = (r2f_width(gs->level->dim) * 0.5f) * 1.25f;
     i32 hh = (VIRTUAL_RES_Y * 0.5f) * 1.25f;
     
     Texture planet_textures[MAX_GALAXY] = {
@@ -39,7 +39,7 @@ void stars_init(GameState *gs) {
         galaxy->pos.y = rand_range(-hh, hh);
         galaxy->z = rand_range(2, 10);
         f32 ratio = ((f32)rand_range(50, 100) / 100.0f);
-        galaxy->scale = v2(200*ratio, 200*ratio);
+        galaxy->scale = v2(ratio, ratio);
         galaxy->tint = v4(0.4f, 0.4f, 0.4f, 1);
         galaxy->angle = 0;
         color_index++;
@@ -53,8 +53,8 @@ void stars_init(GameState *gs) {
         star->pos.x = rand_range(-hw, hw);
         star->pos.y = rand_range(-hh, hh);
         star->z = (f32)rand_range(1, 10);
-        star->scale.x = 10/star->z;
-        star->scale.y = 10/star->z;
+        star->scale.x = 1/star->z;
+        star->scale.y = 1/star->z;
         star->tint = hex_to_v4(star_colors[color_index]);
         star->angle = 0;
         
@@ -64,7 +64,7 @@ void stars_init(GameState *gs) {
 
 void stars_update(GameState *gs, f32 dt) {
 
-    i32 hw = (r2_width(gs->level->dim) * 0.5f);
+    i32 hw = (r2f_width(gs->level->dim) * 0.5f);
     i32 hh = VIRTUAL_RES_Y * 0.5f;
 
     V2 pos = gs->level->camera_pos.xy;
@@ -149,14 +149,14 @@ PARTICLE_SYSTEM_UPDATE(ship_ps_update) {
         V2 dir;
         dir.x = -cosf(gs->hero->angle + offset);
         dir.y = -sinf(gs->hero->angle + offset);
-        particle->vel.x = dir.x * 180.0f + gs->hero->vel.x;
-        particle->vel.y = dir.y * 180.0f + gs->hero->vel.y;
+        particle->vel.x = dir.x * 1.0f + gs->hero->vel.x;
+        particle->vel.y = dir.y * 1.0f + gs->hero->vel.y;
         particle->tint = hex_to_v4(fire_tint[fire_tint_index]);
         fire_tint_index = (fire_tint_index + 1) % array_len(fire_tint);
     }
     
     float x = particle->lifetime;
-    particle->scale =  clamp((1.0f-(2*x-1)*(2*x-1)) * 60, 5, 60);
+    particle->scale =  clamp((1.0f-(2*x-1)*(2*x-1)) * 0.4f, 0.1f, 0.4f);
     
     x = particle->lifetime/particle->save_lifetime;
     particle->tint.w = x*x;
@@ -190,14 +190,14 @@ PARTICLE_SYSTEM_UPDATE(neon_ps_update) {
         V2 offset_point = v2_add(gs->hero->pos.xy, v2_scale(dir, 120));
         dir = v2_normalized(v2_sub(offset_point, particle->pos));
 
-        particle->vel.x = dir.x * 300.0f + gs->hero->vel.x;
-        particle->vel.y = dir.y * 300.0f + gs->hero->vel.y;
+        particle->vel.x = dir.x * 1.0f + gs->hero->vel.x;
+        particle->vel.y = dir.y * 1.0f + gs->hero->vel.y;
         particle->tint = hex_to_v4(neon_tint[neon_tint_index]);
         neon_tint_index = (neon_tint_index + 1) % array_len(neon_tint);
     }
     
     float x = particle->lifetime;
-    particle->scale =  clamp((1.0f-(2*x-1)*(2*x-1)) * 60, 5, 60);
+    particle->scale =  clamp((1.0f-(2*x-1)*(2*x-1)) * 0.4f, 0.01f, 0.4f);
     
     x = particle->lifetime/particle->save_lifetime;
     particle->tint.w = x*x;
@@ -227,8 +227,8 @@ PARTICLE_SYSTEM_UPDATE(pixel_ps_update) {
         particle->pos.x += perp.x * offet;
         particle->pos.y += perp.y * offet;
 
-        particle->vel.x = dir.x * 300.0f + gs->hero->vel.x;
-        particle->vel.y = dir.y * 300.0f + gs->hero->vel.y;
+        particle->vel.x = dir.x * 1.0f + gs->hero->vel.x;
+        particle->vel.y = dir.y * 1.0f + gs->hero->vel.y;
         particle->tint = hex_to_v4(tint[tint_index]);
         tint_index = (tint_index + 1) % array_len(tint);
 
@@ -236,7 +236,7 @@ PARTICLE_SYSTEM_UPDATE(pixel_ps_update) {
     }
     
     float x = particle->lifetime;
-    particle->scale =  clamp((1.0f-(2*x-1)*(2*x-1)) * 20, 5, 60);
+    particle->scale =  clamp((1.0f-(2*x-1)*(2*x-1)) * 0.1f, 0.01f, 0.1f);
     
     x = particle->lifetime/particle->save_lifetime;
     particle->tint.w = x*x;
@@ -249,11 +249,11 @@ PARTICLE_SYSTEM_UPDATE(smoke_ps_update) {
 
     static u32 tint_index = 0;
     static u32 tint[] = {
-        0x11d8d8d8,
-        0x11b1b1b1,
-        0x117e7e7e,
-        0x11474747,
-        0x111a1a1a
+        0x22d8d8d8,
+        0x22b1b1b1,
+        0x227e7e7e,
+        0x22474747,
+        0x221a1a1a
     };
 
     if(!particle->init) {
@@ -266,12 +266,12 @@ PARTICLE_SYSTEM_UPDATE(smoke_ps_update) {
         V2 perp = v2(-dir.y, dir.x);
         f32 x_offet = rand_range(gs->hero->scale.x*-0.15f, gs->hero->scale.x*0.15f);
         particle->pos.x += perp.x * x_offet;
-        particle->pos.y += perp.y * x_offet + rand_range(0, 20);
+        particle->pos.y += perp.y * x_offet + (rand_range(0, 20) / 200.0f);
 
         particle->tint = hex_to_v4(tint[tint_index]);
         tint_index = (tint_index + 1) % array_len(tint);
         
-        particle->scale = rand_range(10, 40);
+        particle->scale = rand_range(10, 40) / 200.0f;
         particle->vel = v2(0, 0);
         particle->lifetime = 10;
 
@@ -309,9 +309,9 @@ PARTICLE_SYSTEM_UPDATE(confeti_ps_update) {
         particle->pos.x += perp.x * x_offet;
         particle->pos.y += perp.y * x_offet;
         
-        particle->vel.x = dir.x * (f32)rand_range(300, 600) + gs->hero->vel.x;
-        particle->vel.y = dir.y * (f32)rand_range(300, 600) + gs->hero->vel.y;
-        particle->scale = 20.0f;
+        particle->vel.x = dir.x * (f32)rand_range(300, 600)/200.0f + gs->hero->vel.x;
+        particle->vel.y = dir.y * (f32)rand_range(300, 600)/200.0f + gs->hero->vel.y;
+        particle->scale = 0.14f;
         particle->save_lifetime = (f32)rand_range(25, 400) / 100.0f;
         particle->lifetime = (f32)rand_range(25, 400) / 100.0f;
         particle->tex = gs->confeti_texture[confeti_tint_index];

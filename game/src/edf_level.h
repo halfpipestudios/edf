@@ -16,7 +16,7 @@ typedef struct Level {
     struct Arena *arena;
     struct EntityManager *em;
 
-    R2 dim;
+    R2f dim;
     V3 camera_vel;
     V3 camera_pos;
 
