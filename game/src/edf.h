@@ -69,7 +69,7 @@ typedef struct GameState {
     Console cs;
     ArenaViewer av;
 
-#define MAX_STARS 1000
+#define MAX_STARS 100
 #define MAX_GALAXY 6
     Sprite stars[MAX_STARS];
     Sprite galaxy[MAX_GALAXY];

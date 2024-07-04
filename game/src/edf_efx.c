@@ -18,8 +18,8 @@ void stars_init(GameState *gs) {
         0xFFC0DBEA
     };
 
-    f32 hw = (r2f_width(gs->level->dim) * 0.5f) * 1.25f;
-    f32 hh = (MAP_COORDS_Y * 0.5f) * 1.25f;
+    f32 hw = (MAP_COORDS_X * 0.5f)*1.25f;
+    f32 hh = (MAP_COORDS_Y * 0.5f)*1.25f;
     
     Texture planet_textures[MAX_GALAXY] = {
         am_get_texture(gs->am, "galaxy.png"),
@@ -64,17 +64,18 @@ void stars_init(GameState *gs) {
 
 void stars_update(GameState *gs, f32 dt) {
 
-    i32 hw = (r2f_width(gs->level->dim) * 0.5f);
-    i32 hh = VIRTUAL_RES_Y * 0.5f;
+    f32 hw = (MAP_COORDS_X * 0.5f)*1.25f;
+    f32 hh = (MAP_COORDS_Y * 0.5f)*1.25f;
 
     V2 pos = gs->level->camera_pos.xy;
     V2 vel = gs->level->camera_vel.xy;
 
     R2 bounds = {0};
-    bounds.min.x = pos.x - (hw * 1.25f);
-    bounds.min.y = pos.y - (hh * 1.25f);
-    bounds.max.x = pos.x + (hw * 1.25f);
-    bounds.max.y = pos.y + (hh * 1.25f);
+    bounds.min.x = -hw;
+    bounds.min.y = -hh;
+    bounds.max.x = hw;
+    bounds.max.y = hh;
+
     for(i32 i = 0; i < MAX_GALAXY; i++) {
         Sprite *galaxy = gs->galaxy + i;
         galaxy->pos.x -= (vel.x / galaxy->z) * dt;
@@ -100,7 +101,6 @@ void stars_update(GameState *gs, f32 dt) {
         star->pos.x -= (vel.x / star->z) * dt;
         star->pos.y -= (vel.y / star->z) * dt;
         
-#if 0
         if(star->pos.x > bounds.max.x) {
             star->pos.x = bounds.min.x;
         }
@@ -114,7 +114,7 @@ void stars_update(GameState *gs, f32 dt) {
         if(star->pos.y < bounds.min.y) {
             star->pos.y = bounds.max.y;
         }
-#endif
+
     }
 }
 

@@ -229,10 +229,10 @@ void game_render(Memory *memory) {
 
         gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
         gpu_draw_quad_color(gs->gpu, 0, 0, (f32)w, (f32)h, 0, v4(0.05f, 0.05f, 0.1f, 1));
-        
+        stars_render(gs);
+
         // Entities draw
         gpu_camera_set(gs->gpu, gs->level->camera_pos, 0);
-        stars_render(gs);
         particle_system_render(gs->gpu, gs->ps);
         render_system_update(gs, gs->em);
 
