@@ -143,10 +143,13 @@ void quad_batch_flush(OpenglGPU *renderer) {
 }
 
 void quad_batch_push(OpenglGPU *renderer, OpenglQuad quad) {
-    if(renderer->quad_count > array_len(renderer->quad_buffer)) {
+    if(renderer->quad_count >= array_len(renderer->quad_buffer)) {
         quad_batch_flush(renderer);
     }
     renderer->quad_buffer[renderer->quad_count++] = quad;
+    if(renderer->quad_count == array_len(renderer->quad_buffer)) {
+        i32 break_here = 0;
+    }
 }
 
 unsigned int gpu_create_program(const char *vert_src, const char *frag_src) {

@@ -322,13 +322,137 @@ Level *load_level(GameState *gs, struct Arena *arena, struct EntityManager *em) 
         add_screen(gs, level, 11, asteroids, 8, array_len(asteroids));
     }
 
+    {
+        static char asteroids[] = {
+            "ttttttttttttttt"
+            "..............."
+            "..............."
+            ".......x......."
+            "..............."
+            "..........x...."
+            "..............."
+            "bbbbbbbbbbbbbbb"
+        };
+
+        add_screen(gs, level, 12, asteroids, 8, array_len(asteroids));
+    }
+
+#if 1
+    {
+        static char asteroids[] = {
+            "ttttttttttttttt"
+            "..............."
+            "....x.........."
+            "..............."
+            "..............."
+            "...x..........."
+            "..............."
+            "bbbbbbbbbbbbbbb"
+        };
+
+        add_screen(gs, level, 13, asteroids, 8, array_len(asteroids));
+    }
+
+    {
+        static char asteroids[] = {
+            "ttttttttttttttt"
+            "..............."
+            "......x........"
+            "...........x..."
+            "..............."
+            ".......x......."
+            "..............."
+            "bbbbbbbbbbbbbbb"
+        };
+
+        add_screen(gs, level, 14, asteroids, 8, array_len(asteroids));
+    }
+
+    {
+        static char asteroids[] = {
+            "ttttttttttttttt"
+            "..............."
+            ".......x......."
+            "..............."
+            "..............."
+            ".......x......."
+            "..............."
+            "bbbbbbbbbbbbbbb"
+        };
+
+        add_screen(gs, level, 15, asteroids, 8, array_len(asteroids));
+    }
+
+    {
+        static char asteroids[] = {
+            "ttttttttttttttt"
+            "..............."
+            "..............."
+            "..x.........x.."
+            "..............."
+            "..............."
+            "..............."
+            "bbbbbbbbbbbbbbb"
+        };
+
+        add_screen(gs, level, 16, asteroids, 8, array_len(asteroids));
+    }
+
+    {
+        static char asteroids[] = {
+            "ttttttttttttttt"
+            "..............."
+            ".......x......."
+            "..............."
+            ".......x......."
+            "..x.......x...."
+            "..............."
+            "bbbbbbbbbbbbbbb"
+        };
+
+        add_screen(gs, level, 17, asteroids, 8, array_len(asteroids));
+    }   
+
+    {
+        static char asteroids[] = {
+            "ttttttttttttttt"
+            "..............."
+            "..........x...."
+            "..............."
+            "..............."
+            "..x............"
+            "..............."
+            "bbbbbbbbbbbbbbb"
+        };
+
+        add_screen(gs, level, 18, asteroids, 8, array_len(asteroids));
+    }
+
+    {
+        static char asteroids[] = {
+            "ttttttttttttttt"
+            "..............."
+            "...x..........."
+            "..............."
+            "..............."
+            "......x.x.x...."
+            "..............."
+            "bbbbbbbbbbbbbbb"
+        };
+
+        add_screen(gs, level, 19, asteroids, 8, array_len(asteroids));
+    }
+
+#endif
+
     return level;
 }
 
 void level_update(Level *level, f32 dt) {
     level->camera_pos = v3_add(level->camera_pos, v3_scale(level->camera_vel, dt));
-    if(level->camera_pos.x + MAP_COORDS_X*0.5f >= level->dim.max.x) {
-        level->camera_pos.x = level->dim.max.x - MAP_COORDS_Y*0.5f;
+    if(level->camera_pos.x >= level->dim.max.x - MAP_COORDS_X*0.5f) {
+        level->camera_pos.x = level->dim.max.x - MAP_COORDS_X*0.5f;
+        level->camera_vel = v3(0, 0, 0);
     }
 }
 

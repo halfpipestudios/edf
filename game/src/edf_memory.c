@@ -12,7 +12,7 @@ static u32 scratch_arenas_count = 0;
 
 Arena arena_create(Memory *memory, sz size) {
     assert(memory->used + size <= memory->size);
-    void *data = memory->data + memory->used;
+    void *data = (u8 *)memory->data + memory->used;
     memory->used = memory->used + size;    
     Arena arena;
     arena.data = data;

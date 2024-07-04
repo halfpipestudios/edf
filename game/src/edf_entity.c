@@ -79,6 +79,7 @@ void entity_remove_components(Entity *entity, u64 components) {
 
 EntityManager *entity_manager_load(Arena *arena, i32 entity_max_count) {
     // Init the entity manager
+    assert(entity_max_count <= ENTITY_MANAGER_MAX_ENTITIES);
     EntityManager *em = (EntityManager *)arena_push(arena, sizeof(EntityManager), 8);
     em->entity_count = 0;
     em->entity_max_cout = entity_max_count;
@@ -87,6 +88,7 @@ EntityManager *entity_manager_load(Arena *arena, i32 entity_max_count) {
     for(i32 i = 0; i < em->entity_max_cout; i++) {
         Entity *entity = em->entities + i;
         memset(entity, 0, sizeof(Entity));
+
         if(i < (em->entity_max_cout - 1)) {
             entity->next = em->entities + (i + 1);
         }
@@ -116,6 +118,7 @@ Entity *entity_manager_add_entity(EntityManager *em) {
         }
         em->first = entity;
         em->entity_count++;
+        assert(em->entity_count < ENTITY_MANAGER_MAX_ENTITIES);
         return entity;
     }
     return 0;
@@ -162,7 +165,7 @@ void entity_manager_clear(EntityManager *em) {
 
 void entity_manager_forall(struct GameState *gs, EntityManager *em, SystemUpdateFunc *system_update, u64 components, f32 dt) {
     i32 entity_to_update_count = 0;
-    Entity *entities_to_update[ENTITY_MANAGER_MAX_ENTITIES];
+    static Entity *entities_to_update[ENTITY_MANAGER_MAX_ENTITIES];
 
     Entity *entity = em->first;
     while(entity) {
@@ -174,6 +177,9 @@ void entity_manager_forall(struct GameState *gs, EntityManager *em, SystemUpdate
     }
 
     for(i32 i = 0; i < entity_to_update_count; i++) {
+        if(i == 500) {
+            i32 break_here = 0;
+        }
         Entity *entity = entities_to_update[i];
         system_update(gs, entity, entities_to_update, entity_to_update_count, dt);
     }

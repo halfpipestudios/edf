@@ -36,8 +36,13 @@ void game_init(Memory *memory) {
 
     init_scratch_arenas(memory, 3, mb(10));
 
+    // arena_push(get_scratch_arena(0), mb(11), 8);
     gs->platform_arena = arena_create(memory, mb(20));
     gs->game_arena     = arena_create(memory, mb(50));
+
+    u64 platform_arena_end = (u64)gs->platform_arena.data + gs->platform_arena.size;
+    u64 game_arena_start = (u64)gs->game_arena.data;
+    assert(platform_arena_end <= game_arena_start);
 
     gs->gpu = gpu_load(&gs->platform_arena);
     gs->spu = spu_load(&gs->platform_arena);
@@ -53,7 +58,7 @@ void game_init(Memory *memory) {
     av_add_arena(&gs->av, &gs->platform_arena, "platform arena");
     av_add_arena(&gs->av, &gs->game_arena, "game arena");
 
-    gs->em = entity_manager_load(&gs->game_arena, 1000);
+    gs->em = entity_manager_load(&gs->game_arena, 800);
     
     gs->fire    = particle_system_create(&gs->game_arena, 100, 10,
                                          0.05f, v2(0, 0), am_get_texture(gs->am, "orbe.png"),
