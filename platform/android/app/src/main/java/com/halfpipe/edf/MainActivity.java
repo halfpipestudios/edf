@@ -61,8 +61,9 @@ public class MainActivity extends Activity {
 }
 
 class Touch {
-    int index;
+    int uid;
     float x, y;
+    boolean up, down;
 }
 
 class GameInput {
@@ -70,22 +71,24 @@ class GameInput {
     static final int MAX_TOUCHES = 5;
 
     Touch[] touches;
-    int[] indices;
-    int indices_count;
 
     GameInput() {
         touches = new Touch[MAX_TOUCHES];
-        indices = new int[MAX_TOUCHES];
-
         for(int i = 0; i < touches.length; ++i) {
             touches[i] = new Touch();
         }
-
-        Arrays.fill(indices, -1);
-
-        indices_count = 0;
     }
 
+    void reset() {
+        for(int i = 0; i < GameInput.MAX_TOUCHES; ++i) {
+            Touch touch = touches[i];
+            touch.uid = 0;
+            touch.x = 0;
+            touch.y = 0;
+            touch.up = true;
+            touch.down = false;
+        }
+    }
 }
 
 class GameView extends GLSurfaceView {
@@ -115,13 +118,6 @@ class GameView extends GLSurfaceView {
         return this.renderer;
     }
 
-    private void printInput(GameInput input) {
-        Log.d("Game", "----------------\n");
-        for(int i = 0; i < GameInput.MAX_TOUCHES; ++i) {
-            Log.d("Game", "location: " + input.indices[i]);
-        }
-    }
-
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouchEvent(final MotionEvent event) {
@@ -130,44 +126,40 @@ class GameView extends GLSurfaceView {
         int action_index = event.getActionIndex();
         int index = event.getPointerId(action_index);
 
-        if(index >= input.touches.length) return false;
-
         switch (action) {
 
             case  MotionEvent.ACTION_DOWN:
             case  MotionEvent.ACTION_POINTER_DOWN: {
-
+                if(index >= GameInput.MAX_TOUCHES) return true;
                 uid = (uid + 1) == 0 ? 1 : (uid + 1);
+                Touch touch = input.touches[index];
+                touch.uid = uid;
+                touch.x = event.getX(action_index);
+                touch.y = event.getY(action_index);
+                touch.down = true;
+                touch.up   = false;
+            } break;
 
-                input.indices[input.indices_count++] = index;
-                input.touches[index].index = uid;
-                input.touches[index].x = event.getX(action_index);
-                input.touches[index].y = event.getY(action_index);
-
+            case MotionEvent.ACTION_CANCEL: {
+                input.reset();
             } break;
 
             case  MotionEvent.ACTION_UP:
-            case  MotionEvent.ACTION_POINTER_UP:
-            case MotionEvent.ACTION_CANCEL: {
-
-                int index_to_remove = -1;
-                for(int i = 0; i < input.indices_count; ++i) {
-                    if(input.indices[i] == index) {
-                        index_to_remove = i;
-                        break;
-                    }
-                }
-                assert(index_to_remove != -1);
-                input.touches[input.indices[index_to_remove]].index = 0;
-                input.indices[index_to_remove] = input.indices[--input.indices_count];
-                input.indices[input.indices_count] = -1;
+            case  MotionEvent.ACTION_POINTER_UP: {
+                if(index >= GameInput.MAX_TOUCHES) return true;
+                Touch touch = input.touches[index];
+                touch.uid = 0;
+                touch.x = event.getX(action_index);
+                touch.y = event.getY(action_index);
+                touch.down = false;
+                touch.up   = true;
             } break;
 
             case  MotionEvent.ACTION_MOVE: {
                 int len = event.getPointerCount();
                 for(int i = 0; i < len; ++i) {
                     int j = event.getPointerId(i);
-                    if(j < input.touches.length) {
+                    if(j < GameInput.MAX_TOUCHES) {
                         input.touches[j].x = event.getX(i);
                         input.touches[j].y = event.getY(i);
                     }
@@ -184,7 +176,7 @@ class GameRenderer implements GLSurfaceView.Renderer {
 
     public native void gameInit(AssetManager manager);
 
-    public native void gameUpdate(int count, int[] indices, Touch[] touches, float dt);
+    public native void gameUpdate(Touch[] touches, float dt);
 
     public native void gameRender();
 
@@ -203,12 +195,11 @@ class GameRenderer implements GLSurfaceView.Renderer {
     }
 
     public void onPause() {
-        resetInput();
     }
 
     public void onResume() {
-        resetInput();
         lastTime = System.nanoTime();
+        input.reset();
     }
 
     @Override
@@ -233,15 +224,7 @@ class GameRenderer implements GLSurfaceView.Renderer {
         long currentTime = System.nanoTime();
         double dt = (currentTime - lastTime) / NANOS_PER_SECOND;
         lastTime = currentTime;
-        gameUpdate(input.indices_count, input.indices, input.touches, (float)dt);
+        gameUpdate(input.touches, (float)dt);
         gameRender();
     }
-
-    void resetInput() {
-        for(int i = 0; i < input.touches.length; ++i) {
-            input.indices[i] = -1;
-            input.touches[i].index = 0;
-        }
-    }
-
 }

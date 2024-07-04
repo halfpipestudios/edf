@@ -17,42 +17,37 @@ typedef void * Gpu;
 // ----------------------------------------------
 
 typedef struct Touch {
-    V2i pos;
     u64 uid;
     u64 hash;
-    i32 location;
+
+    V2i pos;
+    b32 down;
+    b32 up;
 } Touch;
 
-#define MAX_TOUCHES 5
 
+#define MAX_TOUCHES 5
 typedef struct Input {
     Touch touches[MAX_TOUCHES];
-    i32 locations[MAX_TOUCHES];
-    u32 count;
+    i32 count;
 } Input;
 
 #define TOUCH_INVALID_UID 0
-
 typedef struct Multitouch {
     Input *input;
     Input last_input;
-    i32 *registry[MAX_TOUCHES];
 } Multitouch;
 
 void mt_begin(Multitouch *mt, Input *input);
 void mt_end(Multitouch *mt, Input *input);
 
-void mt_touch_unregister(Multitouch *mt, i32 *touch);
+i32 mt_touch_in_circle(Multitouch *mt, V2 pos, float radii);
+i32 mt_touch_in_rect(Multitouch *mt, R2 rect);
 
-b32 mt_touch_in_circle(Multitouch *mt, i32 *touch, V2 pos, float radii);
-b32 mt_touch_just_in_circle(Multitouch *mt, i32 *touch, V2 pos, float radii);
-b32 mt_touch_in_rect(Multitouch *mt, i32 *touch, R2 rect);
-b32 mt_touch_just_in_rect(Multitouch *mt, i32 *touch, R2 rect);
-
-V2 mt_touch_pos(Multitouch *mt, int touch);
-V2 mt_touch_last_pos(Multitouch *mt, int touch);
-
-b32 mt_touch_down(Multitouch *mt, int *touch);
+V2 mt_touch_pos(Multitouch *mt, i32 touch);
+V2 mt_touch_last_pos(Multitouch *mt, i32 touch);
+b32 mt_touch_down(Multitouch *mt, i32 touch);
+b32 mt_touch_was_down(Multitouch *mt, i32 touch);
 
 // ----------------------------------------------
 //             UI system
@@ -68,7 +63,6 @@ struct {                \
     WidgetType type;    \
     V2 pos;             \
     i32 touch;          \
-    i32 last_touch;     \
     V4 widget_tint;     \
     R2 widget_rect;     \
     union Widget *next; \

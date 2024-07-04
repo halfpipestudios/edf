@@ -220,10 +220,10 @@ static void ios_touch_reset() {
     }
     touches_index_array[MAX_TOUCHES - 1] = -1;
     Touch touch = {0};
+    touch.up = true;
+    touch.down = false;
     for(i32 i = 0; i < MAX_TOUCHES; i++) {
         g_input.touches[i] = touch;
-        g_input.locations[i] = -1;
-
     }
 }
 
@@ -941,16 +941,15 @@ void spu_sound_restart(Spu spu, Sound sound) {
         g_uid = (g_uid + 1) == 0 ? 1 : (g_uid + 1);
         
         touches_free_list = touches_index_array[free_index];
-        g_input.locations[g_input.count] = free_index;
-        
         UITouch *uitouch = touches.allObjects[i];
         CGPoint location = [uitouch locationInView:self.view];
         Touch touch = {0};
-        touch.location = g_input.count;
         touch.pos.x = (i32)(((f32)location.x / w) * r2_width(display));
         touch.pos.y = (i32)(((f32)location.y / h) * r2_height(display));
         touch.hash = (u64)uitouch.hash;
         touch.uid = g_uid;
+        touch.up = false;
+        touch.down = true;
         touches_index_array[free_index] = -1;
         g_input.touches[free_index] = touch;
         
@@ -984,16 +983,21 @@ void spu_sound_restart(Spu spu, Sound sound) {
     if(g_input.count == 0) {
         return;
     }
+    
+    f32 w = self.view.bounds.size.width;
+    f32 h = self.view.bounds.size.height;
+    
     for (i32 i = 0; i < touches.count; i++) {
         UITouch *uitouch = touches.allObjects[i];
+        CGPoint location = [uitouch locationInView:self.view];
         i32 index_to_free = [self find_touch_index:uitouch.hash];
         if(index_to_free >= 0) {
-            Touch *touch = g_input.touches + index_to_free;
-            g_input.touches[g_input.locations[g_input.count - 1]].location = touch->location;
-            g_input.locations[touch->location] = g_input.locations[g_input.count - 1];
-            g_input.locations[g_input.count - 1] = -1;
-            Touch zero = {0};
-            g_input.touches[index_to_free] = zero;
+            Touch touch = {0};
+            touch.pos.x = (i32)(((f32)location.x / w) * r2_width(display));
+            touch.pos.y = (i32)(((f32)location.y / h) * r2_height(display));
+            touch.up = true;
+            touch.down = false;
+            g_input.touches[index_to_free] = touch;
             touches_index_array[index_to_free] = touches_free_list;
             touches_free_list = index_to_free;
             g_input.count--;

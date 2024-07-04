@@ -281,8 +281,8 @@ RenderTarget gpu_render_targte_load(Gpu gpu, i32 width, i32 height) {
     glGenTextures(1, &frame_buffer->texture);
     glBindTexture(GL_TEXTURE_2D, frame_buffer->texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frame_buffer->texture, 0);
 
@@ -341,26 +341,26 @@ void gpu_render_target_draw(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Rend
     glBindTexture(GL_TEXTURE_2D, renderer->atlas.id);
 }
 
-Input input_from_java(JNIEnv *env, jint touches_count, jintArray  indices, jobjectArray touches) {
+static Input input_from_java(JNIEnv *env, jobjectArray touches) {
     Input input = { 0 };
 
-    input.count = min(touches_count, MAX_TOUCHES);
-    int *indices_arr = (*env)->GetIntArrayElements(env, indices, false);
-    int len = MAX_TOUCHES;
+    for(u32 i = 0; i < MAX_TOUCHES; ++i) {
+        jobject jtouch = (*env)->GetObjectArrayElement(env, touches, (jsize)i);
 
-    for(u32 i = 0; i < len; ++i) {
-        jobject touch = (*env)->GetObjectArrayElement(env, touches, (jsize)i);
-
-        jclass touch_class = (*env)->GetObjectClass(env, touch);
-        jfieldID index_id = (*env)->GetFieldID(env, touch_class, "index", "I");
+        jclass touch_class = (*env)->GetObjectClass(env, jtouch);
+        jfieldID uid_id = (*env)->GetFieldID(env, touch_class, "uid", "I");
         jfieldID x_id  = (*env)->GetFieldID(env, touch_class, "x", "F");
         jfieldID y_id  = (*env)->GetFieldID(env, touch_class, "y", "F");
+        jfieldID down_id  = (*env)->GetFieldID(env, touch_class, "down", "Z");
+        jfieldID up_id  = (*env)->GetFieldID(env, touch_class, "up", "Z");
 
-        input.touches[i].uid = (u64)(*env)->GetIntField(env, touch, index_id);
-        input.touches[i].pos.x = (i32)(*env)->GetFloatField(env, touch, x_id);
-        input.touches[i].pos.y = (i32)(*env)->GetFloatField(env, touch, y_id);
+        Touch *touch = input.touches + i;
 
-        input.locations[i] = indices_arr[i];
+        touch->uid = (u64)(*env)->GetIntField(env, jtouch, uid_id);
+        touch->pos.x = (i32)(*env)->GetFloatField(env, jtouch, x_id);
+        touch->pos.y = (i32)(*env)->GetFloatField(env, jtouch, y_id);
+        touch->down = (b32)(*env)->GetBooleanField(env, jtouch, down_id);
+        touch->up = (b32)(*env)->GetBooleanField(env, jtouch, up_id);
     }
 
     return input;
@@ -379,10 +379,10 @@ JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameInit(JNIEnv *env, 
     game_init(&global_memory);
 }
 
-JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameUpdate(JNIEnv *env, jobject thiz, jint count, jintArray indices, jobjectArray touches, jfloat dt) {
+JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameUpdate(JNIEnv *env, jobject thiz, jobjectArray touches, jfloat dt) {
     (void)env;
     (void)thiz;
-    Input input = input_from_java(env, count, indices, touches);
+    Input input = input_from_java(env, touches);
     game_update(&global_memory, &input, dt);
 }
 

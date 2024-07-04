@@ -153,6 +153,7 @@ void game_update(Memory *memory, Input *input, f32 dt) {
         }
         gs->hero->tex = gs->ship_texture[next_ship];
         next_ship = (next_ship + 1) % array_len(gs->ship_texture);
+
     }
 
     if(ui_button_just_up(&gs->mt, gs->next_boost_button)) {
@@ -191,8 +192,8 @@ void game_update(Memory *memory, Input *input, f32 dt) {
         dir.x = cosf(gs->hero->angle + PI*0.5f);
         dir.y = sinf(gs->hero->angle + PI*0.5f);
         particle_system_set_position(gs->ps, v2_sub(v2(gs->hero->pos.x, gs->hero->pos.y), v2_scale(dir, gs->hero->scale.y*0.5f)));
-        
         particle_system_update(gs, gs->ps, dt);
+
     }
 
    ui_end(&gs->ui, &gs->mt, input);
@@ -304,13 +305,6 @@ void game_resize(Memory *memory, u32 w, u32 h) {
         vw = dh * wvr;
         vh = dh;
     }
-
-#if 0
-    if(vw > dw) {
-        vh = (i32)((f32)w * hvr);
-        vw = (i32)((f32)h * wvr);
-    }
-#endif
 
     f32 x = dw*0.5f - vw*0.5f;
     f32 y = dh*0.5f - vh*0.5f;

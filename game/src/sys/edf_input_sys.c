@@ -11,6 +11,7 @@
 #include "../edf_particles.h"
 
 SYSTEM_UPDATE(input_system) {
+
     if(ui_widget_is_active(&gs->mt, gs->joystick)) {
         V2 diff = v2_sub(gs->joystick->pos, gs->joystick->c_pos);
         f32 len = v2_len(diff);
@@ -19,6 +20,8 @@ SYSTEM_UPDATE(input_system) {
             entity->angle = atan2f(dir.y, dir.x) + (PI / 2.0f);
         }
     }
+
+    
     if(ui_widget_is_active(&gs->mt, gs->boost_button)) {
         V2 dir = {0};
         dir.x = cosf(entity->angle + (PI / 2.0f));
