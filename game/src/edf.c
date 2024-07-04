@@ -125,11 +125,8 @@ void game_init(Memory *memory) {
 
     stars_init(gs);
 
-    cs_print(gcs, "test 1: dhsajhd dsahdjksha dshajkdhs dshkajdshak\n");
-    cs_print(gcs, "test 2: ----------------------------------------\n");
-    
     gs->render_target = gpu_render_targte_load(gs->gpu, VIRTUAL_RES_X, VIRTUAL_RES_Y);
-    
+
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {

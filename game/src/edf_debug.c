@@ -125,9 +125,12 @@ void cs_draw_line(Gpu gpu, Console *c, i32 line, i32 index) {
     char *line_buffer = &c->buffer[line * c->max_cols];
     char *text = cs_get_nullterminated(temp.arena, c, line_buffer);
     
-    i32 pos_x = c->padding + c->rect.min.x;
-    i32 pos_y = -c->padding + c->rect.max.y + -index * c->pixels_per_row - c->pixels_per_row;
-    font_draw_text(gpu, c->font, text, (f32)pos_x, (f32)pos_y, v4(1,1,1,1));
+    R2 text_size = font_size_text(c->font, text);
+    if(!r2_invalid(text_size)) {
+        i32 pos_x = c->padding + c->rect.min.x + text_size.min.x;
+        i32 pos_y = -c->padding + c->rect.max.y + -index * c->pixels_per_row - c->pixels_per_row;
+        font_draw_text(gpu, c->font, text, (f32) pos_x, (f32) pos_y, v4(1, 1, 1, 1));
+    }
 
     temp_arena_end(temp);
 }
@@ -284,7 +287,8 @@ void av_render(Gpu gpu, ArenaViewer *av) {
         R2 use_size = font_size_text(av->font, used_text);
         i32 use_pos_y = (pos_y - view_hh) + (view_hh - r2_height(use_size)/2);
 
-        font_draw_text(gpu, av->font, used_text, av->rect.min.x + av->padding_l_r, use_pos_y-use_size.min.y, v4(1, 1, 1, 0.4));
+        font_draw_text(gpu, av->font, used_text, av->rect.min.x + av->padding_l_r+use_size.min.x, 
+                       use_pos_y-use_size.min.y, v4(1, 1, 1, 0.4));
 
         ++index;
         view = view->next;

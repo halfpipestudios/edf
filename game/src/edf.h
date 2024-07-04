@@ -41,7 +41,7 @@ typedef struct GameState {
     Button *next_ship_button;
     Button *next_boost_button;
     Button *debug_button;
-
+    
     b32 paused;
     b32 debug_show;
     

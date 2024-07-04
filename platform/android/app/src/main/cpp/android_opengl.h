@@ -52,6 +52,8 @@ typedef struct OpenglTextureAtlas {
     i32 last_row_added_height;
 
     i32 w, h;
+
+    u32 regeneration_count;
 } OpenglTextureAtlas;
 
 void texture_atlas_init(OpenglTextureAtlas *atlas);
