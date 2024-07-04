@@ -9,7 +9,7 @@
 
 static inline V2 input_to_game_coords(V2i in_pos) {
     V2 pos = v2((f32)in_pos.x, (f32)in_pos.y);
-    os_print("x: %f, y: %f\n", pos.x, pos.y);
+    //os_print("x: %f, y: %f\n", pos.x, pos.y);
     pos.x -= (r2_width(display) - 1) * 0.5f;
     pos.y -= (r2_height(display) - 1) * 0.5f;
     pos.y *= -1.0f;
@@ -28,144 +28,60 @@ bool point_in_circle(V2 point, V2 c, f32 r) {
 //             Multitouch system
 // ----------------------------------------------
 
-void mt_touch_unregister(Multitouch *mt, i32 *touch) {
-    i32 index = *touch;
-    if(mt->registry[index]) {
-        *(mt->registry[index]) = -1;
-    }
-    mt->registry[index] = 0;
-    mt->last_input.touches[index].uid = TOUCH_INVALID_UID;
-}
-
 void mt_begin(Multitouch *mt, Input *input) {
-
     mt->input = input;
-    for(u32 i = 0; i < mt->last_input.count; ++i) {
-        b32 found = false;
-        int location_to_found = mt->last_input.locations[i];
-        for(u32 j = 0; j < mt->input->count; ++j) {
-            if(location_to_found == mt->input->locations[j]) {
-                found = true;
-                break;
-            }
-        }
-        
-        if(!found && location_to_found != -1) {
-            mt_touch_unregister(mt, &location_to_found);
-        }
-    }
 }
 
 void mt_end(Multitouch *mt, Input *input) {
     memcpy(&mt->last_input, mt->input, sizeof(*mt->input));
 }
 
-static inline b32 found_location_in_last_input(Multitouch *mt, int location_index) {
-    for(u32 j = 0; j < mt->last_input.count; ++j) {
-        if(location_index == mt->last_input.locations[j]) {
-            return true;
-            break;
+i32 mt_touch_in_circle(Multitouch *mt, V2 pos, float radii) {
+    for(u32 i = 0; i < array_len(mt->input->touches); ++i) {
+        Touch *touch = mt->input->touches + i;
+        V2 tpos = input_to_game_coords(touch->pos);
+        if(touch->down && point_in_circle(tpos, pos, radii)) {
+            return i;
         }
     }
-    return false;
+    return -1;
 }
 
-b32 mt_touch_in_circle(Multitouch *mt, i32 *touch, V2 pos, float radii) {
-    if(*touch != -1) return false;
-    for(u32 i = 0; i < mt->input->count; ++i) {
-        Touch *t = mt->input->touches + mt->input->locations[i];
-        V2 tpos = input_to_game_coords(t->pos);
-        int location_index = mt->input->locations[i];
-        if(!mt->registry[location_index] && point_in_circle(tpos, pos, radii)) {
-            mt->registry[location_index] = touch;
-            *touch = location_index;
-            return true;
+i32 mt_touch_in_rect(Multitouch *mt, R2 rect) {
+    for(u32 i = 0; i < array_len(mt->input->touches); ++i) {
+        Touch *touch = mt->input->touches + i;
+        V2 tpos = input_to_game_coords(touch->pos);
+        if(touch->down && r2_point_overlaps(rect, (i32)tpos.x, (i32)tpos.y)) {
+            return i;
         }
     }
-    return false;
+    return -1;
 }
 
-b32 mt_touch_just_in_circle(Multitouch *mt, i32 *touch, V2 pos, float radii) {
-    if(*touch != -1) return false;
-    for(u32 i = 0; i < mt->input->count; ++i) {
-        
-        int location_index = mt->input->locations[i];
-        b32 found = found_location_in_last_input(mt, location_index);
-
-        if(!found) {
-            Touch *t = mt->input->touches + mt->input->locations[i];
-            V2 tpos = input_to_game_coords(t->pos);
-            if(!mt->registry[location_index] && point_in_circle(tpos, pos, radii)) {
-                mt->registry[location_index] = touch;
-                *touch = location_index;
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-b32 mt_touch_in_rect(Multitouch *mt, i32 *touch, R2 rect) {
-    if(*touch != -1) return false;
-    for(u32 i = 0; i < mt->input->count; ++i) {
-        Touch *t = mt->input->touches + mt->input->locations[i];
-        V2 tpos = input_to_game_coords(t->pos);
-        int location_index = mt->input->locations[i];
-        if(!mt->registry[location_index] && r2_point_overlaps(rect, (i32)tpos.x, (i32)tpos.y)) {
-            mt->registry[location_index] = touch;
-            *touch = location_index;
-            return true;
-        }
-    }
-    return false;
-}
-
-b32 mt_touch_just_in_rect(Multitouch *mt, i32 *touch, R2 rect) {
-    if(*touch != -1) return false;
-    for(u32 i = 0; i < mt->input->count; ++i) {
-
-        int location_index = mt->input->locations[i];
-        b32 found = found_location_in_last_input(mt, location_index);
-
-        if(!found) {
-            Touch *t = mt->input->touches + mt->input->locations[i];
-            V2 tpos = input_to_game_coords(t->pos);
-            if(!mt->registry[location_index] && r2_point_overlaps(rect, (i32)tpos.x, (i32)tpos.y)) {
-                mt->registry[location_index] = touch;
-                *touch = location_index;
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-V2 mt_touch_pos(Multitouch *mt, int touch) {
+V2 mt_touch_pos(Multitouch *mt, i32 touch) {
     assert(touch != -1);
     Touch *t = mt->input->touches + touch;
     return input_to_game_coords(t->pos);
 }
 
-V2 mt_touch_last_pos(Multitouch *mt, int touch) {
+V2 mt_touch_last_pos(Multitouch *mt, i32 touch) {
     assert(touch != -1);
     Touch *t = mt->last_input.touches + touch;
     return input_to_game_coords(t->pos);
 }
 
-b32 mt_touch_down(Multitouch *mt, int *touch) {
-    if((*touch) != -1) {
-        Touch *t = mt->input->touches + (*touch);
-        Touch *last_t = mt->last_input.touches + (*touch);
-        if(last_t->uid == TOUCH_INVALID_UID || t->uid == last_t->uid) {
-            return true;
-        } else {
-            cs_print(gcs, "differents uid: curr:%ld, last:%ld\n", t->uid, last_t->uid);
-            cs_print(gcs, "touch unregistered\n");
-            mt_touch_unregister(mt, touch);
-        }
-    }
-    return false;
+b32 mt_touch_down(Multitouch *mt, i32 touch) {
+    assert(touch != -1);
+    Touch *t = mt->input->touches + touch;
+    return t->down;
 }
+
+b32 mt_touch_was_down(Multitouch *mt, i32 touch) {
+    assert(touch != -1);
+    Touch *t = mt->last_input.touches + touch;
+    return t->down;
+}
+
 
 // ----------------------------------------------
 //             UI system
@@ -185,7 +101,6 @@ Widget *ui_widget_alloc(Ui *ui, struct Arena *arena) {
     assert(result);
 
     result->touch = -1;
-    result->last_touch = -1;
     result->widget_tint = v4(1, 1, 1, 1);
     
     if(!ui->widgets) {
@@ -255,6 +170,7 @@ Button *ui_button_alloc(Ui *ui, struct Arena *arena, V2 pos, float radii, Textur
     i32 pos_y = (i32)(pos.y - radii);
     button->widget_rect = r2_from_wh(pos_x, pos_y, (i32)button->radii*2, (i32)button->radii*2);
     button->widget_tint = tint;
+    button->tint = v4(1, 1, 1, 1);
 
     return button;
 }
@@ -275,6 +191,17 @@ b32 ui_clean_position(Ui *ui, V2 pos, Widget *me) {
 
 }
 
+static inline b32 ui_touch_is_not_been_used(Ui *ui, int touch) {
+    Widget *widget = ui->widgets;
+    while(widget) {
+        if(widget->touch == touch) {
+            return false;
+        }
+        widget = widget->next;
+    }
+    return true;
+}
+
 void ui_begin(Ui *ui, Multitouch *mt, Input *input, f32 dt) {
 
     mt_begin(mt, input);
@@ -284,32 +211,56 @@ void ui_begin(Ui *ui, Multitouch *mt, Input *input, f32 dt) {
         switch (widget->type) {
             case WIDGET_TYPE_BUTTON: {
                 Button *button = &widget->button;
-                mt_touch_just_in_circle(mt, &button->touch, button->pos, button->radii);
-                if(mt_touch_down(mt, &button->touch)) {
-                    button->tint = v4(0.5f, 0.5f, 0.5f, 1);
+
+                if(button->touch == -1) {
+                    i32 touch = mt_touch_in_circle(mt, button->pos, button->radii);
+                    if(ui_touch_is_not_been_used(ui, touch)) {
+                        button->touch = touch;
+                    }
+                }
+
+                if(button->touch != -1) {
+                    if(mt_touch_down(mt, button->touch)) {
+                        button->tint = v4(0.5f, 0.5f, 0.5f, 1);
+                    }
                 } else {
                     button->tint = v4(1, 1, 1, 1);
                 }
+
             } break;
             case WIDGET_TYPE_JOYSTICK: {
                 
                 Joystick *joystick = &widget->joystick;
 
-                if(mt_touch_in_rect(mt, &joystick->touch, joystick->rect)) {
-                    V2 pos = mt_touch_pos(mt, joystick->touch);
-                    if(ui_clean_position(ui, pos, widget)) {
-                        joystick->pos = mt_touch_pos(mt, joystick->touch);
-                        joystick->c_pos = joystick->pos;
-                    } else {
-                        mt_touch_unregister(mt, &joystick->touch);
+                if(joystick->touch == -1) {
+                    
+                    joystick->pos = joystick->saved_pos;
+                    joystick->c_pos = joystick->pos;
+                    
+                    joystick->touch = mt_touch_in_rect(mt, joystick->rect);
+
+                    if(joystick->touch != -1) {
+                        V2 pos = mt_touch_pos(mt, joystick->touch);
+                        if(ui_clean_position(ui, pos, widget)) {
+                            joystick->pos = pos;
+                            joystick->c_pos = joystick->pos;
+                        } else {
+                            joystick->touch = -1;
+                        }
                     }
                 }
 
-                if(mt_touch_down(mt, &joystick->touch)) {
-                    joystick->c_pos = mt_touch_pos(mt, joystick->touch);
-                } else {
-                    joystick->pos = joystick->saved_pos;
-                    joystick->c_pos = joystick->pos;
+                if(joystick->touch != -1) {
+                    if(mt_touch_down(mt, joystick->touch)) {
+                        i32 uid = mt->input->touches[joystick->touch].uid;
+                        i32 last_uid = mt->last_input.touches[joystick->touch].uid;
+                        if(uid == last_uid) {
+                            joystick->c_pos = mt_touch_pos(mt, joystick->touch);
+                        } else {
+                            //cs_print(gcs, "current: %d, last: %d\n", uid, last_uid);
+                            joystick->touch = -1;
+                        }
+                    }
                 }
 
                 V2 diff = v2_sub(joystick->pos, joystick->c_pos);
@@ -326,14 +277,15 @@ void ui_begin(Ui *ui, Multitouch *mt, Input *input, f32 dt) {
         widget = widget->next;
     }
 
-
 }
 
 void ui_end(Ui *ui, Multitouch *mt, Input *input) {
 
     Widget *widget = ui->widgets;
     while(widget) {
-        widget->last_touch = widget->touch;
+        if(widget->touch != -1 && !mt_touch_down(mt, widget->touch)) {
+            widget->touch = -1;
+        }
         widget = widget->next;
     }
 
@@ -346,7 +298,6 @@ void ui_render(Gpu gpu, Ui *ui) {
         switch (widget->type) {
             case WIDGET_TYPE_BUTTON: {
                 Button *button = &widget->button;
-
                 gpu_draw_quad_texture_tinted(gpu, button->pos.x, button->pos.y,
                                              button->radii * 2, button->radii * 2,
                                              0, button->texture, v4_had(button->widget_tint, button->tint));
@@ -365,37 +316,35 @@ void ui_render(Gpu gpu, Ui *ui) {
 
             } break;
         }
-#if 0
-        V2 center = r2_center(widget->widget_rect);
-        gpu_draw_quad_color(gpu, center.x, center.y,
-                            (f32)r2_width(widget->widget_rect), (f32)r2_height(widget->widget_rect),
-                            0, v4(1, 0, 0, 0.2f));
-#endif
         widget = widget->next;
     }
 
 }
 
-
 b32 ui_widget_is_active_(Multitouch *mt, Widget *widget) {
-    return mt_touch_down(mt, &widget->touch);
+    if(widget->touch == -1) return false;
+    return mt_touch_down(mt, widget->touch);
 }
 
 b32 ui_widget_just_press_(Multitouch *mt, Widget *widget) {
-    b32 is_down = mt_touch_down(mt, &widget->touch);
-    b32 was_down = mt_touch_down(mt, &widget->last_touch);
+    if(widget->touch == -1) return false;
+    b32 is_down = mt_touch_down(mt, widget->touch);
+    b32 was_down = mt_touch_was_down(mt, widget->touch);
     return is_down && !was_down;
 }
 
 b32 ui_widget_just_up_(Multitouch *mt, Widget *widget) {
-    b32 is_down = mt_touch_down(mt, &widget->touch);
-    b32 was_down = mt_touch_down(mt, &widget->last_touch);
-    return !is_down && was_down;
+    if(widget->touch == -1) return false;
+    b32 is_down = mt_touch_down(mt, widget->touch);
+    b32 was_down = mt_touch_was_down(mt, widget->touch);
+    b32 result = !is_down && was_down;
+    return result;
 }
 
 b32 ui_button_just_up(Multitouch *mt, Button *button) {
+    if(button->touch == -1) return false;
     if(ui_widget_just_up(mt, button)) {
-        V2 pos = mt_touch_last_pos(mt, button->last_touch);
+        V2 pos = mt_touch_last_pos(mt, button->touch);
         if(r2_point_overlaps(button->widget_rect, pos.x, pos.y)) {
             return true;
         }
