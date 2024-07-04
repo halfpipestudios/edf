@@ -29,7 +29,9 @@ SYSTEM_UPDATE(animation_system) {
 
                     gs->hero->pos.x = gs->level->dim.min.x + MAP_COORDS_X*0.5f;
                     gs->hero->pos.y = 0.0f;
+                    gs->hero->angle = 0;
                     gs->level->camera_pos.x = gs->level->dim.min.x + MAP_COORDS_X*0.5f;
+                    gs->level->camera_vel = v3(2.0f, 0, 0);;
                     asteroid_system_reset(gs->em);
                     particle_system_reset(gs->ps);
 
