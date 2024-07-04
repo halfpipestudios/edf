@@ -13,6 +13,7 @@
 #include <edf_math.h>
 #include "common.h"
 // Srouces
+#include "input.cpp"
 #include "editor.cpp"
 
 static i32 sdl_mouse_event_to_index(SDL_MouseButtonEvent event) {
@@ -63,11 +64,42 @@ i32 main(void) {
             if(event.type == SDL_QUIT) {
                 running = false;
             }
+
+            if(event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
+                es->just_focus = true;
+                g_input[0] = {};
+                g_input[1] = {};
+            }
+            if(event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
+                g_input[0] = {};
+                g_input[1] = {};
+            }
+
             if(event.type == SDL_MOUSEWHEEL) {
                 es->mouse_wheel = event.wheel.y;
             }
+            if(event.type == SDL_KEYDOWN) {
+                if(event.key.keysym.sym < 350) {
+                    g_input[0].keys[event.key.keysym.sym] = true;
+                }
+            }
+            if(event.type == SDL_KEYUP) {
+                if(event.key.keysym.sym < 350) {
+                    g_input[0].keys[event.key.keysym.sym] = false;
+                }
+            }
+            if(event.type == SDL_MOUSEBUTTONDOWN) {
+                g_input[0].mouse_buttons[sdl_mouse_event_to_index(event.button)] = true;
+            }
+            if(event.type == SDL_MOUSEBUTTONUP) {
+                g_input[0].mouse_buttons[sdl_mouse_event_to_index(event.button)] = false;
+            }
             
+
         }
+
+        SDL_GetMouseState(&g_input[0].mouse_x, &g_input[0].mouse_y);
+
         ImGui_ImplSDLRenderer2_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
@@ -96,7 +128,9 @@ i32 main(void) {
         SDL_SetRenderTarget(es->renderer, back_buffer);
         SDL_SetRenderDrawColor(es->renderer, 180, 200, 180, SDL_ALPHA_OPAQUE);
         SDL_RenderClear(es->renderer);
-        editor_update(es);
+        if(!es->just_focus) {
+            editor_update(es);
+        }
         editor_render(es);
         SDL_SetRenderTarget(es->renderer, 0);
         ImGui::Image(back_buffer, ImVec2(WINDOW_WIDTH, WINDOW_HEIGHT), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), border_col);
@@ -115,7 +149,10 @@ i32 main(void) {
 
         SDL_RenderPresent(es->renderer); 
 
+        // swap the input pointer
+        g_input[1] = g_input[0];
         es->mouse_wheel = 0;
+        es->just_focus = false;
     }
     editor_shutdown(es);
 
