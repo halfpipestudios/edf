@@ -13,7 +13,6 @@
 #include <edf_math.h>
 #include "common.h"
 // Srouces
-#include "input.cpp"
 #include "editor.cpp"
 
 static i32 sdl_mouse_event_to_index(SDL_MouseButtonEvent event) {
@@ -64,38 +63,11 @@ i32 main(void) {
             if(event.type == SDL_QUIT) {
                 running = false;
             }
-            if(event.type == SDL_KEYDOWN) {
-                if(event.key.keysym.sym < 350) {
-                    g_input[0].keys[event.key.keysym.sym] = true;
-                }
+            if(event.type == SDL_MOUSEWHEEL) {
+                es->mouse_wheel = event.wheel.y;
             }
-            if(event.type == SDL_KEYUP) {
-                if(event.key.keysym.sym < 350) {
-                    g_input[0].keys[event.key.keysym.sym] = false;
-                }
-            }
-            if(event.type == SDL_MOUSEBUTTONDOWN) {
-                g_input[0].mouse_buttons[sdl_mouse_event_to_index(event.button)] = true;
-            }
-            if(event.type == SDL_MOUSEBUTTONUP) {
-                g_input[0].mouse_buttons[sdl_mouse_event_to_index(event.button)] = false;
-            }
+            
         }
-        SDL_GetMouseState(&g_input->mouse_x, &g_input->mouse_y);
-
-
-        editor_update(es);
-
-        SDL_SetRenderTarget(es->renderer, back_buffer);
-        SDL_SetRenderDrawColor(es->renderer, 180, 200, 180, SDL_ALPHA_OPAQUE);
-        SDL_RenderClear(es->renderer);
-
-        editor_render(es);
-
-        SDL_SetRenderTarget(es->renderer, 0);
-        SDL_SetRenderDrawColor(es->renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-        SDL_RenderClear(es->renderer);
-
         ImGui_ImplSDLRenderer2_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
@@ -120,12 +92,22 @@ i32 main(void) {
         // draw the back buffer
         ImGui::Begin("Game Viewport");
         ImVec4 border_col = ImGui::GetStyleColorVec4(ImGuiCol_Border);
+        
+        SDL_SetRenderTarget(es->renderer, back_buffer);
+        SDL_SetRenderDrawColor(es->renderer, 180, 200, 180, SDL_ALPHA_OPAQUE);
+        SDL_RenderClear(es->renderer);
+        editor_update(es);
+        editor_render(es);
+        SDL_SetRenderTarget(es->renderer, 0);
         ImGui::Image(back_buffer, ImVec2(WINDOW_WIDTH, WINDOW_HEIGHT), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), border_col);
+        
         ImGui::End();
 
         editor_ui(es);
 
         ImGui::End();
+        SDL_SetRenderDrawColor(es->renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+        SDL_RenderClear(es->renderer);
         ImGui::Render();
         ImGuiIO& io = ImGui::GetIO();
         SDL_RenderSetScale(es->renderer, io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
@@ -133,9 +115,7 @@ i32 main(void) {
 
         SDL_RenderPresent(es->renderer); 
 
-        // swap the input pointer
-        g_input[1] = g_input[0];
-
+        es->mouse_wheel = 0;
     }
     editor_shutdown(es);
 
