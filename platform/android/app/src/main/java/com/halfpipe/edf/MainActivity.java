@@ -203,9 +203,11 @@ class GameRenderer implements GLSurfaceView.Renderer {
     }
 
     public void onPause() {
+        resetInput();
     }
 
     public void onResume() {
+        resetInput();
         lastTime = System.nanoTime();
     }
 
@@ -233,6 +235,13 @@ class GameRenderer implements GLSurfaceView.Renderer {
         lastTime = currentTime;
         gameUpdate(input.indices_count, input.indices, input.touches, (float)dt);
         gameRender();
+    }
+
+    void resetInput() {
+        for(int i = 0; i < input.touches.length; ++i) {
+            input.indices[i] = -1;
+            input.touches[i].index = 0;
+        }
     }
 
 }
