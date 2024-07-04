@@ -107,8 +107,7 @@ void texture_atlas_regenerate(Arena *arena, OpenglTextureAtlas *atlas) {
     }
 
     if(gcs) {
-        static u32 count = 0;
-        cs_print(gcs, "atlas regeneration count: %d\n", ++count);
+        cs_print(gcs, "atlas regeneration count: %d\n", ++atlas->regeneration_count);
     }
 }
 

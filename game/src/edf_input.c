@@ -236,15 +236,14 @@ void ui_begin(Ui *ui, Multitouch *mt, Input *input, f32 dt) {
                     joystick->pos = joystick->saved_pos;
                     joystick->c_pos = joystick->pos;
                     
-                    joystick->touch = mt_touch_in_rect(mt, joystick->rect);
+                    i32 touch = mt_touch_in_rect(mt, joystick->rect);
 
-                    if(joystick->touch != -1) {
-                        V2 pos = mt_touch_pos(mt, joystick->touch);
-                        if(ui_clean_position(ui, pos, widget)) {
+                    if(touch != -1) {
+                        V2 pos = mt_touch_pos(mt, touch);
+                        if(ui_touch_is_not_been_used(ui, touch) && ui_clean_position(ui, pos, widget)) {
+                            joystick->touch = touch;
                             joystick->pos = pos;
                             joystick->c_pos = joystick->pos;
-                        } else {
-                            joystick->touch = -1;
                         }
                     }
                 }
