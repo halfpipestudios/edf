@@ -172,6 +172,7 @@ void game_update(Memory *memory, Input *input, f32 dt) {
 
     if(ui_button_just_up(&gs->mt, gs->res_button)) {
         display.resolution_index = (display.resolution_index + 1) % (u32)array_len(resolutions);
+        //game_resize(memory, r2_width(display.screen), r2_height(display.screen));
         u32 virtual_res_x = virtual_w();
         u32 virtual_res_y = virtual_h();
         cs_print(gcs, "resolusion chage to %dx%d\n", virtual_res_x, virtual_res_y);
@@ -241,7 +242,6 @@ void game_update(Memory *memory, Input *input, f32 dt) {
         gs->fps_counter = 0;
         gs->time_per_frame = gs->time_per_frame - 1.0f;
     }
-
     f32 ms = (dt * 1000);
     gs->MS = ms;
 
@@ -258,7 +258,7 @@ void game_render(Memory *memory) {
     u32 virtual_res_y = virtual_h();
 
     {
-        // render the back ground
+        // Clear the screen
         f32 w = MAP_COORDS_X;
         f32 h = MAP_COORDS_Y;
 
@@ -293,7 +293,6 @@ void game_render(Memory *memory) {
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
     
     // Game present
-    
     if(gs->show_frame_buffer) {
         gpu_render_target_draw(gs->gpu, 0, 0, virtual_w(), virtual_h(), 0, render_target);    
     } else {
@@ -311,6 +310,7 @@ void game_render(Memory *memory) {
         font_draw_text(gs->gpu, am_get_font(gs->am, "times.ttf", 64), text, pos_x, pos_y, v4(1, 1, 1, 1));
     }
 
+    // DEBUG draw
     if(gs->debug_show) {
         cs_render(gs->gpu, &gs->cs);
         av_render(gs->gpu, &gs->av);
@@ -357,5 +357,4 @@ void game_resize(Memory *memory, u32 w, u32 h) {
     f32 y = dh*0.5f - vh*0.5f;
 
     display.game_view = r2_from_wh((i32)x, (i32)y, (i32)vw, (i32)vh);
-
 }

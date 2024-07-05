@@ -58,7 +58,7 @@ OpenglTexture *texture_atlas_add_bitmap(OpenglGPU *renderer, Arena *arena, Openg
 }
 
 void texture_atlas_regenerate(Arena *arena, OpenglTextureAtlas *atlas) {
-
+    // NOTE: Reset atlas state
     atlas->current_x = 0;
     atlas->current_y = 0;
     atlas->last_row_added_height = 0;

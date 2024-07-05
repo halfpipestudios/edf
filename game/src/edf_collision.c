@@ -24,7 +24,6 @@ static Interval get_interval(V2 *verts, i32 count, V2 axis) {
     return interval;
 }
 
-
 static bool overlap_on_axis(V2 *verts0, i32 count0,
                             V2 *verts1, i32 count1,
                             V2 axis) {

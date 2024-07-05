@@ -366,7 +366,7 @@ static Input input_from_java(JNIEnv *env, jobjectArray touches) {
     return input;
 }
 
-JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameInit(JNIEnv *env, jobject thiz,  jobject manager) {
+JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameJNI_gameInit(JNIEnv *env, jobject thiz,  jobject manager) {
     (void)thiz;
     asset_manager_ref = (*env)->NewGlobalRef(env, manager);
     asset_manager     = AAssetManager_fromJava(env, asset_manager_ref);
@@ -379,25 +379,19 @@ JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameInit(JNIEnv *env, 
     game_init(&global_memory);
 }
 
-JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameUpdate(JNIEnv *env, jobject thiz, jobjectArray touches, jfloat dt) {
+JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameJNI_gameUpdate(JNIEnv *env, jobject thiz, jobjectArray touches, jfloat dt) {
     (void)env;
     (void)thiz;
     Input input = input_from_java(env, touches);
     game_update(&global_memory, &input, dt);
 }
 
-JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameRender(JNIEnv *env, jobject thiz) {
+JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameJNI_gameRender(JNIEnv *env, jobject thiz) {
     (void)env;
     (void)thiz;
     game_render(&global_memory);
 }
 
-JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameResize(JNIEnv *env, jobject thiz, jint x, jint y, jint w, jint h) {
+JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameJNI_gameResize(JNIEnv *env, jobject thiz, jint x, jint y, jint w, jint h) {
     game_resize(&global_memory, w, h);
-}
-
-JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gpuSetViewport(JNIEnv *env, jobject thiz, jint x, jint y, jint w, jint h) {
-    (void) env;
-    (void) thiz;
-
 }
