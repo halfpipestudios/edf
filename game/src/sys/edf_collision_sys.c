@@ -10,6 +10,7 @@
 #include "../edf.h"
 #include "../edf_debug.h"
 #include "../edf_particles.h"
+#include "../edf_level.h"
 
 
 SYSTEM_UPDATE(collision_system) {
@@ -49,6 +50,8 @@ SYSTEM_UPDATE(collision_system) {
             entity->vel = v2(0, 0);
             entity->acc = v2(0, 0);
             particle_system_stop(gs->ps);
+            gs->level->camera_vel = v3(0, 0, 0);
+
         }
     }
 }

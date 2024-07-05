@@ -216,8 +216,8 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     if(!gs->paused) {
         input_system_update(gs, gs->em, dt);
         physics_system_update(gs->em, dt);
-        collision_system_update(gs, gs->em, dt);
         animation_system_update(gs, gs->em, dt);
+        collision_system_update(gs, gs->em, dt);
         trigger_system_update(gs, gs->em, dt);
         asteroid_system_update(gs->em, dt);
         stars_update(gs, dt);

@@ -12,6 +12,7 @@
 #include "edf_memory.h"
 #include "edf_asset.h"
 #include "edf.h"
+#include "edf_particles.h"
 
 static inline void add_wall(Level *level, f32 screen_x, f32 screen_y, V2 scale, Texture texture) {
     V3 pos = v3(screen_x, screen_y, 0);
@@ -483,6 +484,28 @@ void level_update(Level *level, f32 dt) {
         level->camera_pos.x = level->dim.max.x - MAP_COORDS_X*0.5f;
         level->camera_vel = v3(0, 0, 0);
     }
+    
+
+
+    f32 radii = level->gs->hero->collision.circle.r*2.0f;
+    AABB camera_bound = {};
+    camera_bound.min = v2(level->camera_pos.x - MAP_COORDS_X*0.5f + radii, level->camera_pos.y - MAP_COORDS_Y*0.5f + radii);
+    camera_bound.max = v2(level->camera_pos.x + MAP_COORDS_X*0.5f - radii, level->camera_pos.y + MAP_COORDS_Y*0.5f- radii);
+    if(test_circle_aabb(level->gs->hero->collision.circle, camera_bound) == false) {
+        
+        if(level->gs->hero->animation->playing == false) {
+            level->gs->hero->save_tex = level->gs->hero->tex;
+            level->gs->hero->animation->playing = true;
+        }
+        level->gs->hero->vel = v2(0, 0);
+        level->gs->hero->acc = v2(0, 0);
+        particle_system_stop(level->gs->ps);
+        level->camera_vel = v3(0, 0, 0);
+    }
+        
+    
+
+    
 }
 
 void level_render(Level *level, Gpu gpu) {
