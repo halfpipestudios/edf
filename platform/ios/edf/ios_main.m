@@ -944,8 +944,8 @@ void spu_sound_restart(Spu spu, Sound sound) {
         UITouch *uitouch = touches.allObjects[i];
         CGPoint location = [uitouch locationInView:self.view];
         Touch touch = {0};
-        touch.pos.x = (i32)(((f32)location.x / w) * r2_width(display));
-        touch.pos.y = (i32)(((f32)location.y / h) * r2_height(display));
+        touch.pos.x = (i32)(((f32)location.x / w) * r2_width(display.screen));
+        touch.pos.y = (i32)(((f32)location.y / h) * r2_height(display.screen));
         touch.hash = (u64)uitouch.hash;
         touch.uid = g_uid;
         touch.up = false;
@@ -973,8 +973,8 @@ void spu_sound_restart(Spu spu, Sound sound) {
             UITouch *uitouch = touches.allObjects[i];
             CGPoint location = [uitouch locationInView:self.view];
             Touch *touch = g_input.touches + index_to_update;
-            touch->pos.x = (i32)(((f32)location.x / w) * r2_width(display));
-            touch->pos.y = (i32)(((f32)location.y / h) * r2_height(display));
+            touch->pos.x = (i32)(((f32)location.x / w) * r2_width(display.screen));
+            touch->pos.y = (i32)(((f32)location.y / h) * r2_height(display.screen));
         }
     }
 }
@@ -993,8 +993,8 @@ void spu_sound_restart(Spu spu, Sound sound) {
         i32 index_to_free = [self find_touch_index:uitouch.hash];
         if(index_to_free >= 0) {
             Touch touch = {0};
-            touch.pos.x = (i32)(((f32)location.x / w) * r2_width(display));
-            touch.pos.y = (i32)(((f32)location.y / h) * r2_height(display));
+            touch.pos.x = (i32)(((f32)location.x / w) * r2_width(display.screen));
+            touch.pos.y = (i32)(((f32)location.y / h) * r2_height(display.screen));
             touch.up = true;
             touch.down = false;
             g_input.touches[index_to_free] = touch;

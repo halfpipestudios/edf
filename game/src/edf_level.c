@@ -117,7 +117,7 @@ void add_screen(GameState *gs, Level *level, i32 screen_index, const char *posit
                     V3 pos = v3(map_x, map_y, 0);
                     last_trigger = entity_manager_add_entity(level->em);
                     entity_add_render_component(last_trigger, pos, scale, texture, v4(1, 1, 1, 0));
-                    Collision collision;
+                    Collision collision = {0};
                     collision.type = COLLISION_TYPE_AABB;
                     V2 posv2 = v2(map_x, map_y);
                     collision.aabb.min = v2_sub(posv2, v2(1, MAP_COORDS_X*0.5f));
@@ -131,7 +131,7 @@ void add_screen(GameState *gs, Level *level, i32 screen_index, const char *posit
                     Entity *asteroid = entity_manager_add_entity(level->em);
                     asteroid->save_pos = pos;
                     entity_add_render_component(asteroid, pos, scale, texture, v4(1, 1, 1, 1));
-                    Collision asteriod_collision;
+                    Collision asteriod_collision = {0};
                     asteriod_collision.type = COLLISION_TYPE_CIRLCE;
                     asteriod_collision.circle.c = asteroid->pos.xy;
                     asteriod_collision.circle.r = fabsf(asteroid->scale.x)*0.5f;
@@ -164,7 +164,7 @@ Level *load_level(GameState *gs, struct Arena *arena, struct EntityManager *em) 
     entity_add_input_component(gs->hero);
     entity_add_render_component(gs->hero, hero_position, v2(0.5, 0.5), gs->ship_texture[ship_rand_texture], v4(1, 1, 1, 1));
     entity_add_physics_component(gs->hero, v2(0, 0), v2(0, 0), 0.4f);
-    Collision hero_collision;
+    Collision hero_collision = {0};
     hero_collision.type = COLLISION_TYPE_CIRLCE;
     hero_collision.circle.c = gs->hero->pos.xy;
     hero_collision.circle.r = gs->hero->scale.x*0.4f;
