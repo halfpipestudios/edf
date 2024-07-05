@@ -122,8 +122,7 @@ i32 main(void) {
         ImGui::DockSpace(ImGui::GetID("Dockspace"));
 
         // draw the back buffer
-        ImGui::Begin("Game Viewport");
-        ImVec4 border_col = ImGui::GetStyleColorVec4(ImGuiCol_Border);
+        ImGui::Begin("Game Viewport", 0, ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse);
         
         SDL_SetRenderTarget(es->renderer, back_buffer);
         SDL_SetRenderDrawColor(es->renderer, 180, 200, 180, SDL_ALPHA_OPAQUE);
@@ -133,7 +132,7 @@ i32 main(void) {
         }
         editor_render(es);
         SDL_SetRenderTarget(es->renderer, 0);
-        ImGui::Image(back_buffer, ImVec2(WINDOW_WIDTH, WINDOW_HEIGHT), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), border_col);
+        ImGui::Image(back_buffer, ImVec2(WINDOW_WIDTH, WINDOW_HEIGHT), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(0, 0, 0, 0));
         
         ImGui::End();
 

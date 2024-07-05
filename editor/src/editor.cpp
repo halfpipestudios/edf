@@ -12,6 +12,7 @@ struct EditorState {
     f32 zoom;
      
     i32 mouse_wheel;
+    f32 mouse_wheel_offset;
     bool mouse_down;
 };
 //===========================================================================
@@ -22,6 +23,21 @@ struct EditorState {
 //===========================================================================
 // Utility functions
 //===========================================================================
+
+V2 screen_to_world(EditorState *es, f32 sx, f32 sy, f32 w, f32 h) {
+    f32 cx = es->camera.x;
+    f32 cy = -es->camera.y;
+    cx = (cx * METERS_TO_PIXEL); 
+    cy = (cy * METERS_TO_PIXEL);
+
+    sx -= (w * 0.5f) - cx;
+    sy -= (h * 0.5f) - cy;
+    sy *= -1.0f;
+
+    return v2((sx/es->zoom)*PIXEL_TO_METERS,
+              (sy/es->zoom)*PIXEL_TO_METERS);   
+}
+
 void draw_quad(EditorState *es, f32 x, f32 y, f32 w, f32 h, SDL_Texture *texture) {
 
         f32 cx = es->camera.x;
@@ -105,6 +121,7 @@ void draw_gird(EditorState *es, i32 tile_count_x, i32 tile_count_y, f32 tile_siz
         y += tile_size;
     }
 }
+
 //===========================================================================
 //===========================================================================
 
@@ -116,8 +133,9 @@ void editor_init(EditorState *es) {
     es->just_focus = false;
     es->camera = v2(0, 0);
     es->mouse_wheel = 0;
+    es->mouse_wheel_offset = 1.0f;
+    es->zoom = es->mouse_wheel_offset * es->mouse_wheel_offset;
     es->mouse_down = false;
-    es->zoom = 1.0f;
 
     es->texture = IMG_LoadTexture(es->renderer, "../assets/rock_full.png");
 }
@@ -142,14 +160,43 @@ void editor_update(EditorState *es) {
             es->camera.y += y_delta*PIXEL_TO_METERS;
         }
     }
+
+
+    ImVec2 min = ImGui::GetWindowContentRegionMin();
+    ImVec2 max = ImGui::GetWindowContentRegionMax();
+    min.x += ImGui::GetWindowPos().x;
+    min.y += ImGui::GetWindowPos().y;
+    max.x += ImGui::GetWindowPos().x;
+    max.y += ImGui::GetWindowPos().y;
+    f32 rel_x = get_mouse_x() - min.x;
+    f32 rel_y = get_mouse_y() - min.y;
+
+
+    // handle zoom
     if(ImGui::IsWindowHovered()) {
-        es->zoom = clamp(es->zoom + (es->mouse_wheel * 0.01f), 0.1f, 2.0f);
+        V2 mouse_pos_pre_zoom = screen_to_world(es, rel_x, rel_y, WINDOW_WIDTH, WINDOW_HEIGHT);
+        if(es->mouse_wheel != 0)
+        {
+            if(es->mouse_wheel > 0)
+            {
+                es->mouse_wheel_offset *= 1.1f;
+            }
+            else
+            {
+                es->mouse_wheel_offset *= 0.9f;
+            }
+            es->mouse_wheel_offset = clamp(es->mouse_wheel_offset, 0.15f, 8.0f);
+            es->zoom = es->mouse_wheel_offset * es->mouse_wheel_offset;
+        } 
+        V2 mouse_pos_post_zoom = screen_to_world(es, rel_x, rel_y, WINDOW_WIDTH, WINDOW_HEIGHT);
+        es->camera.x += (mouse_pos_pre_zoom.x - mouse_pos_post_zoom.x)*es->zoom;
+        es->camera.y += (mouse_pos_pre_zoom.y - mouse_pos_post_zoom.y)*es->zoom;
     }
 }
 
 void editor_render(EditorState *es) {
 
-    f32 tile_size = 0.5f * es->zoom;
+    f32 tile_size = 1.0f * es->zoom;
 
     f32 y = 0;
     for(i32 j = -5; j < 5; j++) {
@@ -161,8 +208,9 @@ void editor_render(EditorState *es) {
         y += tile_size;
     }
 
-
-    draw_gird(es, 200, 125, tile_size, 0xDD00AAFF);
+    if(es->mouse_wheel_offset > 0.23f) {
+        draw_gird(es, 200, 125, tile_size, 0xDD00AAFF);
+    }
     // draw the x and y axis for reference of the origin (0, 0)
     draw_line(es, es->camera.x-(MAP_COORDS_X*0.5f), 0, es->camera.x+(MAP_COORDS_X*0.5f), 0, 0x0000FFFF);
     draw_line(es, 0, es->camera.y-(MAP_COORDS_Y*0.5f), 0, es->camera.y+(MAP_COORDS_Y*0.5f), 0x00FF00FF);
