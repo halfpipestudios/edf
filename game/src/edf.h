@@ -31,7 +31,6 @@ extern R2 game_view;
 #define MAP_COORDS_X 10.0f
 #define MAP_COORDS_Y MAP_COORDS_X*VIRTUAL_RATIO
 
-
 typedef struct Display {
     R2 screen;
     R2 game_view;
@@ -40,7 +39,8 @@ typedef struct Display {
 
 #define VIRTUAL_RES_X_INDEX 0
 #define VIRTUAL_RES_Y_INDEX 1
-extern u32 resolutions[4][2];
+#define RESOLUTION_COUNT 6
+extern u32 resolutions[RESOLUTION_COUNT][2];
 extern Display display;
 u32 virtual_w(void);
 u32 virtual_h(void);
@@ -62,9 +62,11 @@ typedef struct GameState {
     Button *next_boost_button;
     Button *debug_button;
     Button *res_button;
+    Button *frame_buffer_button;
 
     b32 paused;
     b32 debug_show;
+    b32 show_frame_buffer;
     
     struct AssetManager *am;
     struct EntityManager *em;
@@ -95,7 +97,7 @@ typedef struct GameState {
     Sprite stars[MAX_STARS];
     Sprite galaxy[MAX_GALAXY];
     
-    RenderTarget render_targets[4];
+    RenderTarget render_targets[RESOLUTION_COUNT];
 } GameState;
 
 #define game_state(memory) ((GameState *)(memory)->data);

@@ -27,11 +27,13 @@ Display display;
 
 // TODO: Move all display code to other file
 
-u32 resolutions[4][2] = {
+u32 resolutions[RESOLUTION_COUNT][2] = {
     { 1920, 1080 },
     { 1280, 720  },
     { 960 , 540 },
     { 640 , 360 },
+    { 320 , 180 },
+    { 434 , 100}
 };
 
 u32 virtual_w(void) {
@@ -119,9 +121,11 @@ void game_init(Memory *memory) {
     gs->next_boost_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, am_get_texture(gs->am, "pause.png"), v4(0,0,1,0.3f));
     pause_button_pos.x += 220;
     gs->debug_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, am_get_texture(gs->am, "pause.png"), v4(1,0,1,0.3f));
+    
     pause_button_pos.y -= 220;
-    gs->res_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, am_get_texture(gs->am, "pause.png"), v4(0,1,1,0.3f));
-
+    gs->res_button          = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, am_get_texture(gs->am, "pause.png"), v4(0,1,1,0.3f));
+    pause_button_pos.x -= 220;
+    gs->frame_buffer_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, am_get_texture(gs->am, "pause.png"), v4(1,1,0,0.3f));
 
     gs->ship_texture[0] = am_get_texture(gs->am, "Player.png");
     gs->ship_texture[1] = am_get_texture(gs->am, "OG Es.png");
@@ -147,7 +151,7 @@ void game_init(Memory *memory) {
 
     stars_init(gs);
 
-    for(u32 i = 0; i < 4 ; ++i) {
+    for(u32 i = 0; i < array_len(resolutions) ; ++i) {
         gs->render_targets[i] = gpu_render_targte_load(gs->gpu, (i32)resolutions[i][VIRTUAL_RES_X_INDEX], (i32)resolutions[i][VIRTUAL_RES_Y_INDEX]);
     }
 }
@@ -167,10 +171,14 @@ void game_update(Memory *memory, Input *input, f32 dt) {
     }
 
     if(ui_button_just_up(&gs->mt, gs->res_button)) {
-        display.resolution_index = (display.resolution_index + 1) % 4;
+        display.resolution_index = (display.resolution_index + 1) % (u32)array_len(resolutions);
         u32 virtual_res_x = virtual_w();
         u32 virtual_res_y = virtual_h();
         cs_print(gcs, "resolusion chage to %dx%d\n", virtual_res_x, virtual_res_y);
+    }
+
+    if(ui_button_just_up(&gs->mt, gs->frame_buffer_button)) {
+        gs->show_frame_buffer = !gs->show_frame_buffer;
     }
 
     if(ui_button_just_up(&gs->mt, gs->next_ship_button)) {
@@ -285,8 +293,13 @@ void game_render(Memory *memory) {
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
     
     // Game present
-    gpu_render_target_draw(gs->gpu, 0, 0, r2_width(game_view), r2_height(game_view), 0, render_target);
     
+    if(gs->show_frame_buffer) {
+        gpu_render_target_draw(gs->gpu, 0, 0, virtual_w(), virtual_h(), 0, render_target);    
+    } else {
+        gpu_render_target_draw(gs->gpu, 0, 0, r2_width(game_view), r2_height(game_view), 0, render_target);
+    }
+
     // UI draw
     ui_render(gs->gpu, &gs->ui);
 
