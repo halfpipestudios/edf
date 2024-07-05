@@ -1,15 +1,23 @@
+//===========================================================================
+// Structs
+//===========================================================================
 struct EditorState {
     SDL_Window *window;
     SDL_Renderer *renderer;
+    bool just_focus;
     
     SDL_Texture *texture;
 
     V2 camera;
     f32 zoom;
-    
-    ImVec2 mouse_last_pos;
+     
     i32 mouse_wheel;
+    bool mouse_down;
 };
+//===========================================================================
+//===========================================================================
+
+
 
 //===========================================================================
 // Utility functions
@@ -105,11 +113,17 @@ void draw_gird(EditorState *es, i32 tile_count_x, i32 tile_count_y, f32 tile_siz
 // Entry point of the level editor
 //===========================================================================
 void editor_init(EditorState *es) {
+    es->just_focus = false;
     es->camera = v2(0, 0);
-    es->mouse_last_pos = {};
+    es->mouse_wheel = 0;
+    es->mouse_down = false;
     es->zoom = 1.0f;
 
     es->texture = IMG_LoadTexture(es->renderer, "../assets/rock_full.png");
+}
+
+void editor_shutdown(EditorState *es) {
+    SDL_DestroyTexture(es->texture);
 }
 //===========================================================================
 //===========================================================================
@@ -120,35 +134,17 @@ void editor_init(EditorState *es) {
 // Level View (SDL and ImGui)
 //===========================================================================
 void editor_update(EditorState *es) {
-
-    ImVec2 mouse_pos = ImGui::GetMousePos();
-
     if(ImGui::IsWindowFocused()) {
-        if(ImGui::IsMouseDown(0)) {
-            f32 x_delta = mouse_pos.x - es->mouse_last_pos.x;
-            f32 y_delta = mouse_pos.y - es->mouse_last_pos.y;
+        if(mouse_button_down(0)) {
+            f32 x_delta = (f32)get_mouse_delta_x();
+            f32 y_delta = (f32)get_mouse_delta_y();
             es->camera.x -= x_delta*PIXEL_TO_METERS;
             es->camera.y += y_delta*PIXEL_TO_METERS;
         }
-
-        // TODO: zoom
-        es->zoom = clamp(es->zoom + (es->mouse_wheel * 0.01f), 0.1f, 2.0f);
-
-        if(ImGui::IsKeyDown(ImGuiKey_D)) {
-            es->camera.x += 0.1f;
-        }
-        if(ImGui::IsKeyDown(ImGuiKey_A)) {
-            es->camera.x -= 0.1f;
-        }
-        if(ImGui::IsKeyDown(ImGuiKey_W)) {
-            es->camera.y += 0.1f;
-        }
-        if(ImGui::IsKeyDown(ImGuiKey_S)) {
-            es->camera.y -= 0.1f;
-        }
     }
-
-    es->mouse_last_pos = mouse_pos; 
+    if(ImGui::IsWindowHovered()) {
+        es->zoom = clamp(es->zoom + (es->mouse_wheel * 0.01f), 0.1f, 2.0f);
+    }
 }
 
 void editor_render(EditorState *es) {
@@ -196,6 +192,3 @@ void editor_ui(EditorState *es) {
 //===========================================================================
 //===========================================================================
 
-void editor_shutdown(EditorState *es) {
-    SDL_DestroyTexture(es->texture);
-}
