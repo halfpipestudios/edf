@@ -13,12 +13,41 @@
 #include "edf_asset.h"
 #include "edf.h"
 
+static inline void add_wall(Level *level, f32 screen_x, f32 screen_y, V2 scale, Texture texture) {
+    V3 pos = v3(screen_x, screen_y, 0);
+    Entity *asteroid = entity_manager_add_entity(level->em);
+    entity_add_render_component(asteroid, pos, scale, texture, v4(1, 1, 1, 1));
+
+    Collision asteriod_collision = {0};
+    asteriod_collision.type = COLLISION_TYPE_AABB;
+    asteriod_collision.aabb.min = v2(asteroid->pos.x - fabsf(asteroid->scale.x)*0.45f, asteroid->pos.y - fabsf(asteroid->scale.y)*0.45f);
+    asteriod_collision.aabb.max = v2(asteroid->pos.x + fabsf(asteroid->scale.x)*0.45f, asteroid->pos.y + fabsf(asteroid->scale.y)*0.45f);
+    entity_add_collision_component(asteroid, asteriod_collision, false);
+}
+
 static inline void add_entity(Level *level, f32 screen_x, f32 screen_y, V2 scale, Texture texture) {
     V3 pos = v3(screen_x, screen_y, 0);
     Entity *asteroid = entity_manager_add_entity(level->em);
     entity_add_render_component(asteroid, pos, scale, texture, v4(1, 1, 1, 1));
 
-    Collision asteriod_collision;
+    V2 dir = v2_normalized(scale);
+
+    Collision asteriod_collision = {0};
+    asteriod_collision.type = COLLISION_TYPE_CIRLCE;
+    asteriod_collision.offset = v2_scale(dir, -0.15);
+    asteriod_collision.circle.c = asteroid->pos.xy;
+    asteriod_collision.circle.r = fabsf(asteroid->scale.x)*0.5f;
+    entity_add_collision_component(asteroid, asteriod_collision, false);
+}
+
+static inline void add_asteroid(Level *level, f32 screen_x, f32 screen_y, V2 scale, Texture texture) {
+    V3 pos = v3(screen_x, screen_y, 0);
+    Entity *asteroid = entity_manager_add_entity(level->em);
+    entity_add_render_component(asteroid, pos, scale, texture, v4(1, 1, 1, 1));
+
+    V2 dir = v2_normalized(scale);
+
+    Collision asteriod_collision = {0};
     asteriod_collision.type = COLLISION_TYPE_CIRLCE;
     asteriod_collision.circle.c = asteroid->pos.xy;
     asteriod_collision.circle.r = fabsf(asteroid->scale.x)*0.5f;
@@ -49,11 +78,11 @@ void add_screen(GameState *gs, Level *level, i32 screen_index, const char *posit
                 case 't': {
                     texture = am_get_texture(gs->am, "rocks_flat.png");
                     scale.y = -scale.y;
-                    add_entity(level, map_x, map_y, scale, texture);
+                    add_wall(level, map_x, map_y, scale, texture);
                 } break;
                 case 'b': {
                     texture = am_get_texture(gs->am, "rocks_flat.png");
-                    add_entity(level, map_x, map_y, scale, texture);
+                    add_wall(level, map_x, map_y, scale, texture);
                 } break;
                 case 'q': {
                     texture = am_get_texture(gs->am, "rocks_corner.png");
@@ -77,11 +106,11 @@ void add_screen(GameState *gs, Level *level, i32 screen_index, const char *posit
                 } break;
                 case 'f': {
                     texture = am_get_texture(gs->am, "rock_full.png");
-                    add_entity(level, map_x, map_y, scale, texture);
+                    add_wall(level, map_x, map_y, scale, texture);
                 } break;
                 case 'x': {
                     texture = am_get_texture(gs->am, "Meteorito.png");
-                    add_entity(level, map_x, map_y, scale, texture);
+                    add_asteroid(level, map_x, map_y, scale, texture);
                 } break;
                 case '!': {
                     texture = am_get_texture(gs->am, "rocks_flat.png");

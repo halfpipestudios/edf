@@ -15,7 +15,7 @@
 SYSTEM_UPDATE(collision_system) {
 
     if(entity->collision.type == COLLISION_TYPE_CIRLCE) {
-        entity->collision.circle.c = entity->pos.xy;
+        entity->collision.circle.c = v2_add(entity->pos.xy, entity->collision.offset);
     }
     if(entity->collision.type == COLLISION_TYPE_AABB) {
         // TODO: ...
