@@ -47,8 +47,8 @@ void draw_quad(EditorState *es, f32 x, f32 y, f32 w, f32 h, SDL_Texture *texture
 
         y *= -1.0f;
         SDL_Rect dst;
-        dst.w = w * METERS_TO_PIXEL;
-        dst.h = h * METERS_TO_PIXEL;
+        dst.w = (w * METERS_TO_PIXEL) + 1;
+        dst.h = (h * METERS_TO_PIXEL) + 1;
         dst.x = (x * METERS_TO_PIXEL) + (WINDOW_WIDTH * 0.5f) - (dst.w*0.5f) - cx;
         dst.y = (y * METERS_TO_PIXEL) + (WINDOW_HEIGHT * 0.5f) - (dst.h*0.5f) - cy;
         SDL_RenderCopyEx(es->renderer, texture, 0, &dst, 0, 0, SDL_FLIP_NONE);
@@ -161,7 +161,6 @@ void editor_update(EditorState *es) {
         }
     }
 
-
     ImVec2 min = ImGui::GetWindowContentRegionMin();
     ImVec2 max = ImGui::GetWindowContentRegionMax();
     min.x += ImGui::GetWindowPos().x;
@@ -170,7 +169,6 @@ void editor_update(EditorState *es) {
     max.y += ImGui::GetWindowPos().y;
     f32 rel_x = get_mouse_x() - min.x;
     f32 rel_y = get_mouse_y() - min.y;
-
 
     // handle zoom
     if(ImGui::IsWindowHovered()) {
@@ -196,7 +194,7 @@ void editor_update(EditorState *es) {
 
 void editor_render(EditorState *es) {
 
-    f32 tile_size = 1.0f * es->zoom;
+    f32 tile_size = 0.5f * es->zoom;
 
     f32 y = 0;
     for(i32 j = -5; j < 5; j++) {
@@ -208,8 +206,8 @@ void editor_render(EditorState *es) {
         y += tile_size;
     }
 
-    if(es->mouse_wheel_offset > 0.23f) {
-        draw_gird(es, 200, 125, tile_size, 0xDD00AAFF);
+    if(es->mouse_wheel_offset > 0.25f) {
+        draw_gird(es, 400, 225, tile_size, 0xDD00AAFF);
     }
     // draw the x and y axis for reference of the origin (0, 0)
     draw_line(es, es->camera.x-(MAP_COORDS_X*0.5f), 0, es->camera.x+(MAP_COORDS_X*0.5f), 0, 0x0000FFFF);
