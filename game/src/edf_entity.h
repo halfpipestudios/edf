@@ -44,6 +44,7 @@ typedef struct Collision {
         AABB   aabb;
         OBB    obb;
     };
+    V2 offset;
 } Collision;
 
 typedef struct Entity {

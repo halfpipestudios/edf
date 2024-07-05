@@ -15,15 +15,35 @@ struct EntityManager;
 struct ParticleSystem;
 struct Level;
 
-#define VIRTUAL_RES_X 1280
-#define VIRTUAL_RES_Y 720
+#if 0
+#define VIRTUAL_RES_X 1920
+#define VIRTUAL_RES_Y 1080
 #define VIRTUAL_RATIO ((f32)VIRTUAL_RES_Y / (f32)VIRTUAL_RES_X)
 
 #define MAP_COORDS_X 10.0f
 #define MAP_COORDS_Y MAP_COORDS_X*VIRTUAL_RATIO
-  
+
 extern R2 display;
 extern R2 game_view;
+#endif
+
+#define VIRTUAL_RATIO ((f32)9/(f32)16)
+#define MAP_COORDS_X 10.0f
+#define MAP_COORDS_Y MAP_COORDS_X*VIRTUAL_RATIO
+
+typedef struct Display {
+    R2 screen;
+    R2 game_view;
+    u32 resolution_index;
+} Display;
+
+#define VIRTUAL_RES_X_INDEX 0
+#define VIRTUAL_RES_Y_INDEX 1
+#define RESOLUTION_COUNT 6
+extern u32 resolutions[RESOLUTION_COUNT][2];
+extern Display display;
+u32 virtual_w(void);
+u32 virtual_h(void);
 
 typedef struct GameState {
 
@@ -41,9 +61,12 @@ typedef struct GameState {
     Button *next_ship_button;
     Button *next_boost_button;
     Button *debug_button;
-    
+    Button *res_button;
+    Button *frame_buffer_button;
+
     b32 paused;
     b32 debug_show;
+    b32 show_frame_buffer;
     
     struct AssetManager *am;
     struct EntityManager *em;
@@ -74,7 +97,7 @@ typedef struct GameState {
     Sprite stars[MAX_STARS];
     Sprite galaxy[MAX_GALAXY];
     
-    RenderTarget render_target;
+    RenderTarget render_targets[RESOLUTION_COUNT];
 } GameState;
 
 #define game_state(memory) ((GameState *)(memory)->data);

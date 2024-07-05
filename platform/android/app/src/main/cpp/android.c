@@ -114,8 +114,8 @@ static void draw_texture_atlas(OpenglGPU *renderer) {
 
     float angle = 0;
 
-    float window_w = (f32)VIRTUAL_RES_X;
-    float window_h = (f32)VIRTUAL_RES_Y;
+    float window_w = (f32)virtual_w();
+    float window_h = (f32)virtual_h();
 
     float ratio = (f32)renderer->atlas.h / (f32)renderer->atlas.w;
     float render_scale = 1;

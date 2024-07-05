@@ -11,7 +11,6 @@
 #include "sys/edf_animation_sys.h"
 #include "sys/edf_enemy_sys.h"
 
-
 #include <stdarg.h>
 #include <stdio.h>
 
@@ -20,8 +19,30 @@
 // ------------------------
 
 Console *gcs;
-R2 display;
-R2 game_view;
+Display display;
+
+// ------------------------
+// Display
+// ------------------------
+
+// TODO: Move all display code to other file
+
+u32 resolutions[RESOLUTION_COUNT][2] = {
+    { 1920, 1080 },
+    { 1280, 720  },
+    { 960 , 540 },
+    { 640 , 360 },
+    { 320 , 180 },
+    { 434 , 100}
+};
+
+u32 virtual_w(void) {
+    return resolutions[display.resolution_index][VIRTUAL_RES_X_INDEX];
+}
+
+u32 virtual_h(void) {
+    return resolutions[display.resolution_index][VIRTUAL_RES_Y_INDEX];
+}
 
 // ------------------------
 // Game
@@ -48,9 +69,9 @@ void game_init(Memory *memory) {
     gs->spu = spu_load(&gs->platform_arena);
     gs->am  = am_load(&gs->game_arena, gs->gpu);
 
-    i32 debug_y_pos = -DEBUG_PADDING_Y + r2_height(display)/2-60;
-    i32 debug_x_pos = DEBUG_PADDING_X + -r2_width(display)/2;
-    gs->cs = cs_init(am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), debug_x_pos, debug_y_pos, 600, r2_height(display)/2);
+    i32 debug_y_pos = -DEBUG_PADDING_Y + r2_height(display.screen)/2-60;
+    i32 debug_x_pos = DEBUG_PADDING_X + -r2_width(display.screen)/2;
+    gs->cs = cs_init(am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), debug_x_pos, debug_y_pos, 600, r2_height(display.screen)/2);
     gcs = &gs->cs;
     gs->av = av_init(&gs->platform_arena, am_get_font(gs->am, "LiberationMono-Regular.ttf", 32), debug_x_pos+620, debug_y_pos, 600);
     av_add_arena(&gs->av, get_scratch_arena(0), "scratch_arena 0");
@@ -78,8 +99,8 @@ void game_init(Memory *memory) {
 
     gs->ps = gs->fire;
 
-    i32 hw = r2_width(display)/2;
-    i32 hh = r2_height(display)/2;
+    i32 hw = r2_width(display.screen)/2;
+    i32 hh = r2_height(display.screen)/2;
     R2 window_rect;
     window_rect.min.x = -hw;
     window_rect.max.x = 0;
@@ -100,6 +121,11 @@ void game_init(Memory *memory) {
     gs->next_boost_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, am_get_texture(gs->am, "pause.png"), v4(0,0,1,0.3f));
     pause_button_pos.x += 220;
     gs->debug_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, am_get_texture(gs->am, "pause.png"), v4(1,0,1,0.3f));
+    
+    pause_button_pos.y -= 220;
+    gs->res_button          = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, am_get_texture(gs->am, "pause.png"), v4(0,1,1,0.3f));
+    pause_button_pos.x -= 220;
+    gs->frame_buffer_button = ui_button_alloc(&gs->ui, &gs->game_arena, pause_button_pos, pause_buttom_dim*0.5f, am_get_texture(gs->am, "pause.png"), v4(1,1,0,0.3f));
 
     gs->ship_texture[0] = am_get_texture(gs->am, "Player.png");
     gs->ship_texture[1] = am_get_texture(gs->am, "OG Es.png");
@@ -125,8 +151,9 @@ void game_init(Memory *memory) {
 
     stars_init(gs);
 
-    gs->render_target = gpu_render_targte_load(gs->gpu, VIRTUAL_RES_X, VIRTUAL_RES_Y);
-
+    for(u32 i = 0; i < array_len(resolutions) ; ++i) {
+        gs->render_targets[i] = gpu_render_targte_load(gs->gpu, (i32)resolutions[i][VIRTUAL_RES_X_INDEX], (i32)resolutions[i][VIRTUAL_RES_Y_INDEX]);
+    }
 }
 
 void game_update(Memory *memory, Input *input, f32 dt) {
@@ -141,6 +168,17 @@ void game_update(Memory *memory, Input *input, f32 dt) {
 
     if(ui_button_just_up(&gs->mt, gs->debug_button)) {
         gs->debug_show = !gs->debug_show;
+    }
+
+    if(ui_button_just_up(&gs->mt, gs->res_button)) {
+        display.resolution_index = (display.resolution_index + 1) % (u32)array_len(resolutions);
+        u32 virtual_res_x = virtual_w();
+        u32 virtual_res_y = virtual_h();
+        cs_print(gcs, "resolusion chage to %dx%d\n", virtual_res_x, virtual_res_y);
+    }
+
+    if(ui_button_just_up(&gs->mt, gs->frame_buffer_button)) {
+        gs->show_frame_buffer = !gs->show_frame_buffer;
     }
 
     if(ui_button_just_up(&gs->mt, gs->next_ship_button)) {
@@ -215,14 +253,18 @@ void game_render(Memory *memory) {
 
     gpu_frame_begin(gs->gpu);
 
+    RenderTarget render_target = gs->render_targets[display.resolution_index];
+    u32 virtual_res_x = virtual_w();
+    u32 virtual_res_y = virtual_h();
+
     {
         // render the back ground
         f32 w = MAP_COORDS_X;
         f32 h = MAP_COORDS_Y;
 
-        gpu_render_target_begin(gs->gpu, gs->render_target);
+        gpu_render_target_begin(gs->gpu, render_target);
 
-        gpu_viewport_set(gs->gpu, 0, 0, VIRTUAL_RES_X, VIRTUAL_RES_Y);
+        gpu_viewport_set(gs->gpu, 0, 0, virtual_res_x, virtual_res_y);
         gpu_projection_set(gs->gpu, (f32)(-w)*0.5f, (f32)w*0.5f, (f32)h*0.5f, (f32)(-h)*0.5f);
 
         gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
@@ -234,22 +276,30 @@ void game_render(Memory *memory) {
         particle_system_render(gs->gpu, gs->ps);
         render_system_update(gs, gs->em);
 
-        gpu_render_target_end(gs->gpu, gs->render_target);
+        gpu_render_target_end(gs->gpu, render_target);
     }
 
-    i32 w = r2_width(display);
-    i32 h = r2_height(display);
+    R2 screen = display.screen;
+    R2 game_view = display.game_view;
+
+    i32 w = r2_width(screen);
+    i32 h = r2_height(screen);
 
     gpu_render_target_begin(gs->gpu, 0);
 
-    gpu_viewport_set(gs->gpu, (f32)display.min.x, (f32)display.min.y, (f32)r2_width(display), (f32)r2_height(display));
+    gpu_viewport_set(gs->gpu, (f32)screen.min.x, (f32)screen.min.y, (f32)r2_width(screen), (f32)r2_height(screen));
     gpu_projection_set(gs->gpu, (f32)(-w)*0.5f, (f32)w*0.5f, (f32)h*0.5f, (f32)(-h)*0.5f);
 
     gpu_camera_set(gs->gpu, v3(0, 0, 0), 0);
     
     // Game present
-    gpu_render_target_draw(gs->gpu, 0, 0, r2_width(game_view), r2_height(game_view), 0, gs->render_target);
     
+    if(gs->show_frame_buffer) {
+        gpu_render_target_draw(gs->gpu, 0, 0, virtual_w(), virtual_h(), 0, render_target);    
+    } else {
+        gpu_render_target_draw(gs->gpu, 0, 0, r2_width(game_view), r2_height(game_view), 0, render_target);
+    }
+
     // UI draw
     ui_render(gs->gpu, &gs->ui);
 
@@ -257,7 +307,7 @@ void game_render(Memory *memory) {
         char *text = "Pause";
         R2 dim = font_size_text(am_get_font(gs->am, "times.ttf", 64), text);
         f32 pos_x = 0 - (f32)r2_width(dim)*0.5f;
-        f32 pos_y = 0 - (f32)r2_height(dim)*0.5f + VIRTUAL_RES_Y*0.25f;
+        f32 pos_y = 0 - (f32)r2_height(dim)*0.5f + virtual_res_y*0.25f;
         font_draw_text(gs->gpu, am_get_font(gs->am, "times.ttf", 64), text, pos_x, pos_y, v4(1, 1, 1, 1));
     }
 
@@ -268,8 +318,8 @@ void game_render(Memory *memory) {
         static char text[1024];
         snprintf(text, 1024, "FPS: %d | MS %.2f", gs->FPS, gs->MS);
         R2 fps_dim = font_size_text(am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text);
-        f32 pos_x = DEBUG_PADDING_X + -r2_width(display)*0.5f;
-        f32 pos_y = -DEBUG_PADDING_Y + r2_height(display)*0.5f - (f32)r2_height(fps_dim);
+        f32 pos_x = DEBUG_PADDING_X + -r2_width(screen)*0.5f;
+        f32 pos_y = -DEBUG_PADDING_Y + r2_height(screen)*0.5f - (f32)r2_height(fps_dim);
         font_draw_text(gs->gpu, am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text, pos_x, pos_y, v4(1, 1, 1, 1));
     }
     gpu_render_target_end(gs->gpu, 0);
@@ -286,12 +336,12 @@ void game_resize(Memory *memory, u32 w, u32 h) {
     GameState *gs = game_state(memory);
     unused(gs);
 
-    display = r2_from_wh(0, 0, (i32)w, (i32)h);
+    display.screen = r2_from_wh(0, 0, (i32)w, (i32)h);
 
-    f32 vw = VIRTUAL_RES_X;
-    f32 vh = VIRTUAL_RES_Y;
-    f32 dw = (f32)r2_width(display);
-    f32 dh = (f32)r2_height(display);
+    f32 vw = virtual_w();
+    f32 vh = virtual_h();
+    f32 dw = (f32)r2_width(display.screen);
+    f32 dh = (f32)r2_height(display.screen);
     f32 wvr = vw/vh;
     f32 hvr = vh/vw;
     
@@ -306,6 +356,6 @@ void game_resize(Memory *memory, u32 w, u32 h) {
     f32 x = dw*0.5f - vw*0.5f;
     f32 y = dh*0.5f - vh*0.5f;
 
-    game_view = r2_from_wh((i32)x, (i32)y, (i32)vw, (i32)vh);
+    display.game_view = r2_from_wh((i32)x, (i32)y, (i32)vw, (i32)vh);
 
 }

@@ -9,8 +9,8 @@
 
 static inline V2 input_to_game_coords(V2i in_pos) {
     V2 pos = v2((f32)in_pos.x, (f32)in_pos.y);
-    pos.x -= (r2_width(display) - 1) * 0.5f;
-    pos.y -= (r2_height(display) - 1) * 0.5f;
+    pos.x -= (r2_width(display.screen) - 1) * 0.5f;
+    pos.y -= (r2_height(display.screen) - 1) * 0.5f;
     pos.y *= -1.0f;
     return pos;
 }
