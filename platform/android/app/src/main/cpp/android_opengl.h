@@ -79,6 +79,7 @@ typedef struct OpenglGPU {
 
 void quad_batch_flush(OpenglGPU *renderer);
 void quad_batch_push(OpenglGPU *renderer, OpenglQuad quad);
-unsigned int gpu_create_program(const char *vert_src, const char *frag_src);
+unsigned int create_program(const char *vert_src, const char *frag_src);
+void draw_texture_atlas(OpenglGPU *renderer);
 
 #endif //EDF_ANDROID_OPENGL_H

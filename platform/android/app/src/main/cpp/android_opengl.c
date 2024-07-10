@@ -3,7 +3,7 @@
 //
 
 #include "android_opengl.h"
-#include "android.h"
+#include "android_platform.h"
 
 #include <unistd.h>
 
@@ -58,7 +58,7 @@ OpenglTexture *texture_atlas_add_bitmap(OpenglGPU *renderer, Arena *arena, Openg
 }
 
 void texture_atlas_regenerate(Arena *arena, OpenglTextureAtlas *atlas) {
-
+    // NOTE: Reset atlas state
     atlas->current_x = 0;
     atlas->current_y = 0;
     atlas->last_row_added_height = 0;
@@ -151,7 +151,7 @@ void quad_batch_push(OpenglGPU *renderer, OpenglQuad quad) {
     }
 }
 
-unsigned int gpu_create_program(const char *vert_src, const char *frag_src) {
+unsigned int create_program(const char *vert_src, const char *frag_src) {
 
     unsigned int vert_shader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vert_shader, 1, &vert_src, 0);
@@ -186,4 +186,50 @@ unsigned int gpu_create_program(const char *vert_src, const char *frag_src) {
     glDeleteShader(frag_shader);
 
     return program;
+}
+
+
+void draw_texture_atlas(OpenglGPU *renderer) {
+    // draw texture atlas test
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    float angle = 0;
+
+    float window_w = (f32)virtual_w();
+    float window_h = (f32)virtual_h();
+
+    float ratio = (f32)renderer->atlas.h / (f32)renderer->atlas.w;
+    float render_scale = 1;
+    float w = (f32)renderer->atlas.w  * render_scale;
+    float h = w * ratio;
+
+    float padding = 64;
+
+    float x = (-window_w/2) + (w/2) + padding;
+    float y = (window_h/2) - (h/2) - padding;
+
+    M4 translate = m4_translate(v3(x, y, 0));
+    M4 rotate = m4_rotate_z(angle);
+    M4 scale = m4_scale(v3(w, h, 1));
+    M4 world = m4_mul(translate, m4_mul(rotate, scale));
+
+    OpenglQuad quad;
+    V2 uvs[array_len(quad.vertex)] = {
+            {1, 1}, // bottom right
+            {0, 1}, // bottom left
+            {0, 0}, // top left
+            {1, 1}, // bottom right
+            {0, 0}, // bottom right
+            {1, 0}  // top right
+    };
+
+    for(u32 i = 0; i < array_len(quad.vertex); ++i) {
+        V3 vertex = m4_mul_v3(world, vertices[i]);
+        quad.vertex[i].pos = v2(vertex.x, vertex.y);
+        quad.vertex[i].color = v4(1, 1, 1, 1);
+        quad.vertex[i].uvs = uvs[i];
+    }
+    quad_batch_push(renderer, quad);
+
+    // -----------------------------------------------
 }

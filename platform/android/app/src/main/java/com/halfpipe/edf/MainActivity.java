@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.content.res.AssetManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
@@ -13,32 +12,36 @@ import android.app.Activity;
 import android.content.Context;
 import android.opengl.GLSurfaceView;
 
-import java.util.Arrays;
-
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 public class MainActivity extends Activity {
 
-    static {
-        System.loadLibrary("edf");
-    }
+    private static final double NANOS_PER_SECOND = 1000000000.0;
+    private long lastTime;
 
     private GameView gameView;
+    private  GameRenderer renderer;
+    private GameInput input;
+    private AssetManager assetManager;
+    private GameJNI jni;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        input = new GameInput();
+        renderer = new GameRenderer(this);
+        assetManager = getAssets();
+        gameView = new GameView(this, renderer, input);
+        jni = new GameJNI();
 
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             getWindow().getAttributes().layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
         }
 
-        gameView = new GameView(this);
         setContentView(gameView);
-
         gameView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                 | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
@@ -47,16 +50,37 @@ public class MainActivity extends Activity {
                 | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
     }
 
+    void onGameInit() {
+        lastTime = System.nanoTime();
+        jni.gameInit(assetManager);
+    }
+
+    void onGameUpdate() {
+        long currentTime = System.nanoTime();
+        double dt = (currentTime - lastTime) / NANOS_PER_SECOND;
+        lastTime = currentTime;
+        jni.gameUpdate(input.touches, (float)dt);
+    }
+
+    void onGameRender() {
+        jni.gameRender();
+    }
+
+    void onGameResize(int x, int y, int w, int h) {
+        jni.gameResize(x, y, w, h);
+    }
+
     @Override
     protected void onPause() {
         super.onPause();
-        gameView.getRenderer().onPause();
+
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        gameView.getRenderer().onResume();
+        input.reset();
+        lastTime = System.nanoTime();
     }
 }
 
@@ -91,31 +115,41 @@ class GameInput {
     }
 }
 
+class GameJNI {
+
+    static {
+        System.loadLibrary("edf");
+    }
+
+    public native void gameInit(AssetManager manager);
+    public native void gameUpdate(Touch[] touches, float dt);
+    public native void gameRender();
+    public native void gameResize(int x, int y, int w, int h);
+}
+
 class GameView extends GLSurfaceView {
 
-    private final GameRenderer renderer;
-    private GameInput input;
-    private static int uid;
+    static int uid;
+    GameInput input;
+    GameRenderer renderer;
 
     public GameView(Context context) {
         super(context);
+    }
+
+    public GameView(Context context, GameRenderer renderer, GameInput input) {
+        super(context);
+
+        this.input = input;
+        this.renderer = renderer;
 
         setEGLContextClientVersion(3);
         setEGLConfigChooser(8, 8, 8, 8, 24, 8);
 
-        input = new GameInput();
-        renderer = new GameRenderer(context.getAssets(), input);
-        uid = 0;
-
         setRenderer(renderer);
-
         setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
 
-
-    }
-
-    public GameRenderer getRenderer() {
-        return this.renderer;
+        uid = 0;
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -174,57 +208,32 @@ class GameView extends GLSurfaceView {
 
 class GameRenderer implements GLSurfaceView.Renderer {
 
-    public native void gameInit(AssetManager manager);
+    boolean gameIsInit;
+    MainActivity activity;
 
-    public native void gameUpdate(Touch[] touches, float dt);
-
-    public native void gameRender();
-
-    public native void gameResize(int x, int y, int w, int h);
-
-    private static final double NANOS_PER_SECOND = 1000000000.0;
-    private long lastTime;
-    private final AssetManager assetManager;
-    private final GameInput input;
-    private boolean gameIsInit;
-
-    public GameRenderer(AssetManager assetManager, GameInput input) {
-        this.assetManager = assetManager;
-        this.input = input;
+    public GameRenderer(MainActivity activity) {
+        super();
         this.gameIsInit = false;
-    }
-
-    public void onPause() {
-    }
-
-    public void onResume() {
-        lastTime = System.nanoTime();
-        input.reset();
+        this.activity = activity;
     }
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-        lastTime = System.nanoTime();
-        //gameInit(this.assetManager);
     }
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
-        gameResize(0, 0, width, height);
+        activity.onGameResize(0, 0, width, height);
     }
 
     @Override
     public void onDrawFrame(GL10 gl) {
-
         if(!this.gameIsInit) {
-            gameInit(this.assetManager);
+            activity.onGameInit();
             gameIsInit = true;
         }
 
-        long currentTime = System.nanoTime();
-        double dt = (currentTime - lastTime) / NANOS_PER_SECOND;
-        lastTime = currentTime;
-        gameUpdate(input.touches, (float)dt);
-        gameRender();
+        activity.onGameUpdate();
+        activity.onGameRender();
     }
 }

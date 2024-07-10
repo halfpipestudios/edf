@@ -1,19 +1,14 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include <jni.h>
 #include <android/asset_manager.h>
-#include <android/asset_manager_jni.h>
 
-#include <edf.h>
-#include <edf_platform.h>
-
-#include "android.h"
+#include "android_platform.h"
 #include "android_opengl.h"
 
-static jobject *asset_manager_ref   = 0;
-static AAssetManager *asset_manager = 0;
-static Memory global_memory;
+// -------------------------------
+// OS functions implementation
+// -------------------------------
 
 void os_print(char *message, ...) {
     va_list args;
@@ -36,6 +31,10 @@ File os_file_read(struct Arena *arena, char *path) {
 
 bool os_file_write(u8 *data, sz size, char *path) { return false; }
 
+// -------------------------------
+// SPU functions implementation
+// -------------------------------
+
 Spu spu_load(struct Arena *arena) { return 0; }
 void spu_unload(Spu spu) {}
 void spu_clear(Spu spu) {}
@@ -44,6 +43,10 @@ void spu_sound_remove(Spu spu, Sound sound) {}
 void spu_sound_play(Spu spu, Sound sound) {}
 void spu_sound_pause(Spu spu, Sound sound) {}
 void spu_sound_restart(Spu spu, Sound sound) {}
+
+// -------------------------------
+// GPU functions implementation
+// -------------------------------
 
 Gpu gpu_load(struct Arena *arena) {
 
@@ -57,10 +60,14 @@ Gpu gpu_load(struct Arena *arena) {
     renderer->arena = arena;
     texture_atlas_init(&renderer->atlas);
 
-    File vert_src = os_file_read(arena, "shader.vert");
-    File frag_src = os_file_read(arena, "shader.frag");
+    TempArena temp = temp_arena_begin(arena);
 
-    renderer->program = gpu_create_program((const char *)vert_src.data, (const char *)frag_src.data);
+    File vert_src = os_file_read(temp.arena, "shader.vert");
+    File frag_src = os_file_read(temp.arena, "shader.frag");
+
+    renderer->program = create_program((const char *)vert_src.data, (const char *)frag_src.data);
+
+    temp_arena_end(temp);
 
     glGenVertexArrays(1, &renderer->vao);
     glGenBuffers(1, &renderer->vbo);
@@ -106,51 +113,6 @@ void gpu_frame_begin(Gpu gpu) {
     glBindVertexArray(renderer->vao);
 
     renderer->draw_calls = 0;
-}
-
-static void draw_texture_atlas(OpenglGPU *renderer) {
-    // draw texture atlas test
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    float angle = 0;
-
-    float window_w = (f32)virtual_w();
-    float window_h = (f32)virtual_h();
-
-    float ratio = (f32)renderer->atlas.h / (f32)renderer->atlas.w;
-    float render_scale = 1;
-    float w = (f32)renderer->atlas.w  * render_scale;
-    float h = w * ratio;
-
-    float padding = 64;
-
-    float x = (-window_w/2) + (w/2) + padding;
-    float y = (window_h/2) - (h/2) - padding;
-
-    M4 translate = m4_translate(v3(x, y, 0));
-    M4 rotate = m4_rotate_z(angle);
-    M4 scale = m4_scale(v3(w, h, 1));
-    M4 world = m4_mul(translate, m4_mul(rotate, scale));
-
-    OpenglQuad quad;
-    V2 uvs[array_len(quad.vertex)] = {
-        {1, 1}, // bottom right
-        {0, 1}, // bottom left
-        {0, 0}, // top left
-        {1, 1}, // bottom right
-        {0, 0}, // bottom right
-        {1, 0}  // top right
-    };
-
-    for(u32 i = 0; i < array_len(quad.vertex); ++i) {
-        V3 vertex = m4_mul_v3(world, vertices[i]);
-        quad.vertex[i].pos = v2(vertex.x, vertex.y);
-        quad.vertex[i].color = v4(1, 1, 1, 1);
-        quad.vertex[i].uvs = uvs[i];
-    }
-    quad_batch_push(renderer, quad);
-
-    // -----------------------------------------------
 }
 
 void gpu_frame_end(Gpu gpu) {
@@ -339,65 +301,4 @@ void gpu_render_target_draw(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Rend
     quad_batch_flush(renderer);
 
     glBindTexture(GL_TEXTURE_2D, renderer->atlas.id);
-}
-
-static Input input_from_java(JNIEnv *env, jobjectArray touches) {
-    Input input = { 0 };
-
-    for(u32 i = 0; i < MAX_TOUCHES; ++i) {
-        jobject jtouch = (*env)->GetObjectArrayElement(env, touches, (jsize)i);
-
-        jclass touch_class = (*env)->GetObjectClass(env, jtouch);
-        jfieldID uid_id = (*env)->GetFieldID(env, touch_class, "uid", "I");
-        jfieldID x_id  = (*env)->GetFieldID(env, touch_class, "x", "F");
-        jfieldID y_id  = (*env)->GetFieldID(env, touch_class, "y", "F");
-        jfieldID down_id  = (*env)->GetFieldID(env, touch_class, "down", "Z");
-        jfieldID up_id  = (*env)->GetFieldID(env, touch_class, "up", "Z");
-
-        Touch *touch = input.touches + i;
-
-        touch->uid = (u64)(*env)->GetIntField(env, jtouch, uid_id);
-        touch->pos.x = (i32)(*env)->GetFloatField(env, jtouch, x_id);
-        touch->pos.y = (i32)(*env)->GetFloatField(env, jtouch, y_id);
-        touch->down = (b32)(*env)->GetBooleanField(env, jtouch, down_id);
-        touch->up = (b32)(*env)->GetBooleanField(env, jtouch, up_id);
-    }
-
-    return input;
-}
-
-JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameInit(JNIEnv *env, jobject thiz,  jobject manager) {
-    (void)thiz;
-    asset_manager_ref = (*env)->NewGlobalRef(env, manager);
-    asset_manager     = AAssetManager_fromJava(env, asset_manager_ref);
-    assert(asset_manager_ref);
-    assert(asset_manager);
-
-    global_memory.size = GAME_MEMORY_SIZE;
-    global_memory.used = 0;
-    global_memory.data = malloc(global_memory.size);
-    game_init(&global_memory);
-}
-
-JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameUpdate(JNIEnv *env, jobject thiz, jobjectArray touches, jfloat dt) {
-    (void)env;
-    (void)thiz;
-    Input input = input_from_java(env, touches);
-    game_update(&global_memory, &input, dt);
-}
-
-JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameRender(JNIEnv *env, jobject thiz) {
-    (void)env;
-    (void)thiz;
-    game_render(&global_memory);
-}
-
-JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gameResize(JNIEnv *env, jobject thiz, jint x, jint y, jint w, jint h) {
-    game_resize(&global_memory, w, h);
-}
-
-JNIEXPORT void JNICALL Java_com_halfpipe_edf_GameRenderer_gpuSetViewport(JNIEnv *env, jobject thiz, jint x, jint y, jint w, jint h) {
-    (void) env;
-    (void) thiz;
-
 }

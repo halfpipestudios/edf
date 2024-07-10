@@ -29,7 +29,7 @@ set(THIRDPARY_DIR "../../../../../../thirdparty")
 # used in the AndroidManifest.xml file.
 add_library(${CMAKE_PROJECT_NAME} SHARED
         # List C/C++ source files with relative paths to this CMakeLists.txt.
-        android.c android_opengl.c
+        android_platform.c android_opengl.c android_jni.c
         ${GAME_DIR}/src/edf.c
         ${GAME_DIR}/src/edf_memory.c ${GAME_DIR}/src/edf_font.c
         ${GAME_DIR}/src/edf_graphics.c ${GAME_DIR}/src/edf_sound.c
