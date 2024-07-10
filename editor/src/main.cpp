@@ -12,8 +12,12 @@
 #include <edf_common.h>
 #include <edf_math.h>
 #include "common.h"
+#include "entity.h"
+#include "editor.h"
 // Srouces
 #include "input.cpp"
+#include "entity.cpp"
+#include "utils.cpp"
 #include "editor.cpp"
 
 static i32 sdl_mouse_event_to_index(SDL_MouseButtonEvent event) {
@@ -37,7 +41,7 @@ i32 main(void) {
                                 SDL_WINDOWPOS_UNDEFINED,
                                 SDL_WINDOWPOS_UNDEFINED,
                                 WINDOW_WIDTH, WINDOW_HEIGHT, 
-                                SDL_WINDOW_RESIZABLE|SDL_WINDOW_SHOWN|SDL_WINDOW_MAXIMIZED);
+                                SDL_WINDOW_RESIZABLE|SDL_WINDOW_SHOWN/*|SDL_WINDOW_MAXIMIZED*/);
     es->renderer = SDL_CreateRenderer(es->window, -1, SDL_RENDERER_ACCELERATED|SDL_RENDERER_PRESENTVSYNC);
     SDL_Texture *back_buffer = SDL_CreateTexture(es->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
                                                  WINDOW_WIDTH, WINDOW_HEIGHT);
