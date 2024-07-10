@@ -1,6 +1,23 @@
 //===========================================================================
 // Structs
 //===========================================================================
+struct Entity {
+    V2 pos;
+    V2 scale;
+    SDL_Texture *texture;
+
+    Entity *next;
+    Entity *prev;
+};
+
+struct EntityManager {
+    Entity *entities;
+    Entity *first;
+    Entity *free;
+    i32 count;
+    i32 max_count;
+};
+
 struct EditorState {
     SDL_Window *window;
     SDL_Renderer *renderer;
@@ -14,10 +31,103 @@ struct EditorState {
     i32 mouse_wheel;
     f32 mouse_wheel_offset;
     bool mouse_down;
+
+    EntityManager em;
 };
 //===========================================================================
 //===========================================================================
 
+//===========================================================================
+// EntityManager functions
+//===========================================================================
+EntityManager entity_manager_create(i32 max_entity_count) {
+    EntityManager em = {};
+    em.max_count = max_entity_count;
+    em.entities = (Entity *)malloc(sizeof(Entity) * em.max_count);
+    memset(em.entities, 0, sizeof(Entity) * em.max_count);
+    em.first = 0;
+    em.count = 0;
+    em.free = em.entities;
+    // initialize the free list
+    for(i32 i = 0; i < em.max_count; i++) {
+        Entity *entity = em.entities + i;
+        if(i < (em.max_count - 1)) {
+            entity->next = em.entities + (i + 1);
+        }
+        else {
+            entity->next = 0;
+        }
+        if(i == 0) {
+            entity->prev = 0;
+        }
+        else {
+            entity->prev = em.entities + (i - 1);
+        }
+    }
+
+    return em;
+}
+
+void entity_manager_destroy(EntityManager *em) {
+    // free the entities array and set everything to zero
+    free(em->entities);
+    *em = {};
+}
+
+Entity *entity_manager_add_entity(EntityManager *em) {
+    if(em->free == 0) {
+        return 0;
+    }
+
+    Entity *entity = em->free;
+    em->free = entity->next;
+
+    if(em->first) {
+        em->first->prev = entity;
+    }
+    entity->next = em->first;
+    entity->prev = 0;
+    em->first = entity;
+    em->count++;
+
+    return entity;
+}
+
+void entity_manager_remove_entity(EntityManager *em, Entity *entity) {
+    if(entity->next) {
+        entity->next->prev = entity->prev;
+    }
+    if(entity->prev) {
+        entity->prev->next = entity->next;
+    }
+    entity->next = em->free;
+    em->free = entity;
+    em->count--;
+}
+
+void entity_manager_clear(EntityManager *em) {
+    em->first = 0;
+    em->count = 0;
+    em->free = em->entities;
+    // initialize the free list
+    for(i32 i = 0; i < em->max_count; i++) {
+        Entity *entity = em->entities + i;
+        if(i < (em->max_count - 1)) {
+            entity->next = em->entities + (i + 1);
+        }
+        else {
+            entity->next = 0;
+        }
+        if(i == 0) {
+            entity->prev = 0;
+        }
+        else {
+            entity->prev = em->entities + (i - 1);
+        }
+    }
+}
+//===========================================================================
+//===========================================================================
 
 
 //===========================================================================
@@ -138,27 +248,65 @@ void editor_init(EditorState *es) {
     es->mouse_down = false;
 
     es->texture = IMG_LoadTexture(es->renderer, "../assets/rock_full.png");
+
+    es->em = entity_manager_create(1000);
 }
 
 void editor_shutdown(EditorState *es) {
     SDL_DestroyTexture(es->texture);
+    entity_manager_destroy(&es->em);
 }
 //===========================================================================
 //===========================================================================
 
 
+static f32 get_mouse_world_x(EditorState *es) {
+    ImVec2 min = ImGui::GetWindowContentRegionMin();
+    ImVec2 max = ImGui::GetWindowContentRegionMax();
+    min.x += ImGui::GetWindowPos().x;
+    min.y += ImGui::GetWindowPos().y;
+    max.x += ImGui::GetWindowPos().x;
+    max.y += ImGui::GetWindowPos().y;
+    f32 rel_x = get_mouse_x() - min.x;
+    f32 rel_y = get_mouse_y() - min.y;
+
+
+    f32 screem_x = rel_x; 
+    f32 world_x = (screem_x - (WINDOW_WIDTH*0.5f)) * PIXEL_TO_METERS;
+    world_x += es->camera.x;
+    world_x /= es->zoom;
+    return world_x;
+}
+
+static f32 get_mouse_world_y(EditorState *es) {
+    ImVec2 min = ImGui::GetWindowContentRegionMin();
+    ImVec2 max = ImGui::GetWindowContentRegionMax();
+    min.x += ImGui::GetWindowPos().x;
+    min.y += ImGui::GetWindowPos().y;
+    max.x += ImGui::GetWindowPos().x;
+    max.y += ImGui::GetWindowPos().y;
+    f32 rel_x = get_mouse_x() - min.x;
+    f32 rel_y = get_mouse_y() - min.y;
+
+    f32 screem_y = rel_y; 
+    f32 world_y = (screem_y - (WINDOW_HEIGHT*0.5f)) * PIXEL_TO_METERS;
+    world_y -= es->camera.y;
+    world_y /= es->zoom;
+    world_y *= -1.0f;
+    return world_y;
+}
 
 //===========================================================================
 // Level View (SDL and ImGui)
 //===========================================================================
 void editor_update(EditorState *es) {
     if(ImGui::IsWindowFocused()) {
-        if(mouse_button_down(0)) {
+        if(mouse_button_down(2)) {
             f32 x_delta = (f32)get_mouse_delta_x();
             f32 y_delta = (f32)get_mouse_delta_y();
             es->camera.x -= x_delta*PIXEL_TO_METERS;
             es->camera.y += y_delta*PIXEL_TO_METERS;
-        }
+        }        
     }
 
     ImVec2 min = ImGui::GetWindowContentRegionMin();
@@ -189,6 +337,19 @@ void editor_update(EditorState *es) {
         V2 mouse_pos_post_zoom = screen_to_world(es, rel_x, rel_y, WINDOW_WIDTH, WINDOW_HEIGHT);
         es->camera.x += (mouse_pos_pre_zoom.x - mouse_pos_post_zoom.x)*es->zoom;
         es->camera.y += (mouse_pos_pre_zoom.y - mouse_pos_post_zoom.y)*es->zoom;
+
+        printf("y: %f\n", get_mouse_world_y(es));
+
+        if(mouse_button_just_down(0)) {
+            Entity *entity = entity_manager_add_entity(&es->em);
+            entity->pos.x = get_mouse_world_x(es);
+            entity->pos.y = get_mouse_world_y(es);
+            entity->scale = v2(0.5f, 0.5f);
+            entity->texture = es->texture;
+
+        }
+
+
     }
 }
 
@@ -196,15 +357,18 @@ void editor_render(EditorState *es) {
 
     f32 tile_size = 0.5f * es->zoom;
 
-    f32 y = 0;
-    for(i32 j = -5; j < 5; j++) {
-        f32 x = 0;
-        for(i32 i = -5; i < 5; i++) {
-            draw_quad(es, x, y, tile_size, tile_size, es->texture);
-            x += tile_size;
-        }
-        y += tile_size;
+    
+    Entity *entity = es->em.first;
+    while(entity) {
+        draw_quad(es, 
+                  entity->pos.x * es->zoom,
+                  entity->pos.y * es->zoom,
+                  entity->scale.x * es->zoom,
+                  entity->scale.y * es->zoom,
+                  entity->texture);
+        entity = entity->next;
     }
+
 
     if(es->mouse_wheel_offset > 0.25f) {
         draw_gird(es, 400, 225, tile_size, 0xDD00AAFF);

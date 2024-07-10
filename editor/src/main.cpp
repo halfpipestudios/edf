@@ -28,6 +28,8 @@ static i32 sdl_mouse_event_to_index(SDL_MouseButtonEvent event) {
 }
 
 i32 main(void) {
+    
+    // and allocate the editor state
     EditorState *es = (EditorState *)malloc(sizeof(EditorState));
 
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -115,6 +117,8 @@ i32 main(void) {
         windowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
         windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 
+        ImGuiStyle &style = ImGui::GetStyle();
+        style.WindowPadding = ImVec2(0, 0);
         static bool condition = true;
         ImGui::Begin("Dockspace demo", &condition, windowFlags);
         ImGui::PopStyleVar();
@@ -122,7 +126,10 @@ i32 main(void) {
         ImGui::DockSpace(ImGui::GetID("Dockspace"));
 
         // draw the back buffer
+
         ImGui::Begin("Game Viewport", 0, ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse);
+
+
         
         SDL_SetRenderTarget(es->renderer, back_buffer);
         SDL_SetRenderDrawColor(es->renderer, 180, 200, 180, SDL_ALPHA_OPAQUE);
@@ -135,9 +142,12 @@ i32 main(void) {
         ImGui::Image(back_buffer, ImVec2(WINDOW_WIDTH, WINDOW_HEIGHT), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(0, 0, 0, 0));
         
         ImGui::End();
+        style.WindowPadding = ImVec2(8, 8);
 
         editor_ui(es);
 
+
+        style.WindowPadding = ImVec2(0, 0);
         ImGui::End();
         SDL_SetRenderDrawColor(es->renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
         SDL_RenderClear(es->renderer);
