@@ -60,10 +60,14 @@ Gpu gpu_load(struct Arena *arena) {
     renderer->arena = arena;
     texture_atlas_init(&renderer->atlas);
 
-    File vert_src = os_file_read(arena, "shader.vert");
-    File frag_src = os_file_read(arena, "shader.frag");
+    TempArena temp = temp_arena_begin(arena);
+
+    File vert_src = os_file_read(temp.arena, "shader.vert");
+    File frag_src = os_file_read(temp.arena, "shader.frag");
 
     renderer->program = create_program((const char *)vert_src.data, (const char *)frag_src.data);
+
+    temp_arena_end(temp);
 
     glGenVertexArrays(1, &renderer->vao);
     glGenBuffers(1, &renderer->vbo);
@@ -298,5 +302,3 @@ void gpu_render_target_draw(Gpu gpu, f32 x, f32 y, f32 w, f32 h, f32 angle, Rend
 
     glBindTexture(GL_TEXTURE_2D, renderer->atlas.id);
 }
-
-
