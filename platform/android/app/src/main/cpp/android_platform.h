@@ -2,8 +2,8 @@
 // Created by tomas on 21/6/2024.
 //
 
-#ifndef EDF_ANDROID_H
-#define EDF_ANDROID_H
+#ifndef EDF_ANDROID_PLATFORM_H
+#define EDF_ANDROID_PLATFORM_H
 
 #include <android/log.h>
 
@@ -13,4 +13,6 @@ static inline void logv(const char *tag,  const char *format, va_list args) {
     __android_log_vprint(ANDROID_LOG_DEBUG, tag, format, args);
 }
 
-#endif //EDF_ANDROID_H
+extern struct  AAssetManager *asset_manager;
+
+#endif //EDF_ANDROID_PLATFORM_H

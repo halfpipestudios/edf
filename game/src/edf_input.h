@@ -25,7 +25,6 @@ typedef struct Touch {
     b32 up;
 } Touch;
 
-
 #define MAX_TOUCHES 5
 typedef struct Input {
     Touch touches[MAX_TOUCHES];
