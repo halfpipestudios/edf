@@ -61,7 +61,7 @@ static void draw_grid_x_y(EditorState *es) {
 }
 
 
-Texture load_texture_and_mask(EditorState *es, const char *path) {
+static Texture load_texture_and_mask(EditorState *es, const char *path) {
     Texture texture;
     // load the texture
     SDL_Surface *surface = IMG_Load(path);
@@ -77,7 +77,12 @@ Texture load_texture_and_mask(EditorState *es, const char *path) {
     for(i32 y = 0; y < height; y++) {
         for(i32 x = 0; x < width; x++) {
             u32 color = pixel[y * width + x];
-            pixel[y * width + x] = ~a_mask | (color & a_mask);
+            if((color & a_mask) > 0) {
+                pixel[y * width + x] = 0xFFFFFFFF;
+            }
+            else {
+                pixel[y * width + x] = 0x00000000;
+            }
         }
     }
     SDL_UnlockSurface(surface);
@@ -87,7 +92,7 @@ Texture load_texture_and_mask(EditorState *es, const char *path) {
     return texture;
 }
 
-u32 mouse_picking(EditorState *es, V2 mouse) {
+static u32 mouse_picking(EditorState *es, V2 mouse) {
 
     SDL_SetRenderTarget(es->renderer, es->mouse_picking_buffer);
     u32 format;
@@ -125,7 +130,7 @@ void editor_init(EditorState *es) {
     es->em = entity_manager_create(1000);
 
 
-    es->texture = load_texture_and_mask(es, "../assets/rocks_corner.png");
+    es->texture = load_texture_and_mask(es, "../assets/test.png");
 
 
 
