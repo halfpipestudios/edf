@@ -315,11 +315,11 @@ void game_render(Memory *memory) {
         av_render(gs->gpu, &gs->av);
 
         static wchar_t text[1024];
-        swprintf(text, 1024, L"FPS: %d | MS %.2f ñÑáéíóú", gs->FPS, gs->MS);
-        R2 fps_dim = font_size_wtext(gs->gpu, am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text);
+        swprintf(text, 1024, L"FPS: %d | MS %.2f ñÑáéíóú ゐゑを", gs->FPS, gs->MS);
+        R2 fps_dim = font_size_wtext(gs->gpu, am_get_font(gs->am, "YuGothR.ttc", 48), text);
         f32 pos_x = DEBUG_PADDING_X + -r2_width(screen)*0.5f;
         f32 pos_y = -DEBUG_PADDING_Y + r2_height(screen)*0.5f - (f32)r2_height(fps_dim);
-        font_draw_wtext(gs->gpu, am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text, pos_x, pos_y, v4(1, 1, 1, 1));
+        font_draw_wtext(gs->gpu, am_get_font(gs->am, "YuGothR.ttc", 48), text, pos_x, pos_y, v4(1, 1, 1, 1));
     }
     gpu_render_target_end(gs->gpu, 0);
 
