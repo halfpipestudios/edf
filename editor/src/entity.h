@@ -1,11 +1,18 @@
 #ifndef ENTITY_H
 #define ENTITY_H
 
+struct Texture {
+    i32 w, h;
+    u32 format;
+    SDL_Texture *texture;
+    SDL_Texture *mask;
+};
+
 struct Entity {
     u32 uid;
     V2 pos;
     V2 scale;
-    SDL_Texture *texture;
+    Texture texture;
 
     Entity *next;
     Entity *prev;

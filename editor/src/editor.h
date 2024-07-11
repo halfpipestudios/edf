@@ -13,11 +13,14 @@ struct EditorState {
 
     EntityManager em;
 
-    SDL_Texture *texture;
+    Texture texture;
 
     // for internal use
     SDL_Window *window;
     SDL_Renderer *renderer;
+    SDL_Texture *back_buffer;
+    SDL_Texture *mouse_picking_buffer;
+    u32 *mouse_picking_pixels;
 };
 
 #endif // EDITOR_H
