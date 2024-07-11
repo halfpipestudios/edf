@@ -2,6 +2,7 @@
 #define ENTITY_H
 
 struct Entity {
+    u32 uid;
     V2 pos;
     V2 scale;
     SDL_Texture *texture;

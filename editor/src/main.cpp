@@ -41,10 +41,10 @@ i32 main(void) {
                                 SDL_WINDOWPOS_UNDEFINED,
                                 SDL_WINDOWPOS_UNDEFINED,
                                 WINDOW_WIDTH, WINDOW_HEIGHT, 
-                                SDL_WINDOW_RESIZABLE|SDL_WINDOW_SHOWN/*|SDL_WINDOW_MAXIMIZED*/);
+                                SDL_WINDOW_RESIZABLE|SDL_WINDOW_SHOWN|SDL_WINDOW_MAXIMIZED);
     es->renderer = SDL_CreateRenderer(es->window, -1, SDL_RENDERER_ACCELERATED|SDL_RENDERER_PRESENTVSYNC);
     SDL_Texture *back_buffer = SDL_CreateTexture(es->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
-                                                 WINDOW_WIDTH, WINDOW_HEIGHT);
+                                                 BACK_BUFFER_WIDTH, BACK_BUFFER_HEIGHT);
 
 
     // Setup Dear ImGui context
@@ -143,7 +143,7 @@ i32 main(void) {
         }
         editor_render(es);
         SDL_SetRenderTarget(es->renderer, 0);
-        ImGui::Image(back_buffer, ImVec2(WINDOW_WIDTH, WINDOW_HEIGHT), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(0, 0, 0, 0));
+        ImGui::Image(back_buffer, ImVec2(BACK_BUFFER_WIDTH, BACK_BUFFER_HEIGHT), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(0, 0, 0, 0));
         
         ImGui::End();
         style.WindowPadding = ImVec2(8, 8);

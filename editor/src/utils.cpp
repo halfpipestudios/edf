@@ -12,8 +12,8 @@ static void draw_quad(EditorState *es, f32 x, f32 y, f32 w, f32 h, SDL_Texture *
         SDL_Rect dst;
         dst.w = ((w * es->zoom) * METERS_TO_PIXEL) + 1;
         dst.h = ((h * es->zoom) * METERS_TO_PIXEL) + 1;
-        dst.x = ((x * es->zoom) * METERS_TO_PIXEL) + (WINDOW_WIDTH * 0.5f) - (dst.w*0.5f) - cx;
-        dst.y = ((y * es->zoom) * METERS_TO_PIXEL) + (WINDOW_HEIGHT * 0.5f) - (dst.h*0.5f) - cy;
+        dst.x = ((x * es->zoom) * METERS_TO_PIXEL) + (BACK_BUFFER_WIDTH * 0.5f) - (dst.w*0.5f) - cx;
+        dst.y = ((y * es->zoom) * METERS_TO_PIXEL) + (BACK_BUFFER_HEIGHT * 0.5f) - (dst.h*0.5f) - cy;
         SDL_RenderCopyEx(es->renderer, texture, 0, &dst, 0, 0, SDL_FLIP_NONE);
 }
 
@@ -26,10 +26,10 @@ static void draw_line(EditorState *es, f32 x0, f32 y0, f32 x1, f32 y1, u32 color
 
     y0 *= -1.0f;
     y1 *= -1.0f;
-    x0 = (x0 * METERS_TO_PIXEL) + (WINDOW_WIDTH * 0.5f) - cx;
-    y0 = (y0 * METERS_TO_PIXEL) + (WINDOW_HEIGHT * 0.5f) - cy;
-    x1 = (x1 * METERS_TO_PIXEL) + (WINDOW_WIDTH * 0.5f) - cx;
-    y1 = (y1 * METERS_TO_PIXEL) + (WINDOW_HEIGHT * 0.5f) - cy;
+    x0 = (x0 * METERS_TO_PIXEL) + (BACK_BUFFER_WIDTH * 0.5f) - cx;
+    y0 = (y0 * METERS_TO_PIXEL) + (BACK_BUFFER_HEIGHT * 0.5f) - cy;
+    x1 = (x1 * METERS_TO_PIXEL) + (BACK_BUFFER_WIDTH * 0.5f) - cx;
+    y1 = (y1 * METERS_TO_PIXEL) + (BACK_BUFFER_HEIGHT * 0.5f) - cy;
     u8 b = (u8)((color >> 24) & 0xFF); 
     u8 g = (u8)((color >> 16) & 0xFF); 
     u8 r = (u8)((color >>  8) & 0xFF); 
@@ -102,10 +102,10 @@ static V2 get_mouse_screen() {
 static V2 get_mouse_world(EditorState *es) {
     V2 screen = get_mouse_screen();
     V2 world;
-    world.x = (screen.x - (WINDOW_WIDTH*0.5f)) * PIXEL_TO_METERS;
+    world.x = (screen.x - (BACK_BUFFER_WIDTH*0.5f)) * PIXEL_TO_METERS;
     world.x += es->camera.x;
     world.x /= es->zoom;
-    world.y = (screen.y - (WINDOW_HEIGHT*0.5f)) * PIXEL_TO_METERS;
+    world.y = (screen.y - (BACK_BUFFER_HEIGHT*0.5f)) * PIXEL_TO_METERS;
     world.y -= es->camera.y;
     world.y /= es->zoom;
     world.y *= -1.0f;
