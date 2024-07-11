@@ -125,7 +125,7 @@ void cs_draw_line(Gpu gpu, Console *c, i32 line, i32 index) {
     char *line_buffer = &c->buffer[line * c->max_cols];
     char *text = cs_get_nullterminated(temp.arena, c, line_buffer);
     
-    R2 text_size = font_size_text(c->font, text);
+    R2 text_size = font_size_text(gpu, c->font, text);
     if(!r2_invalid(text_size)) {
         i32 pos_x = c->padding + c->rect.min.x + text_size.min.x;
         i32 pos_y = -c->padding + c->rect.max.y + -index * c->pixels_per_row - c->pixels_per_row;
@@ -267,7 +267,7 @@ void av_render(Gpu gpu, ArenaViewer *av) {
         
         i32 pos_y = base_y - (view_h + av->padding_t_b)*index - view_hh;
 
-        R2 name_size = font_size_text(av->font, view->name);
+        R2 name_size = font_size_text(gpu, av->font, view->name);
         i32 name_pos_y = pos_y+view_hh-name_size.min.y;
         i32 name_pos_x = av->rect.min.x+av->padding_l_r;
         
@@ -284,7 +284,7 @@ void av_render(Gpu gpu, ArenaViewer *av) {
                             used_w, view_h, 0, v4(0, 1, 0, 0.4f));
         
         char *used_text = calculate_used_text(view->arena);
-        R2 use_size = font_size_text(av->font, used_text);
+        R2 use_size = font_size_text(gpu, av->font, used_text);
         i32 use_pos_y = (pos_y - view_hh) + (view_hh - r2_height(use_size)/2);
 
         font_draw_text(gpu, av->font, used_text, av->rect.min.x + av->padding_l_r+use_size.min.x, 
