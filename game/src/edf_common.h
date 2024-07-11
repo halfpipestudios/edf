@@ -12,6 +12,9 @@
 #include <stdbool.h>
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
+#include <wchar.h>
+
 
 typedef uint64_t u64;
 typedef uint32_t u32;

@@ -5,6 +5,8 @@
 #include "edf_font.h"
 #include "edf_graphics.h"
 #include "edf_memory.h"
+#include <string.h>
+#include <wchar.h>
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
@@ -29,7 +31,7 @@ Font *font_load(Gpu gpu, Arena *arena, stbtt_fontinfo stbfont, float size) {
     result->glyphs       = arena_push(arena, sizeof(*result->glyphs) * result->glyphs_count, 8);
     result->arena = arena;
     result->stbfont = stbfont;
-    
+
     stbtt_fontinfo *font = &stbfont;
 
     i32 ascent_i, decent_i, line_gap_i;
@@ -109,7 +111,7 @@ Glyph *font_get_glyph(Gpu gpu, Font *font, u32 code) {
     }
 }
 
-R2 font_size_text(Gpu gpu, Font *font, const char *text) {
+R2 font_size_text(Gpu gpu, Font *font, char *text) {
 
     R2 result = r2_set_invalid();
 
@@ -145,10 +147,73 @@ R2 font_size_text(Gpu gpu, Font *font, const char *text) {
     return result;
 }
 
-void font_draw_text(Gpu gpu, Font *font, const char *text, f32 x, f32 y, V4 color) {
+void font_draw_text(Gpu gpu, Font *font, char *text, f32 x, f32 y, V4 color) {
     
     f32 current_x = (f32)x;
     sz len        = strlen(text);
+    for(sz i = 0; i < len; ++i) {
+        u32 code = (u32)text[i];
+        Glyph *glyph = font_get_glyph(gpu, font, code);
+
+
+        f32 pos_x = current_x + ((f32)glyph->bitmap.w * 0.5f) + glyph->left_bearing;
+        f32 pos_y = y + (((f32)glyph->bitmap.h * 0.5f)) - (f32)glyph->bounds.max.y;
+
+        gpu_draw_quad_texture_tinted(gpu, pos_x, pos_y, (f32)glyph->bitmap.w, (f32)glyph->bitmap.h,
+                                     0, glyph->texture, color);
+
+        current_x += glyph->advance_w;
+#if 1
+        if(text[i + 1]) {
+            i32 kerning =
+                stbtt_GetCodepointKernAdvance(&font->stbfont, (i32)text[i], (i32)text[i + 1]);
+            f32 scale_kerning = (f32)kerning * font->scale;
+            current_x += scale_kerning;
+        }
+#endif
+    }
+}
+
+R2 font_size_wtext(Gpu gpu, Font *font, wchar_t *text) {
+
+    R2 result = r2_set_invalid();
+
+    f32 x = 0;
+    f32 y = 0;
+
+    f32 current_x = (f32)x;
+    sz len        = wcslen(text);
+    for(sz i = 0; i < len; ++i) {
+        u32 code = (u32)text[i];
+        Glyph *glyph = font_get_glyph(gpu, font, code);
+
+        f32 pos_x = current_x + glyph->left_bearing;
+        f32 pos_y = y - (f32)glyph->bounds.max.y;
+
+        R2 glyph_rect = r2_from_wh((i32)pos_x, (i32)pos_y, glyph->bitmap.w, glyph->bitmap.h);
+        if(i == 0) {
+            result = glyph_rect;
+        } else {
+            result = r2_union(result, glyph_rect);
+        }
+
+        current_x += glyph->advance_w;
+
+        if(text[i + 1]) {
+            i32 kerning =
+                stbtt_GetCodepointKernAdvance(&font->stbfont, (i32)text[i], (i32)text[i + 1]);
+            f32 scale_kerning = (f32)kerning * font->scale;
+            current_x += scale_kerning;
+        }
+    }
+
+    return result;
+}
+
+void font_draw_wtext(Gpu gpu, Font *font, wchar_t *text, f32 x, f32 y, V4 color) {
+    
+    f32 current_x = (f32)x;
+    sz len        = wcslen(text);
     for(sz i = 0; i < len; ++i) {
         u32 code = (u32)text[i];
         Glyph *glyph = font_get_glyph(gpu, font, code);

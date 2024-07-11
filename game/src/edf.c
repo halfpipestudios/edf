@@ -1,4 +1,5 @@
 #include "edf.h"
+#include "edf_common.h"
 #include "edf_entity.h"
 #include "edf_level.h"
 #include "edf_efx.h"
@@ -10,9 +11,7 @@
 #include "sys/edf_collision_sys.h"
 #include "sys/edf_animation_sys.h"
 #include "sys/edf_enemy_sys.h"
-
-#include <stdarg.h>
-#include <stdio.h>
+#include <wchar.h>
 
 // ------------------------
 // Globals
@@ -303,11 +302,11 @@ void game_render(Memory *memory) {
     ui_render(gs->gpu, &gs->ui);
 
     if(gs->paused) {
-        char *text = "Pause";
-        R2 dim = font_size_text(gs->gpu, am_get_font(gs->am, "times.ttf", 64), text);
+        wchar_t *text = L"Pause";
+        R2 dim = font_size_wtext(gs->gpu, am_get_font(gs->am, "times.ttf", 64), text);
         f32 pos_x = 0 - (f32)r2_width(dim)*0.5f;
         f32 pos_y = 0 - (f32)r2_height(dim)*0.5f + virtual_res_y*0.25f;
-        font_draw_text(gs->gpu, am_get_font(gs->am, "times.ttf", 64), text, pos_x, pos_y, v4(1, 1, 1, 1));
+        font_draw_wtext(gs->gpu, am_get_font(gs->am, "times.ttf", 64), text, pos_x, pos_y, v4(1, 1, 1, 1));
     }
 
     // DEBUG draw
@@ -315,12 +314,12 @@ void game_render(Memory *memory) {
         cs_render(gs->gpu, &gs->cs);
         av_render(gs->gpu, &gs->av);
 
-        static char text[1024];
-        snprintf(text, 1024, "FPS: %d | MS %.2f", gs->FPS, gs->MS);
-        R2 fps_dim = font_size_text(gs->gpu, am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text);
+        static wchar_t text[1024];
+        swprintf(text, 1024, L"FPS: %d | MS %.2f ñÑáéíóú", gs->FPS, gs->MS);
+        R2 fps_dim = font_size_wtext(gs->gpu, am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text);
         f32 pos_x = DEBUG_PADDING_X + -r2_width(screen)*0.5f;
         f32 pos_y = -DEBUG_PADDING_Y + r2_height(screen)*0.5f - (f32)r2_height(fps_dim);
-        font_draw_text(gs->gpu, am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text, pos_x, pos_y, v4(1, 1, 1, 1));
+        font_draw_wtext(gs->gpu, am_get_font(gs->am, "LiberationMono-Regular.ttf", 48), text, pos_x, pos_y, v4(1, 1, 1, 1));
     }
     gpu_render_target_end(gs->gpu, 0);
 

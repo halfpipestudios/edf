@@ -10,6 +10,7 @@
 #include "edf_platform.h"
 
 #include "stb_truetype.h"
+#include <wchar.h>
 
 #define FONT_CODEPOINT_RANGE_START ((i32)' ')
 #define FONT_CODEPOINT_RANGE_END ((i32)'~')
@@ -57,8 +58,11 @@ FontInfo font_info_load(struct Arena *arena, char *path);
 Font *font_load(Gpu gpu, struct Arena *arena, stbtt_fontinfo stbfont, float size);
 void font_unload(Gpu gpu, Font *font);
 
-R2 font_size_text(Gpu gpu, Font *font, const char *text);
-void font_draw_text(Gpu gpu, Font *font, const char *text, f32 x, f32 y, V4 color);
+R2 font_size_text(Gpu gpu, Font *font, char *text);
+void font_draw_text(Gpu gpu, Font *font, char *text, f32 x, f32 y, V4 color);
+
+R2 font_size_wtext(Gpu gpu, Font *font, wchar_t *text);
+void font_draw_wtext(Gpu gpu, Font *font, wchar_t *text, f32 x, f32 y, V4 color);
 
 void font_rasterize_glyph(Gpu gpu, Font *font, Glyph *glyph, u32 code);
 Glyph *font_get_glyph(Gpu gpu, Font *font, u32 code);
