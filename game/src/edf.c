@@ -98,6 +98,7 @@ void game_init(Memory *memory) {
 
     gs->ps = gs->fire;
 
+    i32 padding = 100;
     i32 hw = r2_width(display.screen)/2;
     i32 hh = r2_height(display.screen)/2;
     R2 window_rect;
@@ -105,10 +106,10 @@ void game_init(Memory *memory) {
     window_rect.max.x = 0;
     window_rect.min.y = -hh;
     window_rect.max.y = hh;
-    gs->joystick = ui_joystick_alloc(&gs->ui, &gs->game_arena, v2((f32)-hw+220, (f32)-hh+220), window_rect,
+    gs->joystick = ui_joystick_alloc(&gs->ui, &gs->game_arena, v2((f32)-hw+220+padding, (f32)-hh+220+padding), window_rect,
                                     140, 220, am_get_texture(gs->am, "move_inner.png"), am_get_texture(gs->am, "move_outer.png"), v4(1,1,1,0.3f));
 
-    gs->boost_button = ui_button_alloc(&gs->ui, &gs->game_arena, v2((f32)hw-135, (f32)-hh+135), 135, am_get_texture(gs->am, "boost.png"), v4(1,1,1,0.3f));
+    gs->boost_button = ui_button_alloc(&gs->ui, &gs->game_arena, v2((f32)hw-135-padding, (f32)-hh+135+padding), 135, am_get_texture(gs->am, "boost.png"), v4(1,1,1,0.3f));
 
     f32 paddin_top = 80;
     f32 pause_buttom_dim = 140;
