@@ -43,11 +43,10 @@ static void draw_all_entities(EditorState *es) {
         u8 r = (entity->uid >> 16) & 0xFF;
         u8 g = (entity->uid >>  8) & 0xFF;
         u8 b = (entity->uid >>  0) & 0xFF;
-        //SDL_SetTextureColorMod(entity->texture, r, g, b);
         draw_quad(es, 
                   entity->pos.x, entity->pos.y,
                   entity->scale.x, entity->scale.y,
-                  entity->texture);
+                  entity->texture.texture);
         entity = entity->next;
     }
 }
@@ -61,13 +60,6 @@ static void draw_grid_x_y(EditorState *es) {
     draw_line(es, 0, es->camera.y-(MAP_COORDS_Y*0.5f), 0, es->camera.y+(MAP_COORDS_Y*0.5f), 0x00FF00FF);
 }
 
-struct Texture {
-    i32 w, h;
-    u32 format;
-    SDL_Texture *texture;
-    SDL_Texture *mask;
-};
-
 
 Texture load_texture_and_mask(EditorState *es, const char *path) {
     Texture texture;
@@ -75,8 +67,8 @@ Texture load_texture_and_mask(EditorState *es, const char *path) {
     SDL_Surface *surface = IMG_Load(path);
     texture.texture = SDL_CreateTextureFromSurface(es->renderer, surface);
     
+    // create the mask for the mouse picking
     SDL_LockSurface(surface);
-
     i32 bytes_per_pixel = surface->format->BytesPerPixel;
     u32 a_mask = surface->format->Amask;
     i32 width = surface->w;
@@ -88,12 +80,33 @@ Texture load_texture_and_mask(EditorState *es, const char *path) {
             pixel[y * width + x] = ~a_mask | (color & a_mask);
         }
     }
-
     SDL_UnlockSurface(surface);
-
     texture.mask = SDL_CreateTextureFromSurface(es->renderer, surface);
     SDL_FreeSurface(surface);
+    
     return texture;
+}
+
+u32 mouse_picking(EditorState *es, V2 mouse) {
+
+    SDL_SetRenderTarget(es->renderer, es->mouse_picking_buffer);
+    u32 format;
+    i32 w, h;
+    SDL_QueryTexture(es->mouse_picking_buffer, &format, 0, &w, &h);
+    i32 bytes_per_pixel = SDL_BYTESPERPIXEL(format);
+
+    SDL_RenderReadPixels(es->renderer, 0, format, es->mouse_picking_pixels, bytes_per_pixel * w);
+
+    u32 color = es->mouse_picking_pixels[(i32)mouse.y * w + (i32)mouse.x] & 0xFFFFFF00;
+    u32 r = (u8)((color >> 24) & 0xFF); 
+    u32 g = (u8)((color >> 16) & 0xFF); 
+    u32 b = (u8)((color >>  8) & 0xFF); 
+    u32 a = (u8)((color >>  0) & 0xFF); 
+    u32 uid = (a << 24) | (r << 16) | (g << 8) | b;
+    
+    SDL_SetRenderTarget(es->renderer, es->back_buffer);
+
+    return uid;
 }
 
 //===========================================================================
@@ -112,15 +125,15 @@ void editor_init(EditorState *es) {
     es->em = entity_manager_create(1000);
 
 
-    Texture test = load_texture_and_mask(es, "../assets/rocks_corner.png");
+    es->texture = load_texture_and_mask(es, "../assets/rocks_corner.png");
 
-    es->texture = test.texture;
 
 
 }
 
 void editor_shutdown(EditorState *es) {
-    SDL_DestroyTexture(es->texture);
+    SDL_DestroyTexture(es->texture.texture);
+    SDL_DestroyTexture(es->texture.mask);
     entity_manager_destroy(&es->em);
 }
 //===========================================================================
@@ -135,7 +148,7 @@ void editor_update(EditorState *es) {
     process_zoom(es);
     // add entitites
     if(ImGui::IsWindowHovered()) {
-        static u32 uid = 0x0000000;
+        static u32 uid = 1;
         if(mouse_button_just_down(0)) {
             Entity *entity = entity_manager_add_entity(&es->em);
             V2 mouse_w = get_mouse_world(es);
@@ -143,8 +156,14 @@ void editor_update(EditorState *es) {
             entity->pos.y = roundf(mouse_w.y / 0.5f) * 0.5f;
             entity->scale = v2(0.5f, 0.5f);
             entity->texture = es->texture;
+            assert((uid > 0) && (uid < 0xFF000000));
             entity->uid = uid;
             uid++;
+        }
+
+        if(mouse_button_just_down(2)) {
+            u32 uid = mouse_picking(es, get_mouse_screen());
+            printf("uid: %d\n", uid);
         }
     }
 }

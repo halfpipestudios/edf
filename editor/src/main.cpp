@@ -43,8 +43,16 @@ i32 main(void) {
                                 WINDOW_WIDTH, WINDOW_HEIGHT, 
                                 SDL_WINDOW_RESIZABLE|SDL_WINDOW_SHOWN|SDL_WINDOW_MAXIMIZED);
     es->renderer = SDL_CreateRenderer(es->window, -1, SDL_RENDERER_ACCELERATED|SDL_RENDERER_PRESENTVSYNC);
-    SDL_Texture *back_buffer = SDL_CreateTexture(es->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
+    es->back_buffer = SDL_CreateTexture(es->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
                                                  BACK_BUFFER_WIDTH, BACK_BUFFER_HEIGHT);
+    es->mouse_picking_buffer = SDL_CreateTexture(es->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
+                                                 BACK_BUFFER_WIDTH, BACK_BUFFER_HEIGHT);
+
+    u32 format;
+    i32 w, h;
+    SDL_QueryTexture(es->mouse_picking_buffer, &format, 0, &w, &h);
+    i32 bytes_per_pixel = SDL_BYTESPERPIXEL(format);
+    es->mouse_picking_pixels = (u32 *)malloc(bytes_per_pixel * w * h);
 
 
     // Setup Dear ImGui context
@@ -133,9 +141,25 @@ i32 main(void) {
 
         ImGui::Begin("Game Viewport", 0, ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse);
 
+        SDL_SetRenderTarget(es->renderer, es->mouse_picking_buffer);
+        SDL_SetRenderDrawColor(es->renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+        SDL_RenderClear(es->renderer);
+        Entity *entity = es->em.first;
+        while(entity) {
+            u8 r = (entity->uid >> 16) & 0xFF;
+            u8 g = (entity->uid >>  8) & 0xFF;
+            u8 b = (entity->uid >>  0) & 0xFF;
+            SDL_SetTextureColorMod(entity->texture.mask, r, g, b);
+            draw_quad(es, 
+                      entity->pos.x, entity->pos.y,
+                      entity->scale.x, entity->scale.y,
+                      entity->texture.mask);
+            entity = entity->next;
+        }
 
         
-        SDL_SetRenderTarget(es->renderer, back_buffer);
+        
+        SDL_SetRenderTarget(es->renderer, es->back_buffer);
         SDL_SetRenderDrawColor(es->renderer, 180, 200, 180, SDL_ALPHA_OPAQUE);
         SDL_RenderClear(es->renderer);
         if(!es->just_focus) {
@@ -143,7 +167,7 @@ i32 main(void) {
         }
         editor_render(es);
         SDL_SetRenderTarget(es->renderer, 0);
-        ImGui::Image(back_buffer, ImVec2(BACK_BUFFER_WIDTH, BACK_BUFFER_HEIGHT), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(0, 0, 0, 0));
+        ImGui::Image(es->back_buffer, ImVec2(BACK_BUFFER_WIDTH, BACK_BUFFER_HEIGHT), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(0, 0, 0, 0));
         
         ImGui::End();
         style.WindowPadding = ImVec2(8, 8);
@@ -172,6 +196,10 @@ i32 main(void) {
     ImGui_ImplSDLRenderer2_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
+
+    free(es->mouse_picking_pixels);
+    SDL_DestroyTexture(es->mouse_picking_buffer);
+    SDL_DestroyTexture(es->back_buffer);
 
     SDL_DestroyRenderer(es->renderer);
     SDL_DestroyWindow(es->window);
