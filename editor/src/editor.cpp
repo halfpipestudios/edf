@@ -213,9 +213,6 @@ void editor_init(EditorState *es) {
     namespace fs = std::filesystem;
     // path to the directory
     std::string path = "../../game/assets";
-    // this structure would distinguish a file from a directory
-    struct stat sb;
-
     // looping until all the items in the dir are exhausted
     es->texture_count = 0;
     for(const auto& entry : fs::directory_iterator(path)) {
@@ -224,9 +221,7 @@ void editor_init(EditorState *es) {
         fs::path outfilename = entry.path();
         std::string outfilename_str = outfilename.string();
         const char* path = outfilename_str.c_str();
-        // Testing whether the path points to a
-        // non-directory or not If it does, displays path
-        if (stat(path, &sb) == 0 && !(sb.st_mode & S_IFDIR) && outfilename_str.find(".png") != std::string::npos) {
+        if (outfilename_str.find(".png") != std::string::npos) {
 
             es->textures[es->texture_count] = load_texture_and_mask(es, path);
             es->texture_count++;
