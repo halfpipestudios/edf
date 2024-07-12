@@ -55,18 +55,20 @@ Entity *entity_manager_add_entity(EntityManager *em) {
 }
 
 void entity_manager_remove_entity(EntityManager *em, Entity *entity) {
-    if(em->first == entity) {
-        em->first = entity->next;
+    if(entity) {
+        if(em->first == entity) {
+            em->first = entity->next;
+        }
+        if(entity->next) {
+            entity->next->prev = entity->prev;
+        }
+        if(entity->prev) {
+            entity->prev->next = entity->next;
+        }
+        entity->next = em->free;
+        em->free = entity;
+        em->count--;
     }
-    if(entity->next) {
-        entity->next->prev = entity->prev;
-    }
-    if(entity->prev) {
-        entity->prev->next = entity->next;
-    }
-    entity->next = em->free;
-    em->free = entity;
-    em->count--;
 }
 
 void entity_manager_clear(EntityManager *em) {

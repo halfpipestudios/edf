@@ -9,6 +9,14 @@ enum EditorMode {
     EDITOR_MODE_COUNT
 };
 
+enum EntityModifyMode {
+    ENTITY_MODIFY_MODE_TRANSLATE,
+    ENTITY_MODIFY_MODE_ROTATE,
+    ENTITY_MODIFY_MODE_SCALE,
+
+    ENTITY_MODIFY_COUNT
+};
+
 
 struct EditorState {
     bool just_focus;
@@ -24,8 +32,11 @@ struct EditorState {
     Texture texture;
 
     EditorMode editor_mode;
-    SDL_Texture *editor_mode_buttons_textures[3];
+    SDL_Texture *editor_mode_buttons_textures[EDITOR_MODE_COUNT];
     Entity *selected_entity;
+
+    EntityModifyMode entity_modify_mode;
+    SDL_Texture *entity_modify_textrues[ENTITY_MODIFY_COUNT];
 
     // for internal use
     SDL_Window *window;

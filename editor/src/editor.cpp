@@ -59,7 +59,7 @@ static void draw_all_entities(EditorState *es) {
 
 static void draw_grid_x_y(EditorState *es) {
     if(es->mouse_wheel_offset > 0.25f) {
-        draw_grid(es, 400, 225, 0.5f, 0xDD00AAFF);
+        draw_grid(es, 400, 225, 0.5f, 0x413620FF);
     }
     // draw the x and y axis for reference of the origin (0, 0)
     draw_line(es, es->camera.x-(MAP_COORDS_X*0.5f), 0, es->camera.x+(MAP_COORDS_X*0.5f), 0, 0x0000FFFF);
@@ -167,12 +167,15 @@ static void select_entity(EditorState *es) {
     }
 }
 
-static void modify_entity(EditorState *es, Entity *entity) {
 
+
+static void modify_entity(EditorState *es, Entity *entity) {
     if(key_just_down(127)) {
         entity_manager_remove_entity(&es->em, entity);
         es->selected_entity = 0;
     }
+
+
 
 }
 
@@ -198,6 +201,11 @@ void editor_init(EditorState *es) {
     es->editor_mode_buttons_textures[2] = IMG_LoadTexture(es->renderer, "../assets/tile_button.png");
     es->editor_mode = EDITOR_MODE_ADD_TILE;
     es->selected_entity = 0;
+
+    es->entity_modify_textrues[0] = IMG_LoadTexture(es->renderer, "../assets/translate_button.png");
+    es->entity_modify_textrues[1] = IMG_LoadTexture(es->renderer, "../assets/rotation_button.png");
+    es->entity_modify_textrues[2] = IMG_LoadTexture(es->renderer, "../assets/scale_button.png");
+    es->entity_modify_mode = ENTITY_MODIFY_MODE_TRANSLATE;
 }
 
 void editor_shutdown(EditorState *es) {
@@ -249,36 +257,57 @@ void editor_render(EditorState *es) {
 //===========================================================================
 // ImGui UI (ImGui only Do Not use SDL here, only pass SDL_Texture to ImGui::Image)
 //===========================================================================
-void editor_ui(EditorState *es) {
-    // Editor Mode selector Window
-    {
-        ImGui::Begin("Editor Mode Selector", 0,  ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse);
 
-        for(i32 i = 0; i < EDITOR_MODE_COUNT; i++) {
-            ImVec4 tint = ImVec4(1, 1, 1, 1);
-            if(es->editor_mode == i) {
-                tint = ImVec4(0.5f, 0.5f, 0.5f, 1);
-            }
-            ImGui::PushID(i);
-            if(ImGui::ImageButton("", es->editor_mode_buttons_textures[i], ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), tint)) {
-                if(es->editor_mode != i) {
-                    es->editor_mode = (EditorMode)i;
-                }
-                
-            }
-            ImGui::PopID();
-            ImGui::SameLine();
+void editor_mode_window(EditorState *es) {
+    ImGui::Begin("Editor Mode Selector", 0,  ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse);
+    for(i32 i = 0; i < EDITOR_MODE_COUNT; i++) {
+        ImVec4 tint = ImVec4(1, 1, 1, 1);
+        if(es->editor_mode == i) {
+            tint = ImVec4(0.5f, 0.5f, 0.5f, 1);
         }
-
-        ImGui::End();
+        ImGui::PushID(i);
+        if(ImGui::ImageButton("", es->editor_mode_buttons_textures[i], ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), tint)) {
+            if(es->editor_mode != i) {
+                es->editor_mode = (EditorMode)i;
+            }
+            
+        }
+        ImGui::PopID();
+        ImGui::SameLine();
     }
+    ImGui::End();
+}
 
+void entity_modify_window(EditorState *es) {
+    ImGui::Begin("Entity Modify", 0,  ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse);
+    for(i32 i = 0; i < ENTITY_MODIFY_COUNT; i++) {
+        ImVec4 tint = ImVec4(1, 1, 1, 1);
+        if(es->entity_modify_mode == i) {
+            tint = ImVec4(0.5f, 0.5f, 0.5f, 1);
+        }
+        ImGui::PushID(i);
+        if(ImGui::ImageButton("", es->entity_modify_textrues[i], ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), tint)) {
+            if(es->entity_modify_mode != i) {
+                es->entity_modify_mode = (EntityModifyMode)i;
+            }
+            
+        }
+        ImGui::PopID();
+    }
+    ImGui::End();
+}
 
+void editor_ui(EditorState *es) {
+    editor_mode_window(es);
+    entity_modify_window(es);
+
+#if 0
     // demo window
     {
         static bool show_demo = true; 
         ImGui::ShowDemoWindow(&show_demo);
     }
+#endif
 }
 //===========================================================================
 //===========================================================================

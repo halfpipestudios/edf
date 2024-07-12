@@ -64,7 +64,7 @@ i32 main(void) {
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
     
     // Setup Dear ImGui style
-    ImGui::StyleColorsClassic();
+    ImGui::StyleColorsLight();
     ImGui_ImplSDL2_InitForSDLRenderer(es->window, es->renderer);
     ImGui_ImplSDLRenderer2_Init(es->renderer);
     
@@ -160,7 +160,7 @@ i32 main(void) {
         
         
         SDL_SetRenderTarget(es->renderer, es->back_buffer);
-        SDL_SetRenderDrawColor(es->renderer, 180, 200, 180, SDL_ALPHA_OPAQUE);
+        SDL_SetRenderDrawColor(es->renderer, 25, 25, 25, SDL_ALPHA_OPAQUE);
         SDL_RenderClear(es->renderer);
         if(!es->just_focus) {
             editor_update(es);

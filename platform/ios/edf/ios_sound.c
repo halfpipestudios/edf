@@ -107,6 +107,9 @@ void IosSoundSysRemove(IosSoundSystem *sound_sys, IosSoundHandle *out_handle) {
         return;
     }
     IosSoundChannel *channel = sound_sys->channels + handle;
+    if(sound_sys->first == handle) {
+        sound_sys->first = channel->next;
+    }
 
     // remove this channel from the list
     IosSoundChannel *prev_channel = sound_sys->channels + channel->prev;
