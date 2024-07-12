@@ -43,6 +43,12 @@ static void draw_all_entities(EditorState *es) {
         u8 r = (entity->uid >> 16) & 0xFF;
         u8 g = (entity->uid >>  8) & 0xFF;
         u8 b = (entity->uid >>  0) & 0xFF;
+        if(entity == es->selected_entity) {
+            SDL_SetTextureColorMod(entity->texture.texture, 0, 255, 0);
+        }
+        else {
+            SDL_SetTextureColorMod(entity->texture.texture, 255, 255, 255);
+        }
         draw_quad(es, 
                   entity->pos.x, entity->pos.y,
                   entity->scale.x, entity->scale.y,
@@ -114,6 +120,62 @@ static u32 mouse_picking(EditorState *es, V2 mouse) {
     return uid;
 }
 
+static void add_tile(EditorState *es) {
+    if(ImGui::IsWindowHovered()) {
+        static u32 uid = 1;
+        if(mouse_button_just_down(0)) {
+            Entity *entity = entity_manager_add_entity(&es->em);
+            V2 mouse_w = get_mouse_world(es);
+            entity->pos.x = roundf(mouse_w.x / 0.5f) * 0.5f;
+            entity->pos.y = roundf(mouse_w.y / 0.5f) * 0.5f;
+            entity->scale = v2(0.5f, 0.5f);
+            entity->texture = es->texture;
+            assert((uid > 0) && (uid < 0xFF000000));
+            entity->uid = uid;
+            uid++;
+        }
+
+    }
+}
+
+static void select_entity(EditorState *es) {
+    if(ImGui::IsWindowHovered()) {
+        if(mouse_button_just_down(0)) {
+            u32 uid = mouse_picking(es, get_mouse_screen());
+            if(uid > 0) {
+                // TODO: use binary search for this ...
+                Entity *entity = es->em.first;
+                bool founded = false;
+                while(entity) {
+                    if(entity->uid == uid) {
+                        founded = true;
+                        break;
+                    }
+                    entity = entity->next;
+                }
+                if(founded) {
+                    es->selected_entity = entity;
+                }
+                else {
+                    es->selected_entity = 0;
+                }
+            }
+            else {
+                es->selected_entity = 0;
+            }
+        }
+    }
+}
+
+static void modify_entity(EditorState *es, Entity *entity) {
+
+    if(key_just_down(127)) {
+        entity_manager_remove_entity(&es->em, entity);
+        es->selected_entity = 0;
+    }
+
+}
+
 //===========================================================================
 // Entry point of the level editor
 //===========================================================================
@@ -129,14 +191,19 @@ void editor_init(EditorState *es) {
 
     es->em = entity_manager_create(1000);
 
+    es->texture = load_texture_and_mask(es, "../assets/rocks_corner.png");
 
-    es->texture = load_texture_and_mask(es, "../assets/test.png");
-
-
-
+    es->editor_mode_buttons_textures[0] = IMG_LoadTexture(es->renderer, "../assets/select_button.png");
+    es->editor_mode_buttons_textures[1] = IMG_LoadTexture(es->renderer, "../assets/entity_button.png");
+    es->editor_mode_buttons_textures[2] = IMG_LoadTexture(es->renderer, "../assets/tile_button.png");
+    es->editor_mode = EDITOR_MODE_ADD_TILE;
+    es->selected_entity = 0;
 }
 
 void editor_shutdown(EditorState *es) {
+    SDL_DestroyTexture(es->editor_mode_buttons_textures[0]);
+    SDL_DestroyTexture(es->editor_mode_buttons_textures[1]);
+    SDL_DestroyTexture(es->editor_mode_buttons_textures[2]);
     SDL_DestroyTexture(es->texture.texture);
     SDL_DestroyTexture(es->texture.mask);
     entity_manager_destroy(&es->em);
@@ -151,25 +218,23 @@ void editor_shutdown(EditorState *es) {
 void editor_update(EditorState *es) {
     process_panning(es);
     process_zoom(es);
-    // add entitites
-    if(ImGui::IsWindowHovered()) {
-        static u32 uid = 1;
-        if(mouse_button_just_down(0)) {
-            Entity *entity = entity_manager_add_entity(&es->em);
-            V2 mouse_w = get_mouse_world(es);
-            entity->pos.x = roundf(mouse_w.x / 0.5f) * 0.5f;
-            entity->pos.y = roundf(mouse_w.y / 0.5f) * 0.5f;
-            entity->scale = v2(0.5f, 0.5f);
-            entity->texture = es->texture;
-            assert((uid > 0) && (uid < 0xFF000000));
-            entity->uid = uid;
-            uid++;
-        }
-
-        if(mouse_button_just_down(2)) {
-            u32 uid = mouse_picking(es, get_mouse_screen());
-            printf("uid: %d\n", uid);
-        }
+        
+    switch(es->editor_mode) {
+        case EDITOR_MODE_SELECT_ENTITY: {
+            select_entity(es);
+            if(es->selected_entity) {
+                modify_entity(es, es->selected_entity);
+            }
+        } break;
+        case EDITOR_MODE_ADD_ENTITY: {
+            // TODO: ...
+        } break;
+        case EDITOR_MODE_ADD_TILE: {
+            add_tile(es);
+        } break;
+        default: {
+            assert(!"editor mode not handle!");
+        } break;
     }
 }
 
@@ -185,6 +250,30 @@ void editor_render(EditorState *es) {
 // ImGui UI (ImGui only Do Not use SDL here, only pass SDL_Texture to ImGui::Image)
 //===========================================================================
 void editor_ui(EditorState *es) {
+    // Editor Mode selector Window
+    {
+        ImGui::Begin("Editor Mode Selector", 0,  ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse);
+
+        for(i32 i = 0; i < EDITOR_MODE_COUNT; i++) {
+            ImVec4 tint = ImVec4(1, 1, 1, 1);
+            if(es->editor_mode == i) {
+                tint = ImVec4(0.5f, 0.5f, 0.5f, 1);
+            }
+            ImGui::PushID(i);
+            if(ImGui::ImageButton("", es->editor_mode_buttons_textures[i], ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), tint)) {
+                if(es->editor_mode != i) {
+                    es->editor_mode = (EditorMode)i;
+                }
+                
+            }
+            ImGui::PopID();
+            ImGui::SameLine();
+        }
+
+        ImGui::End();
+    }
+
+
     // demo window
     {
         static bool show_demo = true; 

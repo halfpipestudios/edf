@@ -1,6 +1,15 @@
 #ifndef EDITOR_H
 #define EDITOR_H
 
+enum EditorMode {
+    EDITOR_MODE_SELECT_ENTITY,
+    EDITOR_MODE_ADD_ENTITY,
+    EDITOR_MODE_ADD_TILE,
+
+    EDITOR_MODE_COUNT
+};
+
+
 struct EditorState {
     bool just_focus;
 
@@ -12,8 +21,11 @@ struct EditorState {
     bool mouse_wheel_down;
 
     EntityManager em;
-
     Texture texture;
+
+    EditorMode editor_mode;
+    SDL_Texture *editor_mode_buttons_textures[3];
+    Entity *selected_entity;
 
     // for internal use
     SDL_Window *window;
