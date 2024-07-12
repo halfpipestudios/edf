@@ -289,7 +289,10 @@ void editor_render(EditorState *es) {
 // ImGui UI (ImGui only Do Not use SDL here, only pass SDL_Texture to ImGui::Image)
 //==================================================================================
 static void editor_mode_window(EditorState *es) {
-    ImGui::Begin("Editor Mode Selector", 0,  ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse);
+    ImGuiWindowClass window_class;
+    window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_AutoHideTabBar;
+    ImGui::SetNextWindowClass(&window_class);
+    ImGui::Begin("Editor Mode Selector", 0,  ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
     for(i32 i = 0; i < EDITOR_MODE_COUNT; i++) {
         ImVec4 tint = ImVec4(1, 1, 1, 1);
         if(es->editor_mode == i) {
@@ -309,7 +312,10 @@ static void editor_mode_window(EditorState *es) {
 }
 
 static void entity_modify_window(EditorState *es) {
-    ImGui::Begin("Entity Modify", 0,  ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse);
+    ImGuiWindowClass window_class;
+    window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_AutoHideTabBar;
+    ImGui::SetNextWindowClass(&window_class);
+    ImGui::Begin("Entity Modify", 0,  ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
     for(i32 i = 0; i < ENTITY_MODIFY_COUNT; i++) {
         ImVec4 tint = ImVec4(1, 1, 1, 1);
         if(es->entity_modify_mode == i) {
@@ -328,46 +334,49 @@ static void entity_modify_window(EditorState *es) {
 }
 
 static void texture_selector_window(EditorState *es) {
-        ImGui::Begin("Textures", 0, ImGuiWindowFlags_NoCollapse);
+    ImGuiWindowClass window_class;
+    window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_AutoHideTabBar;
+    ImGui::SetNextWindowClass(&window_class);
+    ImGui::Begin("Textures", 0, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
 
-        ImGuiStyle& style = ImGui::GetStyle();
-        i32 buttons_count = es->texture_count;
-        f32 window_visible_x2 = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x;
-        for (i32 i = 0; i < buttons_count; i++)
+    ImGuiStyle& style = ImGui::GetStyle();
+    i32 buttons_count = es->texture_count;
+    f32 window_visible_x2 = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x;
+    for (i32 i = 0; i < buttons_count; i++)
+    {
+        ImTextureID textureId = es->textures[i].texture;
+        f32 uMin = 0;
+        f32 vMin = 0;
+
+        f32 uMax = 1;
+        f32 vMax = 1;
+
+        ImVec2 uvMin = ImVec2(uMin, vMin);
+        ImVec2 uvMax = ImVec2(uMax, vMax);
+
+        ImVec4 tintCol = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+        ImVec4 backCol = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
+        
+        ImGui::PushID(i);
+        if(ImGui::ImageButton(textureId, ImVec2(64, 64), uvMin, uvMax, 1, backCol, tintCol))
         {
-            ImTextureID textureId = es->textures[i].texture;
-            f32 uMin = 0;
-            f32 vMin = 0;
-
-            f32 uMax = 1;
-            f32 vMax = 1;
-
-            ImVec2 uvMin = ImVec2(uMin, vMin);
-            ImVec2 uvMax = ImVec2(uMax, vMax);
-
-            ImVec4 tintCol = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-            ImVec4 backCol = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
-            
-            ImGui::PushID(i);
-            if(ImGui::ImageButton(textureId, ImVec2(64, 64), uvMin, uvMax, 1, backCol, tintCol))
-            {
-                es->selected_texture = es->textures[i];
-            }
-
-            f32 max = ImGui::GetItemRectMax().x;
-            f32 min = ImGui::GetItemRectMin().x;
-
-            f32 last_button_x2 = ImGui::GetItemRectMax().x;
-            f32 next_button_x2 = last_button_x2 + style.ItemSpacing.x + (max - min);
-            
-            if (i + 1 < buttons_count && next_button_x2 < window_visible_x2)
-                ImGui::SameLine();
-
-
-            ImGui::PopID();
+            es->selected_texture = es->textures[i];
         }
 
-        ImGui::End();
+        f32 max = ImGui::GetItemRectMax().x;
+        f32 min = ImGui::GetItemRectMin().x;
+
+        f32 last_button_x2 = ImGui::GetItemRectMax().x;
+        f32 next_button_x2 = last_button_x2 + style.ItemSpacing.x + (max - min);
+        
+        if (i + 1 < buttons_count && next_button_x2 < window_visible_x2)
+            ImGui::SameLine();
+
+
+        ImGui::PopID();
+    }
+
+    ImGui::End();
 }
 
 void editor_ui(EditorState *es) {

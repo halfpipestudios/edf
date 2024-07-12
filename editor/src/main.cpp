@@ -142,8 +142,10 @@ i32 main(void) {
         ImGui::DockSpace(ImGui::GetID("Dockspace"));
 
         // draw the back buffer
-
-        ImGui::Begin("Game Viewport", 0, ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse);
+        ImGuiWindowClass window_class;
+        window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_AutoHideTabBar;
+        ImGui::SetNextWindowClass(&window_class);
+        ImGui::Begin("Game Viewport", 0, ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
 
         SDL_SetRenderTarget(es->renderer, es->mouse_picking_buffer);
         SDL_SetRenderDrawColor(es->renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
