@@ -129,7 +129,7 @@ static void add_tile(EditorState *es) {
             entity->pos.x = roundf(mouse_w.x / 0.5f) * 0.5f;
             entity->pos.y = roundf(mouse_w.y / 0.5f) * 0.5f;
             entity->scale = v2(0.5f, 0.5f);
-            entity->texture = es->texture;
+            entity->texture = es->selected_texture;
             assert((uid > 0) && (uid < 0xFF000000));
             entity->uid = uid;
             uid++;
@@ -194,7 +194,7 @@ void editor_init(EditorState *es) {
 
     es->em = entity_manager_create(1000);
 
-    es->texture = load_texture_and_mask(es, "../assets/rocks_corner.png");
+    //es->texture[0] = load_texture_and_mask(es, "../assets/rocks_corner.png");
 
     es->editor_mode_buttons_textures[0] = IMG_LoadTexture(es->renderer, "../assets/select_button.png");
     es->editor_mode_buttons_textures[1] = IMG_LoadTexture(es->renderer, "../assets/entity_button.png");
@@ -206,14 +206,45 @@ void editor_init(EditorState *es) {
     es->entity_modify_textrues[1] = IMG_LoadTexture(es->renderer, "../assets/rotation_button.png");
     es->entity_modify_textrues[2] = IMG_LoadTexture(es->renderer, "../assets/scale_button.png");
     es->entity_modify_mode = ENTITY_MODIFY_MODE_TRANSLATE;
+
+
+    // Load all the exture in the game asset folder
+    // Get All file in a directory test
+    namespace fs = std::filesystem;
+    // path to the directory
+    std::string path = "../../game/assets";
+    // this structure would distinguish a file from a directory
+    struct stat sb;
+
+    // looping until all the items in the dir are exhausted
+    es->texture_count = 0;
+    for(const auto& entry : fs::directory_iterator(path)) {
+        // Converting the path to const char * in the
+        // subsequent lines
+        fs::path outfilename = entry.path();
+        std::string outfilename_str = outfilename.string();
+        const char* path = outfilename_str.c_str();
+        // Testing whether the path points to a
+        // non-directory or not If it does, displays path
+        if (stat(path, &sb) == 0 && !(sb.st_mode & S_IFDIR) && outfilename_str.find(".png") != std::string::npos) {
+
+            es->textures[es->texture_count] = load_texture_and_mask(es, path);
+            es->texture_count++;
+
+        }
+    }
+    es->selected_texture = es->textures[0];
+
 }
 
 void editor_shutdown(EditorState *es) {
     SDL_DestroyTexture(es->editor_mode_buttons_textures[0]);
     SDL_DestroyTexture(es->editor_mode_buttons_textures[1]);
     SDL_DestroyTexture(es->editor_mode_buttons_textures[2]);
-    SDL_DestroyTexture(es->texture.texture);
-    SDL_DestroyTexture(es->texture.mask);
+    for(i32 i = 0; i < es->texture_count; i++) {
+        SDL_DestroyTexture(es->textures[i].texture);
+        SDL_DestroyTexture(es->textures[i].mask);
+    }
     entity_manager_destroy(&es->em);
 }
 //===========================================================================
@@ -254,11 +285,10 @@ void editor_render(EditorState *es) {
 //===========================================================================
 
 
-//===========================================================================
+//==================================================================================
 // ImGui UI (ImGui only Do Not use SDL here, only pass SDL_Texture to ImGui::Image)
-//===========================================================================
-
-void editor_mode_window(EditorState *es) {
+//==================================================================================
+static void editor_mode_window(EditorState *es) {
     ImGui::Begin("Editor Mode Selector", 0,  ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse);
     for(i32 i = 0; i < EDITOR_MODE_COUNT; i++) {
         ImVec4 tint = ImVec4(1, 1, 1, 1);
@@ -278,7 +308,7 @@ void editor_mode_window(EditorState *es) {
     ImGui::End();
 }
 
-void entity_modify_window(EditorState *es) {
+static void entity_modify_window(EditorState *es) {
     ImGui::Begin("Entity Modify", 0,  ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse);
     for(i32 i = 0; i < ENTITY_MODIFY_COUNT; i++) {
         ImVec4 tint = ImVec4(1, 1, 1, 1);
@@ -297,13 +327,56 @@ void entity_modify_window(EditorState *es) {
     ImGui::End();
 }
 
+static void texture_selector_window(EditorState *es) {
+        ImGui::Begin("Textures", 0, ImGuiWindowFlags_NoCollapse);
+
+        ImGuiStyle& style = ImGui::GetStyle();
+        i32 buttons_count = es->texture_count;
+        f32 window_visible_x2 = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x;
+        for (i32 i = 0; i < buttons_count; i++)
+        {
+            ImTextureID textureId = es->textures[i].texture;
+            f32 uMin = 0;
+            f32 vMin = 0;
+
+            f32 uMax = 1;
+            f32 vMax = 1;
+
+            ImVec2 uvMin = ImVec2(uMin, vMin);
+            ImVec2 uvMax = ImVec2(uMax, vMax);
+
+            ImVec4 tintCol = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+            ImVec4 backCol = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
+            
+            ImGui::PushID(i);
+            if(ImGui::ImageButton(textureId, ImVec2(64, 64), uvMin, uvMax, 1, backCol, tintCol))
+            {
+                es->selected_texture = es->textures[i];
+            }
+
+            f32 max = ImGui::GetItemRectMax().x;
+            f32 min = ImGui::GetItemRectMin().x;
+
+            f32 last_button_x2 = ImGui::GetItemRectMax().x;
+            f32 next_button_x2 = last_button_x2 + style.ItemSpacing.x + (max - min);
+            
+            if (i + 1 < buttons_count && next_button_x2 < window_visible_x2)
+                ImGui::SameLine();
+
+
+            ImGui::PopID();
+        }
+
+        ImGui::End();
+}
+
 void editor_ui(EditorState *es) {
     editor_mode_window(es);
     entity_modify_window(es);
+    texture_selector_window(es);
 
 #if 0
-    // demo window
-    {
+    /*demo window*/ {
         static bool show_demo = true; 
         ImGui::ShowDemoWindow(&show_demo);
     }

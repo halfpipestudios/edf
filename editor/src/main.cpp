@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <filesystem>
+#include <string>
 
 #include <imgui.h>
 #include <imgui_impl_sdl2.h>
@@ -65,6 +67,8 @@ i32 main(void) {
     
     // Setup Dear ImGui style
     ImGui::StyleColorsLight();
+    //ImGui::StyleColorsDark();
+    //ImGui::StyleColorsClassic();
     ImGui_ImplSDL2_InitForSDLRenderer(es->window, es->renderer);
     ImGui_ImplSDLRenderer2_Init(es->renderer);
     

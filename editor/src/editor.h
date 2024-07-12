@@ -29,11 +29,13 @@ struct EditorState {
     bool mouse_wheel_down;
 
     EntityManager em;
-    Texture texture;
+    Texture textures[128];
+    i32 texture_count;
 
     EditorMode editor_mode;
     SDL_Texture *editor_mode_buttons_textures[EDITOR_MODE_COUNT];
     Entity *selected_entity;
+    Texture selected_texture;
 
     EntityModifyMode entity_modify_mode;
     SDL_Texture *entity_modify_textrues[ENTITY_MODIFY_COUNT];
