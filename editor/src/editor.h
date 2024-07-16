@@ -6,7 +6,8 @@ enum EditorMode {
     EDITOR_MODE_ADD_ENTITY,
     EDITOR_MODE_ADD_TILE,
 
-    EDITOR_MODE_COUNT
+    EDITOR_MODE_COUNT,
+    EDITOR_MODE_NONE
 };
 
 enum EntityModifyMode {
@@ -14,7 +15,8 @@ enum EntityModifyMode {
     ENTITY_MODIFY_MODE_ROTATE,
     ENTITY_MODIFY_MODE_SCALE,
 
-    ENTITY_MODIFY_COUNT
+    ENTITY_MODIFY_COUNT,
+    ENTITY_MODIFY_MODE_NONE
 };
 
 enum Axis {

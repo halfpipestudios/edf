@@ -297,7 +297,6 @@ static void process_entitites(EditorState *es) {
                 add_tile(es);
             } break;
             default: {
-                assert(!"editor mode not handle!");
             } break;
         }
     }
@@ -345,13 +344,13 @@ void editor_init(EditorState *es) {
     es->editor_mode_buttons_textures[0] = IMG_LoadTexture(es->renderer, "../assets/select_button.png");
     es->editor_mode_buttons_textures[1] = IMG_LoadTexture(es->renderer, "../assets/entity_button.png");
     es->editor_mode_buttons_textures[2] = IMG_LoadTexture(es->renderer, "../assets/tile_button.png");
-    es->editor_mode = EDITOR_MODE_ADD_TILE;
+    es->editor_mode = EDITOR_MODE_NONE;
     es->selected_entity = 0;
 
     es->entity_modify_textrues[0] = IMG_LoadTexture(es->renderer, "../assets/translate_button.png");
     es->entity_modify_textrues[1] = IMG_LoadTexture(es->renderer, "../assets/rotation_button.png");
     es->entity_modify_textrues[2] = IMG_LoadTexture(es->renderer, "../assets/scale_button.png");
-    es->ems.entity_modify_mode = ENTITY_MODIFY_MODE_TRANSLATE;
+    es->ems.entity_modify_mode = ENTITY_MODIFY_MODE_NONE;
     es->ems.selected_axis = AXIS_NONE;
 
 
@@ -459,6 +458,52 @@ static void entity_modify_window(EditorState *es) {
     ImGui::End();
 }
 
+static void entity_property_window(EditorState *es) {
+    ImGuiWindowClass window_class;
+    window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_AutoHideTabBar;
+    ImGui::SetNextWindowClass(&window_class);
+    ImGui::Begin("Entity", 0, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+
+    if(es->selected_entity) {
+        Entity *entity = es->selected_entity;
+
+        ImGui::Text("Texture:");
+        ImGui::Image(entity->texture.texture, ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(0, 0, 0, 0));
+        if (ImGui::BeginCombo("textures", 0, ImGuiComboFlags_NoPreview)) {
+            for (i32 i = 0; i < es->texture_count; i++) {
+
+                if(i % 2 != 0) {
+                    ImGui::SameLine();
+                }
+
+                bool is_selected = entity->texture.texture == es->textures[i].texture;
+                
+                ImGui::PushID(i);
+                if(ImGui::ImageButton(es->textures[i].texture, ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), 1, ImVec4(0.0f, 0.0f, 0.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f)))
+                {
+                    entity->texture = es->textures[i];
+                }
+                ImGui::PopID();
+
+                if (is_selected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
+
+        ImGui::Text("Transform:");
+        ImGui::InputFloat2("position", (f32 *)&entity->pos);
+        ImGui::InputFloat2("scale", (f32 *)&entity->scale);
+        ImGui::InputFloat("angle", &entity->angle);
+    }
+    else {
+        ImGui::Text("there is no selected entity");
+    }
+
+    ImGui::End();
+}
+
 static void texture_selector_window(EditorState *es) {
     ImGuiWindowClass window_class;
     window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_AutoHideTabBar;
@@ -509,6 +554,7 @@ void editor_ui(EditorState *es) {
     editor_mode_window(es);
     entity_modify_window(es);
     texture_selector_window(es);
+    entity_property_window(es);
 
 #if 0
     /*demo window*/ {
