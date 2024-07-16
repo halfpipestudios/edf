@@ -17,6 +17,17 @@ enum EntityModifyMode {
     ENTITY_MODIFY_COUNT
 };
 
+enum Axis {
+    AXIS_X,
+    AXIS_Y,
+    AXIS_NONE
+};
+
+struct EntityModifyState {
+    u8 selected_axis; 
+    EntityModifyMode entity_modify_mode;
+    f32 start_angle;
+};
 
 struct EditorState {
     bool just_focus;
@@ -37,7 +48,7 @@ struct EditorState {
     Entity *selected_entity;
     Texture selected_texture;
 
-    EntityModifyMode entity_modify_mode;
+    EntityModifyState ems;
     SDL_Texture *entity_modify_textrues[ENTITY_MODIFY_COUNT];
 
     // for internal use

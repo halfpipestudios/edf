@@ -1,42 +1,3 @@
-static void process_panning(EditorState *es) {
-    if(ImGui::IsWindowHovered()) {
-        if(mouse_button_just_down(1)) { 
-            es->mouse_wheel_down = true;
-        }
-    }
-    if(mouse_button_just_up(1)) {
-        es->mouse_wheel_down = false;    
-    }
-    if(es->mouse_wheel_down) {
-        f32 x_delta = (f32)get_mouse_delta_x();
-        f32 y_delta = (f32)get_mouse_delta_y();
-        es->camera.x -= x_delta*PIXEL_TO_METERS;
-        es->camera.y += y_delta*PIXEL_TO_METERS;
-    }
-}
-
-static void process_zoom(EditorState *es) {
-    if(ImGui::IsWindowHovered()) {
-        V2 mouse_pos_pre_zoom = get_mouse_world(es);
-        if(es->mouse_wheel != 0)
-        {
-            if(es->mouse_wheel > 0)
-            {
-                es->mouse_wheel_offset *= 1.1f;
-            }
-            else
-            {
-                es->mouse_wheel_offset *= 0.9f;
-            }
-            es->mouse_wheel_offset = clamp(es->mouse_wheel_offset, 0.15f, 8.0f);
-            es->zoom = es->mouse_wheel_offset * es->mouse_wheel_offset;
-        } 
-        V2 mouse_pos_post_zoom = get_mouse_world(es);
-        es->camera.x += (mouse_pos_pre_zoom.x - mouse_pos_post_zoom.x)*es->zoom;
-        es->camera.y += (mouse_pos_pre_zoom.y - mouse_pos_post_zoom.y)*es->zoom;
-    }
-}
-
 static void draw_all_entities(EditorState *es) {
     Entity *entity = es->em.first;
     while(entity) {
@@ -167,17 +128,142 @@ static void select_entity(EditorState *es) {
     }
 }
 
+//=================================================================================
+// Entity Modify functions
+//=================================================================================
+static void translate_entity(EditorState *es, EntityModifyState *ems, Entity *entity) {
+    V2 mouse_wolrd = get_mouse_world(es);
+    V2 mouse_last_world = get_mouse_last_world(es);
+    V2 mouse_delta  = v2_sub(mouse_wolrd, mouse_last_world);
+    switch(ems->selected_axis) {
+        case AXIS_NONE: {
+            entity->pos = v2_add(entity->pos, mouse_delta);
+        } break;
+        case AXIS_X: {
+            entity->pos.x += mouse_delta.x;
+        } break;
+        case AXIS_Y: {
+            entity->pos.y += mouse_delta.y;
+        } break;
+    }
+}
 
+static void rotate_entity(EditorState *es, EntityModifyState *ems, Entity *entity) {
+     
+}
 
-static void modify_entity(EditorState *es, Entity *entity) {
+static void scale_entity(EditorState *es, EntityModifyState *ems, Entity *entity) {
+    V2 mouse_wolrd = get_mouse_world(es);
+    V2 mouse_last_world = get_mouse_last_world(es);
+    V2 mouse_delta  = v2_sub(mouse_wolrd, mouse_last_world);
+    switch(ems->selected_axis) {
+        case AXIS_NONE: {
+            entity->scale = v2_add(entity->scale, mouse_delta);
+        } break;
+        case AXIS_X: {
+            entity->scale.x += mouse_delta.x;
+        } break;
+        case AXIS_Y: {
+            entity->scale.y += mouse_delta.y;
+        } break;
+    }
+}
+
+static void modify_entity(EditorState *es, EntityModifyState *ems, Entity *entity) {
     if(key_just_down(127)) {
         entity_manager_remove_entity(&es->em, entity);
         es->selected_entity = 0;
     }
 
-
-
+    if(key_just_down(SDLK_x)) {
+        ems->selected_axis = AXIS_X;
+    }
+    if(key_just_down(SDLK_y)) {
+        ems->selected_axis = AXIS_Y;
+    }
+    if(key_just_down(SDLK_ESCAPE)) {
+        ems->selected_axis = AXIS_NONE;
+    }
+    
+    if(ImGui::IsWindowFocused() && mouse_button_down(0)) {
+        switch(ems->entity_modify_mode) {
+            case ENTITY_MODIFY_MODE_TRANSLATE: {
+                translate_entity(es, ems, entity); 
+            } break;
+            case ENTITY_MODIFY_MODE_ROTATE: {
+                rotate_entity(es, ems, entity); 
+            } break;
+            case ENTITY_MODIFY_MODE_SCALE: {
+                scale_entity(es, ems, entity); 
+            } break;
+            default: {
+            } break;
+        }
+    }
 }
+
+static void process_panning(EditorState *es) {
+    if(ImGui::IsWindowHovered()) {
+        if(mouse_button_just_down(1)) { 
+            es->mouse_wheel_down = true;
+        }
+    }
+    if(mouse_button_just_up(1)) {
+        es->mouse_wheel_down = false;    
+    }
+    if(es->mouse_wheel_down) {
+        f32 x_delta = (f32)get_mouse_delta_x();
+        f32 y_delta = (f32)get_mouse_delta_y();
+        es->camera.x -= x_delta*PIXEL_TO_METERS;
+        es->camera.y += y_delta*PIXEL_TO_METERS;
+    }
+}
+
+static void process_entitites(EditorState *es) {
+    if(!es->mouse_wheel_down) {
+        switch(es->editor_mode) {
+            case EDITOR_MODE_SELECT_ENTITY: {
+                select_entity(es);
+                if(es->selected_entity) {
+                    modify_entity(es, &es->ems, es->selected_entity);
+                }
+            } break;
+            case EDITOR_MODE_ADD_ENTITY: {
+                // TODO: ...
+            } break;
+            case EDITOR_MODE_ADD_TILE: {
+                add_tile(es);
+            } break;
+            default: {
+                assert(!"editor mode not handle!");
+            } break;
+        }
+    }
+}
+
+static void process_zoom(EditorState *es) {
+    if(ImGui::IsWindowHovered()) {
+        V2 mouse_pos_pre_zoom = get_mouse_world(es);
+        if(es->mouse_wheel != 0)
+        {
+            if(es->mouse_wheel > 0)
+            {
+                es->mouse_wheel_offset *= 1.1f;
+            }
+            else
+            {
+                es->mouse_wheel_offset *= 0.9f;
+            }
+            es->mouse_wheel_offset = clamp(es->mouse_wheel_offset, 0.15f, 8.0f);
+            es->zoom = es->mouse_wheel_offset * es->mouse_wheel_offset;
+        } 
+        V2 mouse_pos_post_zoom = get_mouse_world(es);
+        es->camera.x += (mouse_pos_pre_zoom.x - mouse_pos_post_zoom.x)*es->zoom;
+        es->camera.y += (mouse_pos_pre_zoom.y - mouse_pos_post_zoom.y)*es->zoom;
+    }
+}
+//=================================================================================
+//=================================================================================
 
 //===========================================================================
 // Entry point of the level editor
@@ -205,7 +291,9 @@ void editor_init(EditorState *es) {
     es->entity_modify_textrues[0] = IMG_LoadTexture(es->renderer, "../assets/translate_button.png");
     es->entity_modify_textrues[1] = IMG_LoadTexture(es->renderer, "../assets/rotation_button.png");
     es->entity_modify_textrues[2] = IMG_LoadTexture(es->renderer, "../assets/scale_button.png");
-    es->entity_modify_mode = ENTITY_MODIFY_MODE_TRANSLATE;
+    es->ems.entity_modify_mode = ENTITY_MODIFY_MODE_TRANSLATE;
+    es->ems.selected_axis = AXIS_NONE;
+    es->ems.start_angle = 0;
 
 
     // Load all the exture in the game asset folder
@@ -251,25 +339,8 @@ void editor_shutdown(EditorState *es) {
 //===========================================================================
 void editor_update(EditorState *es) {
     process_panning(es);
+    process_entitites(es); 
     process_zoom(es);
-        
-    switch(es->editor_mode) {
-        case EDITOR_MODE_SELECT_ENTITY: {
-            select_entity(es);
-            if(es->selected_entity) {
-                modify_entity(es, es->selected_entity);
-            }
-        } break;
-        case EDITOR_MODE_ADD_ENTITY: {
-            // TODO: ...
-        } break;
-        case EDITOR_MODE_ADD_TILE: {
-            add_tile(es);
-        } break;
-        default: {
-            assert(!"editor mode not handle!");
-        } break;
-    }
 }
 
 void editor_render(EditorState *es) {
@@ -307,19 +378,20 @@ static void editor_mode_window(EditorState *es) {
 }
 
 static void entity_modify_window(EditorState *es) {
+    EntityModifyState *ems = &es->ems;
     ImGuiWindowClass window_class;
     window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_AutoHideTabBar;
     ImGui::SetNextWindowClass(&window_class);
     ImGui::Begin("Entity Modify", 0,  ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
     for(i32 i = 0; i < ENTITY_MODIFY_COUNT; i++) {
         ImVec4 tint = ImVec4(1, 1, 1, 1);
-        if(es->entity_modify_mode == i) {
+        if(ems->entity_modify_mode == i) {
             tint = ImVec4(0.5f, 0.5f, 0.5f, 1);
         }
         ImGui::PushID(i);
         if(ImGui::ImageButton("", es->entity_modify_textrues[i], ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), tint)) {
-            if(es->entity_modify_mode != i) {
-                es->entity_modify_mode = (EntityModifyMode)i;
+            if(ems->entity_modify_mode != i) {
+                ems->entity_modify_mode = (EntityModifyMode)i;
             }
             
         }

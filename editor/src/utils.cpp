@@ -111,6 +111,33 @@ static V2 get_mouse_world(EditorState *es) {
     world.y *= -1.0f;
     return world;
 }
+
+static V2 get_mouse_last_screen() {
+    ImVec2 min = ImGui::GetWindowContentRegionMin();
+    ImVec2 max = ImGui::GetWindowContentRegionMax();
+    min.x += ImGui::GetWindowPos().x;
+    min.y += ImGui::GetWindowPos().y;
+    max.x += ImGui::GetWindowPos().x;
+    max.y += ImGui::GetWindowPos().y;
+    V2 result;
+    result.x = get_mouse_last_x() - min.x;
+    result.y = get_mouse_last_y() - min.y;
+    return result;
+}
+
+
+static V2 get_mouse_last_world(EditorState *es) {
+    V2 screen = get_mouse_last_screen();
+    V2 world;
+    world.x = (screen.x - (BACK_BUFFER_WIDTH*0.5f)) * PIXEL_TO_METERS;
+    world.x += es->camera.x;
+    world.x /= es->zoom;
+    world.y = (screen.y - (BACK_BUFFER_HEIGHT*0.5f)) * PIXEL_TO_METERS;
+    world.y -= es->camera.y;
+    world.y /= es->zoom;
+    world.y *= -1.0f;
+    return world;
+}
 //===========================================================================
 //===========================================================================
 
