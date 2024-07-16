@@ -26,7 +26,6 @@ enum Axis {
 struct EntityModifyState {
     u8 selected_axis; 
     EntityModifyMode entity_modify_mode;
-    f32 start_angle;
 };
 
 struct EditorState {

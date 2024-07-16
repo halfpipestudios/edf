@@ -159,11 +159,10 @@ i32 main(void) {
             draw_quad(es, 
                       entity->pos.x, entity->pos.y,
                       entity->scale.x, entity->scale.y,
+                      entity->angle,
                       entity->texture.mask);
             entity = entity->next;
         }
-
-        
         
         SDL_SetRenderTarget(es->renderer, es->back_buffer);
         SDL_SetRenderDrawColor(es->renderer, 25, 25, 25, SDL_ALPHA_OPAQUE);

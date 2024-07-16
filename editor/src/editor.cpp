@@ -4,16 +4,26 @@ static void draw_all_entities(EditorState *es) {
         u8 r = (entity->uid >> 16) & 0xFF;
         u8 g = (entity->uid >>  8) & 0xFF;
         u8 b = (entity->uid >>  0) & 0xFF;
-        if(entity == es->selected_entity) {
-            SDL_SetTextureColorMod(entity->texture.texture, 0, 255, 0);
-        }
-        else {
-            SDL_SetTextureColorMod(entity->texture.texture, 255, 255, 255);
-        }
+        
         draw_quad(es, 
                   entity->pos.x, entity->pos.y,
                   entity->scale.x, entity->scale.y,
+                  entity->angle,
                   entity->texture.texture);
+
+        // reference for entity orientation
+        if(entity == es->selected_entity) {
+            V2 o = entity->pos;
+            V2 x = v2(cosf(entity->angle), sinf(entity->angle));
+            V2 y = v2(-x.y, x.x);
+            x = v2_scale(x, 1.0f/es->zoom);
+            y = v2_scale(y, 1.0f/es->zoom);
+            V2 a = v2_add(o, x);
+            V2 b = v2_add(o, y);
+            draw_line_world(es, o.x, o.y, a.x, a.y, 0xFFFF00FF);
+            draw_line_world(es, o.x, o.y, b.x, b.y, 0xFFFF00FF);
+        }
+
         entity = entity->next;
     }
 }
@@ -132,6 +142,16 @@ static void select_entity(EditorState *es) {
 // Entity Modify functions
 //=================================================================================
 static void translate_entity(EditorState *es, EntityModifyState *ems, Entity *entity) {
+    if(!ImGui::IsWindowFocused() || !mouse_button_down(0)) {
+        return;
+    }
+
+    // TODO: remove this local static variable
+    static V2 og_entity_pos = v2(0, 0);
+    if(mouse_button_just_down(0)) {
+        og_entity_pos = entity->pos;
+    }
+
     V2 mouse_wolrd = get_mouse_world(es);
     V2 mouse_last_world = get_mouse_last_world(es);
     V2 mouse_delta  = v2_sub(mouse_wolrd, mouse_last_world);
@@ -141,18 +161,44 @@ static void translate_entity(EditorState *es, EntityModifyState *ems, Entity *en
         } break;
         case AXIS_X: {
             entity->pos.x += mouse_delta.x;
+            entity->pos.y = og_entity_pos.y;
         } break;
         case AXIS_Y: {
+            entity->pos.x = og_entity_pos.x;
             entity->pos.y += mouse_delta.y;
         } break;
     }
 }
 
 static void rotate_entity(EditorState *es, EntityModifyState *ems, Entity *entity) {
-     
+    if(!ImGui::IsWindowFocused() || !mouse_button_down(0)) {
+        return;
+    }
+
+    V2 mouse_wolrd = get_mouse_world(es);
+    V2 mouse_last_world = get_mouse_last_world(es);
+    
+    V2 curr_dir = v2_normalized(v2_sub(mouse_wolrd, entity->pos));
+    V2 last_dir = v2_normalized(v2_sub(mouse_last_world, entity->pos));
+
+    f32 curr_angle = atan2(curr_dir.y, curr_dir.x);
+    f32 last_angle = atan2(last_dir.y, last_dir.x);
+    f32 delta_angle = curr_angle - last_angle;
+    
+    entity->angle += delta_angle;
 }
 
 static void scale_entity(EditorState *es, EntityModifyState *ems, Entity *entity) {
+    if(!ImGui::IsWindowFocused() || !mouse_button_down(0)) {
+        return;
+    }
+
+    // TODO: remove this local static variable
+    static V2 og_entity_scale = v2(0, 0);
+    if(mouse_button_just_down(0)) {
+        og_entity_scale = entity->scale;
+    }
+
     V2 mouse_wolrd = get_mouse_world(es);
     V2 mouse_last_world = get_mouse_last_world(es);
     V2 mouse_delta  = v2_sub(mouse_wolrd, mouse_last_world);
@@ -162,8 +208,10 @@ static void scale_entity(EditorState *es, EntityModifyState *ems, Entity *entity
         } break;
         case AXIS_X: {
             entity->scale.x += mouse_delta.x;
+            entity->scale.y = og_entity_scale.y;
         } break;
         case AXIS_Y: {
+            entity->scale.x = og_entity_scale.x;
             entity->scale.y += mouse_delta.y;
         } break;
     }
@@ -185,22 +233,36 @@ static void modify_entity(EditorState *es, EntityModifyState *ems, Entity *entit
         ems->selected_axis = AXIS_NONE;
     }
     
-    if(ImGui::IsWindowFocused() && mouse_button_down(0)) {
-        switch(ems->entity_modify_mode) {
-            case ENTITY_MODIFY_MODE_TRANSLATE: {
-                translate_entity(es, ems, entity); 
-            } break;
-            case ENTITY_MODIFY_MODE_ROTATE: {
-                rotate_entity(es, ems, entity); 
-            } break;
-            case ENTITY_MODIFY_MODE_SCALE: {
-                scale_entity(es, ems, entity); 
-            } break;
-            default: {
-            } break;
-        }
+    if(key_just_down(SDLK_t)) {
+        ems->selected_axis = AXIS_NONE;
+        ems->entity_modify_mode = ENTITY_MODIFY_MODE_TRANSLATE;
     }
+    if(key_just_down(SDLK_r)) {
+        ems->selected_axis = AXIS_NONE;
+        ems->entity_modify_mode = ENTITY_MODIFY_MODE_ROTATE;
+    }
+    if(key_just_down(SDLK_s)) {
+        ems->selected_axis = AXIS_NONE;
+        ems->entity_modify_mode = ENTITY_MODIFY_MODE_SCALE;
+    }
+    
+    switch(ems->entity_modify_mode) {
+        case ENTITY_MODIFY_MODE_TRANSLATE: {
+            translate_entity(es, ems, entity); 
+        } break;
+        case ENTITY_MODIFY_MODE_ROTATE: {
+            rotate_entity(es, ems, entity); 
+        } break;
+        case ENTITY_MODIFY_MODE_SCALE: {
+            scale_entity(es, ems, entity); 
+        } break;
+        default: {
+        } break;
+    }
+    
 }
+//=================================================================================
+//=================================================================================
 
 static void process_panning(EditorState *es) {
     if(ImGui::IsWindowHovered()) {
@@ -262,8 +324,6 @@ static void process_zoom(EditorState *es) {
         es->camera.y += (mouse_pos_pre_zoom.y - mouse_pos_post_zoom.y)*es->zoom;
     }
 }
-//=================================================================================
-//=================================================================================
 
 //===========================================================================
 // Entry point of the level editor
@@ -293,7 +353,6 @@ void editor_init(EditorState *es) {
     es->entity_modify_textrues[2] = IMG_LoadTexture(es->renderer, "../assets/scale_button.png");
     es->ems.entity_modify_mode = ENTITY_MODIFY_MODE_TRANSLATE;
     es->ems.selected_axis = AXIS_NONE;
-    es->ems.start_angle = 0;
 
 
     // Load all the exture in the game asset folder
@@ -390,10 +449,10 @@ static void entity_modify_window(EditorState *es) {
         }
         ImGui::PushID(i);
         if(ImGui::ImageButton("", es->entity_modify_textrues[i], ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), tint)) {
+            ems->selected_axis = AXIS_NONE;
             if(ems->entity_modify_mode != i) {
                 ems->entity_modify_mode = (EntityModifyMode)i;
             }
-            
         }
         ImGui::PopID();
     }

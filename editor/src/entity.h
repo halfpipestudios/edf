@@ -12,6 +12,7 @@ struct Entity {
     u32 uid;
     V2 pos;
     V2 scale;
+    f32 angle;
     Texture texture;
 
     Entity *next;

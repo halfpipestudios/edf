@@ -1,20 +1,19 @@
 //===========================================================================
 // Utility functions
 //===========================================================================
-static void draw_quad(EditorState *es, f32 x, f32 y, f32 w, f32 h, SDL_Texture *texture) {
+static void draw_quad(EditorState *es, f32 x, f32 y, f32 w, f32 h, f32 angle, SDL_Texture *texture) {
+    f32 cx = es->camera.x;
+    f32 cy = -es->camera.y;
+    cx = (cx * METERS_TO_PIXEL); 
+    cy = (cy * METERS_TO_PIXEL);
 
-        f32 cx = es->camera.x;
-        f32 cy = -es->camera.y;
-        cx = (cx * METERS_TO_PIXEL); 
-        cy = (cy * METERS_TO_PIXEL);
-
-        y *= -1.0f;
-        SDL_Rect dst;
-        dst.w = ((w * es->zoom) * METERS_TO_PIXEL) + 1;
-        dst.h = ((h * es->zoom) * METERS_TO_PIXEL) + 1;
-        dst.x = ((x * es->zoom) * METERS_TO_PIXEL) + (BACK_BUFFER_WIDTH * 0.5f) - (dst.w*0.5f) - cx;
-        dst.y = ((y * es->zoom) * METERS_TO_PIXEL) + (BACK_BUFFER_HEIGHT * 0.5f) - (dst.h*0.5f) - cy;
-        SDL_RenderCopyEx(es->renderer, texture, 0, &dst, 0, 0, SDL_FLIP_NONE);
+    y *= -1.0f;
+    SDL_Rect dst;
+    dst.w = ((w * es->zoom) * METERS_TO_PIXEL) + 1;
+    dst.h = ((h * es->zoom) * METERS_TO_PIXEL) + 1;
+    dst.x = ((x * es->zoom) * METERS_TO_PIXEL) + (BACK_BUFFER_WIDTH * 0.5f) - (dst.w*0.5f) - cx;
+    dst.y = ((y * es->zoom) * METERS_TO_PIXEL) + (BACK_BUFFER_HEIGHT * 0.5f) - (dst.h*0.5f) - cy;
+    SDL_RenderCopyEx(es->renderer, texture, 0, &dst, -((angle/PI) * 180.0f), 0, SDL_FLIP_NONE);
 }
 
 static void draw_line(EditorState *es, f32 x0, f32 y0, f32 x1, f32 y1, u32 color) {
@@ -23,6 +22,32 @@ static void draw_line(EditorState *es, f32 x0, f32 y0, f32 x1, f32 y1, u32 color
     f32 cy = -es->camera.y;
     cx = (cx * METERS_TO_PIXEL);
     cy = (cy * METERS_TO_PIXEL);
+
+    y0 *= -1.0f;
+    y1 *= -1.0f;
+    x0 = (x0 * METERS_TO_PIXEL) + (BACK_BUFFER_WIDTH * 0.5f) - cx;
+    y0 = (y0 * METERS_TO_PIXEL) + (BACK_BUFFER_HEIGHT * 0.5f) - cy;
+    x1 = (x1 * METERS_TO_PIXEL) + (BACK_BUFFER_WIDTH * 0.5f) - cx;
+    y1 = (y1 * METERS_TO_PIXEL) + (BACK_BUFFER_HEIGHT * 0.5f) - cy;
+    u8 b = (u8)((color >> 24) & 0xFF); 
+    u8 g = (u8)((color >> 16) & 0xFF); 
+    u8 r = (u8)((color >>  8) & 0xFF); 
+    u8 a = (u8)((color >>  0) & 0xFF); 
+    SDL_SetRenderDrawColor(es->renderer, r, g, b, a);
+    SDL_RenderDrawLine(es->renderer, x0, y0, x1, y1);
+}
+
+static void draw_line_world(EditorState *es, f32 x0, f32 y0, f32 x1, f32 y1, u32 color) {
+
+    f32 cx = es->camera.x;
+    f32 cy = -es->camera.y;
+    cx = (cx * METERS_TO_PIXEL);
+    cy = (cy * METERS_TO_PIXEL);
+
+    x0 *= es->zoom;
+    y0 *= es->zoom;
+    x1 *= es->zoom;
+    y1 *= es->zoom;
 
     y0 *= -1.0f;
     y1 *= -1.0f;
