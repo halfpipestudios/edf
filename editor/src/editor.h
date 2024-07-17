@@ -27,7 +27,7 @@ enum Axis {
 
 struct EntityModifyState {
     u8 selected_axis; 
-    EntityModifyMode entity_modify_mode;
+    //EntityModifyMode entity_modify_mode;
 };
 
 struct EditorState {
@@ -44,7 +44,7 @@ struct EditorState {
     Texture textures[128];
     i32 texture_count;
 
-    EditorMode editor_mode;
+    //EditorMode editor_mode;
     SDL_Texture *editor_mode_buttons_textures[EDITOR_MODE_COUNT];
     Entity *selected_entity;
     Texture selected_texture;
@@ -64,6 +64,7 @@ struct EditorState {
     State translate_state;
     State rotate_state;
     State scale_state;
+    StateMachine sm;
 };
 
 #endif // EDITOR_H

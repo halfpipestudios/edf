@@ -37,7 +37,6 @@ static void draw_grid_x_y(EditorState *es) {
     draw_line(es, 0, es->camera.y-(MAP_COORDS_Y*0.5f), 0, es->camera.y+(MAP_COORDS_Y*0.5f), 0x00FF00FF);
 }
 
-
 static Texture load_texture_and_mask(EditorState *es, const char *path) {
     Texture texture;
     // load the texture
@@ -69,203 +68,6 @@ static Texture load_texture_and_mask(EditorState *es, const char *path) {
     return texture;
 }
 
-static u32 mouse_picking(EditorState *es, V2 mouse) {
-
-    SDL_SetRenderTarget(es->renderer, es->mouse_picking_buffer);
-    u32 format;
-    i32 w, h;
-    SDL_QueryTexture(es->mouse_picking_buffer, &format, 0, &w, &h);
-    i32 bytes_per_pixel = SDL_BYTESPERPIXEL(format);
-
-    SDL_RenderReadPixels(es->renderer, 0, format, es->mouse_picking_pixels, bytes_per_pixel * w);
-
-    u32 color = es->mouse_picking_pixels[(i32)mouse.y * w + (i32)mouse.x] & 0xFFFFFF00;
-    u32 r = (u8)((color >> 24) & 0xFF); 
-    u32 g = (u8)((color >> 16) & 0xFF); 
-    u32 b = (u8)((color >>  8) & 0xFF); 
-    u32 a = (u8)((color >>  0) & 0xFF); 
-    u32 uid = (a << 24) | (r << 16) | (g << 8) | b;
-    
-    SDL_SetRenderTarget(es->renderer, es->back_buffer);
-
-    return uid;
-}
-
-static void add_tile(EditorState *es) {
-    if(ImGui::IsWindowHovered()) {
-        // TODO: remove this static from here becouse this is not
-        // the only place we are going to add entitites
-        static u32 uid = 1;
-        if(mouse_button_just_down(0)) {
-            Entity *entity = entity_manager_add_entity(&es->em);
-            V2 mouse_w = get_mouse_world(es);
-            entity->pos.x = roundf(mouse_w.x / 0.5f) * 0.5f;
-            entity->pos.y = roundf(mouse_w.y / 0.5f) * 0.5f;
-            entity->scale = v2(0.5f, 0.5f);
-            entity->texture = es->selected_texture;
-            assert((uid > 0) && (uid < 0xFF000000));
-            entity->uid = uid;
-            uid++;
-        }
-
-    }
-}
-
-static void select_entity(EditorState *es) {
-    if(ImGui::IsWindowHovered()) {
-        if(mouse_button_just_down(0)) {
-            u32 uid = mouse_picking(es, get_mouse_screen());
-            if(uid > 0) {
-                // TODO: use binary search for this ...
-                Entity *entity = es->em.first;
-                bool founded = false;
-                while(entity) {
-                    if(entity->uid == uid) {
-                        founded = true;
-                        break;
-                    }
-                    entity = entity->next;
-                }
-                if(founded) {
-                    es->selected_entity = entity;
-                }
-                else {
-                    es->selected_entity = 0;
-                }
-            }
-            else {
-                es->selected_entity = 0;
-            }
-        }
-    }
-}
-
-//=================================================================================
-// Entity Modify functions
-//=================================================================================
-static void translate_entity(EditorState *es, EntityModifyState *ems, Entity *entity) {
-    if(!ImGui::IsWindowFocused() || !mouse_button_down(0)) {
-        return;
-    }
-
-    // TODO: remove this local static variable
-    static V2 og_entity_pos = v2(0, 0);
-    if(mouse_button_just_down(0)) {
-        og_entity_pos = entity->pos;
-    }
-
-    V2 mouse_wolrd = get_mouse_world(es);
-    V2 mouse_last_world = get_mouse_last_world(es);
-    V2 mouse_delta  = v2_sub(mouse_wolrd, mouse_last_world);
-    switch(ems->selected_axis) {
-        case AXIS_NONE: {
-            entity->pos = v2_add(entity->pos, mouse_delta);
-        } break;
-        case AXIS_X: {
-            entity->pos.x += mouse_delta.x;
-            entity->pos.y = og_entity_pos.y;
-        } break;
-        case AXIS_Y: {
-            entity->pos.x = og_entity_pos.x;
-            entity->pos.y += mouse_delta.y;
-        } break;
-    }
-}
-
-static void rotate_entity(EditorState *es, EntityModifyState *ems, Entity *entity) {
-    if(!ImGui::IsWindowFocused() || !mouse_button_down(0)) {
-        return;
-    }
-
-    V2 mouse_wolrd = get_mouse_world(es);
-    V2 mouse_last_world = get_mouse_last_world(es);
-    
-    V2 curr_dir = v2_normalized(v2_sub(mouse_wolrd, entity->pos));
-    V2 last_dir = v2_normalized(v2_sub(mouse_last_world, entity->pos));
-
-    f32 curr_angle = atan2(curr_dir.y, curr_dir.x);
-    f32 last_angle = atan2(last_dir.y, last_dir.x);
-    f32 delta_angle = curr_angle - last_angle;
-    
-    entity->angle += delta_angle;
-}
-
-static void scale_entity(EditorState *es, EntityModifyState *ems, Entity *entity) {
-    if(!ImGui::IsWindowFocused() || !mouse_button_down(0)) {
-        return;
-    }
-
-    // TODO: remove this local static variable
-    static V2 og_entity_scale = v2(0, 0);
-    if(mouse_button_just_down(0)) {
-        og_entity_scale = entity->scale;
-    }
-
-    V2 mouse_wolrd = get_mouse_world(es);
-    V2 mouse_last_world = get_mouse_last_world(es);
-    V2 mouse_delta  = v2_sub(mouse_wolrd, mouse_last_world);
-    switch(ems->selected_axis) {
-        case AXIS_NONE: {
-            entity->scale = v2_add(entity->scale, mouse_delta);
-        } break;
-        case AXIS_X: {
-            entity->scale.x += mouse_delta.x;
-            entity->scale.y = og_entity_scale.y;
-        } break;
-        case AXIS_Y: {
-            entity->scale.x = og_entity_scale.x;
-            entity->scale.y += mouse_delta.y;
-        } break;
-    }
-}
-
-static void modify_entity(EditorState *es, EntityModifyState *ems, Entity *entity) {
-    if(key_just_down(127)) {
-        entity_manager_remove_entity(&es->em, entity);
-        es->selected_entity = 0;
-    }
-
-    if(key_just_down(SDLK_x)) {
-        ems->selected_axis = AXIS_X;
-    }
-    if(key_just_down(SDLK_y)) {
-        ems->selected_axis = AXIS_Y;
-    }
-    if(key_just_down(SDLK_ESCAPE)) {
-        ems->selected_axis = AXIS_NONE;
-    }
-    
-    if(key_just_down(SDLK_t)) {
-        ems->selected_axis = AXIS_NONE;
-        ems->entity_modify_mode = ENTITY_MODIFY_MODE_TRANSLATE;
-    }
-    if(key_just_down(SDLK_r)) {
-        ems->selected_axis = AXIS_NONE;
-        ems->entity_modify_mode = ENTITY_MODIFY_MODE_ROTATE;
-    }
-    if(key_just_down(SDLK_s)) {
-        ems->selected_axis = AXIS_NONE;
-        ems->entity_modify_mode = ENTITY_MODIFY_MODE_SCALE;
-    }
-    
-    switch(ems->entity_modify_mode) {
-        case ENTITY_MODIFY_MODE_TRANSLATE: {
-            translate_entity(es, ems, entity); 
-        } break;
-        case ENTITY_MODIFY_MODE_ROTATE: {
-            rotate_entity(es, ems, entity); 
-        } break;
-        case ENTITY_MODIFY_MODE_SCALE: {
-            scale_entity(es, ems, entity); 
-        } break;
-        default: {
-        } break;
-    }
-    
-}
-//=================================================================================
-//=================================================================================
-
 static void process_panning(EditorState *es) {
     if(ImGui::IsWindowHovered()) {
         if(mouse_button_just_down(1)) { 
@@ -280,27 +82,6 @@ static void process_panning(EditorState *es) {
         f32 y_delta = (f32)get_mouse_delta_y();
         es->camera.x -= x_delta*PIXEL_TO_METERS;
         es->camera.y += y_delta*PIXEL_TO_METERS;
-    }
-}
-
-static void process_entitites(EditorState *es) {
-    if(!es->mouse_wheel_down) {
-        switch(es->editor_mode) {
-            case EDITOR_MODE_SELECT_ENTITY: {
-                select_entity(es);
-                if(es->selected_entity) {
-                    modify_entity(es, &es->ems, es->selected_entity);
-                }
-            } break;
-            case EDITOR_MODE_ADD_ENTITY: {
-                // TODO: ...
-            } break;
-            case EDITOR_MODE_ADD_TILE: {
-                add_tile(es);
-            } break;
-            default: {
-            } break;
-        }
     }
 }
 
@@ -341,18 +122,14 @@ void editor_init(EditorState *es) {
 
     es->em = entity_manager_create(1000);
 
-    //es->texture[0] = load_texture_and_mask(es, "../assets/rocks_corner.png");
-
     es->editor_mode_buttons_textures[0] = IMG_LoadTexture(es->renderer, "../assets/select_button.png");
     es->editor_mode_buttons_textures[1] = IMG_LoadTexture(es->renderer, "../assets/entity_button.png");
     es->editor_mode_buttons_textures[2] = IMG_LoadTexture(es->renderer, "../assets/tile_button.png");
-    es->editor_mode = EDITOR_MODE_NONE;
     es->selected_entity = 0;
 
     es->entity_modify_textrues[0] = IMG_LoadTexture(es->renderer, "../assets/translate_button.png");
     es->entity_modify_textrues[1] = IMG_LoadTexture(es->renderer, "../assets/rotation_button.png");
     es->entity_modify_textrues[2] = IMG_LoadTexture(es->renderer, "../assets/scale_button.png");
-    es->ems.entity_modify_mode = ENTITY_MODIFY_MODE_NONE;
     es->ems.selected_axis = AXIS_NONE;
 
 
@@ -378,7 +155,6 @@ void editor_init(EditorState *es) {
     }
     es->selected_texture = es->textures[0];
 
-    // TODO: test for the state machine
     state_initialize(&es->tilemap_state, es, 
                           tilemap_state_on_enter,
                           tilemap_state_on_exit,
@@ -400,7 +176,7 @@ void editor_init(EditorState *es) {
                           translate_state_on_render,
                           translate_state_on_ui);
 
-    state_initialize(&es->rotate_state, es, 
+    state_initialize(&es->rotate_state, es,
                           rotate_state_on_enter,
                           rotate_state_on_exit,
                           rotate_state_on_update,
@@ -413,6 +189,8 @@ void editor_init(EditorState *es) {
                           scale_state_on_update,
                           scale_state_on_render,
                           scale_state_on_ui);
+
+    es->sm = state_machine_create();
 
 }
 
@@ -435,12 +213,13 @@ void editor_shutdown(EditorState *es) {
 //===========================================================================
 void editor_update(EditorState *es) {
     process_panning(es);
-    process_entitites(es); 
+    state_machine_update(&es->sm);
     process_zoom(es);
 }
 
 void editor_render(EditorState *es) {
     draw_all_entities(es);
+    state_machine_render(&es->sm);
     draw_grid_x_y(es);
 }
 //===========================================================================
@@ -457,15 +236,23 @@ static void editor_mode_window(EditorState *es) {
     ImGui::Begin("Editor Mode Selector", 0,  ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
     for(i32 i = 0; i < EDITOR_MODE_COUNT; i++) {
         ImVec4 tint = ImVec4(1, 1, 1, 1);
-        if(es->editor_mode == i) {
-            tint = ImVec4(0.5f, 0.5f, 0.5f, 1);
-        }
+
         ImGui::PushID(i);
         if(ImGui::ImageButton("", es->editor_mode_buttons_textures[i], ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), tint)) {
-            if(es->editor_mode != i) {
-                es->editor_mode = (EditorMode)i;
+            state_machine_clear(&es->sm);
+            EditorMode editor_mode = (EditorMode)i;
+            switch(editor_mode) {
+                case EDITOR_MODE_SELECT_ENTITY: {
+                    state_machine_push_state(&es->sm, &es->select_state);
+                } break;
+                case EDITOR_MODE_ADD_ENTITY: {
+
+                } break;
+                case EDITOR_MODE_ADD_TILE: {
+                    state_machine_push_state(&es->sm, &es->tilemap_state);
+                } break;
+                default: break;
             }
-            
         }
         ImGui::PopID();
         ImGui::SameLine();
@@ -473,133 +260,9 @@ static void editor_mode_window(EditorState *es) {
     ImGui::End();
 }
 
-static void entity_modify_window(EditorState *es) {
-    EntityModifyState *ems = &es->ems;
-    ImGuiWindowClass window_class;
-    window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_AutoHideTabBar;
-    ImGui::SetNextWindowClass(&window_class);
-    ImGui::Begin("Entity Modify", 0,  ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
-    for(i32 i = 0; i < ENTITY_MODIFY_COUNT; i++) {
-        ImVec4 tint = ImVec4(1, 1, 1, 1);
-        if(ems->entity_modify_mode == i) {
-            tint = ImVec4(0.5f, 0.5f, 0.5f, 1);
-        }
-        ImGui::PushID(i);
-        if(ImGui::ImageButton("", es->entity_modify_textrues[i], ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), tint)) {
-            ems->selected_axis = AXIS_NONE;
-            if(ems->entity_modify_mode != i) {
-                ems->entity_modify_mode = (EntityModifyMode)i;
-            }
-        }
-        ImGui::PopID();
-    }
-    ImGui::End();
-}
-
-static void entity_property_window(EditorState *es) {
-    ImGuiWindowClass window_class;
-    window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_AutoHideTabBar;
-    ImGui::SetNextWindowClass(&window_class);
-    ImGui::Begin("Entity", 0, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
-
-    if(es->selected_entity) {
-        Entity *entity = es->selected_entity;
-
-        ImGui::Text("Texture:");
-        ImGui::Image(entity->texture.texture, ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(0, 0, 0, 0));
-        if (ImGui::BeginCombo("textures", 0, ImGuiComboFlags_NoPreview)) {
-            for (i32 i = 0; i < es->texture_count; i++) {
-
-                if(i % 2 != 0) {
-                    ImGui::SameLine();
-                }
-
-                bool is_selected = entity->texture.texture == es->textures[i].texture;
-                
-                ImGui::PushID(i);
-                if(ImGui::ImageButton(es->textures[i].texture, ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), 1, ImVec4(0.0f, 0.0f, 0.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f)))
-                {
-                    entity->texture = es->textures[i];
-                }
-                ImGui::PopID();
-
-                if (is_selected) {
-                    ImGui::SetItemDefaultFocus();
-                }
-            }
-            ImGui::EndCombo();
-        }
-
-        ImGui::Text("Transform:");
-        ImGui::InputFloat2("position", (f32 *)&entity->pos);
-        ImGui::InputFloat2("scale", (f32 *)&entity->scale);
-        ImGui::InputFloat("angle", &entity->angle);
-    }
-    else {
-        ImGui::Text("there is no selected entity");
-    }
-
-    ImGui::End();
-}
-
-static void texture_selector_window(EditorState *es) {
-    ImGuiWindowClass window_class;
-    window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_AutoHideTabBar;
-    ImGui::SetNextWindowClass(&window_class);
-    ImGui::Begin("Textures", 0, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
-
-    ImGuiStyle& style = ImGui::GetStyle();
-    i32 buttons_count = es->texture_count;
-    f32 window_visible_x2 = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x;
-    for (i32 i = 0; i < buttons_count; i++)
-    {
-        ImTextureID textureId = es->textures[i].texture;
-        f32 uMin = 0;
-        f32 vMin = 0;
-
-        f32 uMax = 1;
-        f32 vMax = 1;
-
-        ImVec2 uvMin = ImVec2(uMin, vMin);
-        ImVec2 uvMax = ImVec2(uMax, vMax);
-
-        ImVec4 tintCol = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-        ImVec4 backCol = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
-        
-        ImGui::PushID(i);
-        if(ImGui::ImageButton(textureId, ImVec2(64, 64), uvMin, uvMax, 1, backCol, tintCol))
-        {
-            es->selected_texture = es->textures[i];
-        }
-
-        f32 max = ImGui::GetItemRectMax().x;
-        f32 min = ImGui::GetItemRectMin().x;
-
-        f32 last_button_x2 = ImGui::GetItemRectMax().x;
-        f32 next_button_x2 = last_button_x2 + style.ItemSpacing.x + (max - min);
-        
-        if (i + 1 < buttons_count && next_button_x2 < window_visible_x2)
-            ImGui::SameLine();
-
-
-        ImGui::PopID();
-    }
-
-    ImGui::End();
-}
-
 void editor_ui(EditorState *es) {
     editor_mode_window(es);
-    entity_modify_window(es);
-    texture_selector_window(es);
-    entity_property_window(es);
-
-#if 0
-    /*demo window*/ {
-        static bool show_demo = true; 
-        ImGui::ShowDemoWindow(&show_demo);
-    }
-#endif
+    state_machine_ui(&es->sm);
 }
 //===========================================================================
 //===========================================================================

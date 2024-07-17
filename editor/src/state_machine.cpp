@@ -7,9 +7,9 @@ void state_initialize(State *state, EditorState *es,
     state->es = es;
     state->on_enter = on_enter;
     state->on_exit = on_exit;
-    state->on_update = state->on_update;
-    state->on_render = state->on_render;
-    state->on_ui = state->on_ui;
+    state->on_update = on_update;
+    state->on_render = on_render;
+    state->on_ui = on_ui;
 }
 
 StateMachine state_machine_create() {
@@ -32,27 +32,47 @@ void state_machine_push_state(StateMachine *sm, State *state) {
 }
 
 State *state_machine_pop_state(StateMachine *sm) {
-    State *state = sm->states[sm->states_count];
+    if(sm->states_count <= 0) {
+        return 0;
+    }
+
+    State *state = sm->states[sm->states_count - 1];
     state->on_exit(state->es);
     sm->states_count--;
     return state;
 }
 
+void state_machine_clear(StateMachine *sm) {
+    while(sm->states_count > 0) {
+        state_machine_pop_state(sm);
+    }
+}
+
 State *state_machine_get_state(StateMachine *sm) {
-    return sm->states[sm->states_count];
+    assert(sm->states_count > 0);
+    return sm->states[sm->states_count - 1];
 }
 
 void state_machine_update(StateMachine *sm) {
-    State *state = sm->states[sm->states_count];
+    if(sm->states_count <= 0) {
+        return;
+    }
+    State *state = sm->states[sm->states_count - 1];
     state->on_update(state->es);
 }
 
 void state_machine_render(StateMachine *sm) {
-    State *state = sm->states[sm->states_count];
+    if(sm->states_count <= 0) {
+        return;
+    }
+    State *state = sm->states[sm->states_count - 1];
     state->on_render(state->es);
 }
 
 void state_machine_ui(StateMachine *sm) {
-    State *state = sm->states[sm->states_count];
+    if(sm->states_count <= 0) {
+        return;
+    }
+    State *state = sm->states[sm->states_count - 1];
     state->on_ui(state->es);
 }
