@@ -58,6 +58,12 @@ struct EditorState {
     SDL_Texture *back_buffer;
     SDL_Texture *mouse_picking_buffer;
     u32 *mouse_picking_pixels;
+
+    State tilemap_state;
+    State select_state;
+    State translate_state;
+    State rotate_state;
+    State scale_state;
 };
 
 #endif // EDITOR_H

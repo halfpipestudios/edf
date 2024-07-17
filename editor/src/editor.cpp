@@ -93,6 +93,8 @@ static u32 mouse_picking(EditorState *es, V2 mouse) {
 
 static void add_tile(EditorState *es) {
     if(ImGui::IsWindowHovered()) {
+        // TODO: remove this static from here becouse this is not
+        // the only place we are going to add entitites
         static u32 uid = 1;
         if(mouse_button_just_down(0)) {
             Entity *entity = entity_manager_add_entity(&es->em);
@@ -375,6 +377,42 @@ void editor_init(EditorState *es) {
         }
     }
     es->selected_texture = es->textures[0];
+
+    // TODO: test for the state machine
+    state_initialize(&es->tilemap_state, es, 
+                          tilemap_state_on_enter,
+                          tilemap_state_on_exit,
+                          tilemap_state_on_update,
+                          tilemap_state_on_render,
+                          tilemap_state_on_ui);
+
+    state_initialize(&es->select_state, es, 
+                          select_state_on_enter,
+                          select_state_on_exit,
+                          select_state_on_update,
+                          select_state_on_render,
+                          select_state_on_ui);
+
+    state_initialize(&es->translate_state, es, 
+                          translate_state_on_enter,
+                          translate_state_on_exit,
+                          translate_state_on_update,
+                          translate_state_on_render,
+                          translate_state_on_ui);
+
+    state_initialize(&es->rotate_state, es, 
+                          rotate_state_on_enter,
+                          rotate_state_on_exit,
+                          rotate_state_on_update,
+                          rotate_state_on_render,
+                          rotate_state_on_ui);
+
+    state_initialize(&es->scale_state, es, 
+                          scale_state_on_enter,
+                          scale_state_on_exit,
+                          scale_state_on_update,
+                          scale_state_on_render,
+                          scale_state_on_ui);
 
 }
 

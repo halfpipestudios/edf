@@ -15,11 +15,20 @@
 #include <edf_math.h>
 #include "common.h"
 #include "entity.h"
+#include "state_machine.h"
 #include "editor.h"
 // Srouces
 #include "input.cpp"
 #include "entity.cpp"
+#include "state_machine.cpp"
 #include "utils.cpp"
+    // States 
+#include "select_state.cpp"
+#include "tilemap_state.cpp"
+#include "translate_state.cpp"
+#include "rotate_state.cpp"
+#include "scale_state.cpp"
+
 #include "editor.cpp"
 
 static i32 sdl_mouse_event_to_index(SDL_MouseButtonEvent event) {
