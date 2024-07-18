@@ -11,6 +11,8 @@ void rotate_state_on_update(EditorState *es) {
         state_machine_pop_state(&es->sm);
     }
 
+    change_modify_entity_state(es);
+
     if(!ImGui::IsWindowFocused() || !mouse_button_down(0) || es->mouse_wheel_down) {
         return;
     }

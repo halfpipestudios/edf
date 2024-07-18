@@ -55,6 +55,10 @@ void tilemap_state_on_exit(EditorState *es) {
 }
 
 void tilemap_state_on_update(EditorState *es) {
+    if(key_just_down(SDLK_ESCAPE)) {
+        state_machine_pop_state(&es->sm);
+    }
+
     if(ImGui::IsWindowHovered()) {
         // TODO: remove this static from here becouse this is not
         // the only place we are going to add entitites

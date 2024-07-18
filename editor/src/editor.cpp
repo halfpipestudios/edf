@@ -124,13 +124,12 @@ void editor_init(EditorState *es) {
 
     es->editor_mode_buttons_textures[0] = IMG_LoadTexture(es->renderer, "../assets/select_button.png");
     es->editor_mode_buttons_textures[1] = IMG_LoadTexture(es->renderer, "../assets/entity_button.png");
-    es->editor_mode_buttons_textures[2] = IMG_LoadTexture(es->renderer, "../assets/tile_button.png");
     es->selected_entity = 0;
 
-    es->entity_modify_textrues[0] = IMG_LoadTexture(es->renderer, "../assets/translate_button.png");
-    es->entity_modify_textrues[1] = IMG_LoadTexture(es->renderer, "../assets/rotation_button.png");
-    es->entity_modify_textrues[2] = IMG_LoadTexture(es->renderer, "../assets/scale_button.png");
-    es->ems.selected_axis = AXIS_NONE;
+    es->entity_modify_buttons_textrues[0] = IMG_LoadTexture(es->renderer, "../assets/translate_button.png");
+    es->entity_modify_buttons_textrues[1] = IMG_LoadTexture(es->renderer, "../assets/rotation_button.png");
+    es->entity_modify_buttons_textrues[2] = IMG_LoadTexture(es->renderer, "../assets/scale_button.png");
+    es->selected_axis = AXIS_NONE;
 
 
     // Load all the exture in the game asset folder
@@ -155,35 +154,35 @@ void editor_init(EditorState *es) {
     }
     es->selected_texture = es->textures[0];
 
-    state_initialize(&es->tilemap_state, es, 
-                          tilemap_state_on_enter,
-                          tilemap_state_on_exit,
-                          tilemap_state_on_update,
-                          tilemap_state_on_render,
-                          tilemap_state_on_ui);
-
-    state_initialize(&es->select_state, es, 
+    state_initialize(&es->editor_states[EDITOR_STATE_SELECT], es, 
                           select_state_on_enter,
                           select_state_on_exit,
                           select_state_on_update,
                           select_state_on_render,
                           select_state_on_ui);
 
-    state_initialize(&es->translate_state, es, 
+    state_initialize(&es->editor_states[EDITOR_STATE_TILEMAP], es, 
+                          tilemap_state_on_enter,
+                          tilemap_state_on_exit,
+                          tilemap_state_on_update,
+                          tilemap_state_on_render,
+                          tilemap_state_on_ui);
+
+    state_initialize(&es->modify_states[MODIFY_STATE_TRANSLATE], es, 
                           translate_state_on_enter,
                           translate_state_on_exit,
                           translate_state_on_update,
                           translate_state_on_render,
                           translate_state_on_ui);
 
-    state_initialize(&es->rotate_state, es,
+    state_initialize(&es->modify_states[MODIFY_STATE_ROTATE], es,
                           rotate_state_on_enter,
                           rotate_state_on_exit,
                           rotate_state_on_update,
                           rotate_state_on_render,
                           rotate_state_on_ui);
 
-    state_initialize(&es->scale_state, es, 
+    state_initialize(&es->modify_states[MODIFY_STATE_SCALE], es, 
                           scale_state_on_enter,
                           scale_state_on_exit,
                           scale_state_on_update,
@@ -197,7 +196,11 @@ void editor_init(EditorState *es) {
 void editor_shutdown(EditorState *es) {
     SDL_DestroyTexture(es->editor_mode_buttons_textures[0]);
     SDL_DestroyTexture(es->editor_mode_buttons_textures[1]);
-    SDL_DestroyTexture(es->editor_mode_buttons_textures[2]);
+
+    SDL_DestroyTexture(es->entity_modify_buttons_textrues[0]);
+    SDL_DestroyTexture(es->entity_modify_buttons_textrues[1]);
+    SDL_DestroyTexture(es->entity_modify_buttons_textrues[2]);
+
     for(i32 i = 0; i < es->texture_count; i++) {
         SDL_DestroyTexture(es->textures[i].texture);
         SDL_DestroyTexture(es->textures[i].mask);
@@ -234,25 +237,16 @@ static void editor_mode_window(EditorState *es) {
     window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_AutoHideTabBar;
     ImGui::SetNextWindowClass(&window_class);
     ImGui::Begin("Editor Mode Selector", 0,  ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
-    for(i32 i = 0; i < EDITOR_MODE_COUNT; i++) {
+    for(i32 i = 0; i < EDITOR_STATE_COUNT; i++) {
         ImVec4 tint = ImVec4(1, 1, 1, 1);
-
+        State *current_state = state_machine_get_state(&es->sm);
+        if(current_state == &es->editor_states[i]) {
+            tint = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+        }
         ImGui::PushID(i);
         if(ImGui::ImageButton("", es->editor_mode_buttons_textures[i], ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), tint)) {
             state_machine_clear(&es->sm);
-            EditorMode editor_mode = (EditorMode)i;
-            switch(editor_mode) {
-                case EDITOR_MODE_SELECT_ENTITY: {
-                    state_machine_push_state(&es->sm, &es->select_state);
-                } break;
-                case EDITOR_MODE_ADD_ENTITY: {
-
-                } break;
-                case EDITOR_MODE_ADD_TILE: {
-                    state_machine_push_state(&es->sm, &es->tilemap_state);
-                } break;
-                default: break;
-            }
+            state_machine_push_state(&es->sm, &es->editor_states[i]);
         }
         ImGui::PopID();
         ImGui::SameLine();

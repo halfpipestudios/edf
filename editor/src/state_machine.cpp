@@ -49,7 +49,9 @@ void state_machine_clear(StateMachine *sm) {
 }
 
 State *state_machine_get_state(StateMachine *sm) {
-    assert(sm->states_count > 0);
+    if(sm->states_count <= 0) {
+        return 0;
+    }
     return sm->states[sm->states_count - 1];
 }
 

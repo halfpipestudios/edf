@@ -49,36 +49,49 @@ static void select_entity(EditorState *es) {
     }
 }
 
+static void pop_current_state(EditorState *es) {
+    State *current_state = state_machine_get_state(&es->sm);
+    for(i32 i = 0; i < MODIFY_STATE_COUNT; i++) {
+        if(current_state == &es->modify_states[i]) {
+            state_machine_pop_state(&es->sm);
+            break;
+        }
+    }
+}
+
+static void change_modify_entity_state(EditorState *es) {
+    if(es->selected_entity) {
+        if(key_just_down(SDLK_t)) {
+            pop_current_state(es);
+            state_machine_push_state(&es->sm, &es->modify_states[MODIFY_STATE_TRANSLATE]);
+        }
+        if(key_just_down(SDLK_r)) {
+            pop_current_state(es);
+            state_machine_push_state(&es->sm, &es->modify_states[MODIFY_STATE_ROTATE]);
+        }
+        if(key_just_down(SDLK_s)) {
+            pop_current_state(es);
+            state_machine_push_state(&es->sm, &es->modify_states[MODIFY_STATE_SCALE]);
+        }
+    }
+}
+
 static void entity_modify_window(EditorState *es) {
-    EntityModifyState *ems = &es->ems;
     ImGuiWindowClass window_class;
     window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_AutoHideTabBar;
     ImGui::SetNextWindowClass(&window_class);
     ImGui::Begin("Entity Modify", 0,  ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
-    for(i32 i = 0; i < ENTITY_MODIFY_COUNT; i++) {
+    for(i32 i = 0; i < MODIFY_STATE_COUNT; i++) {
         ImVec4 tint = ImVec4(1, 1, 1, 1);
+        State *current_state = state_machine_get_state(&es->sm);
+        if(current_state == &es->modify_states[i]) {
+            tint = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+        }
         ImGui::PushID(i);
-        if(ImGui::ImageButton("", es->entity_modify_textrues[i], ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), tint)) {
+        if(ImGui::ImageButton("", es->entity_modify_buttons_textrues[i], ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), tint)) {
             if(es->selected_entity) {
-                State *current_state = state_machine_get_state(&es->sm);
-                if(current_state == &es->translate_state ||
-                   current_state == &es->rotate_state ||
-                   current_state == &es->scale_state) {
-                    state_machine_pop_state(&es->sm);
-                }
-                EntityModifyMode entity_modify_mode = (EntityModifyMode)i;
-                switch(entity_modify_mode) {
-                    case ENTITY_MODIFY_MODE_TRANSLATE: {
-                        state_machine_push_state(&es->sm, &es->translate_state);
-                    } break;
-                    case ENTITY_MODIFY_MODE_ROTATE: {
-                        state_machine_push_state(&es->sm, &es->rotate_state);
-                    } break;
-                    case ENTITY_MODIFY_MODE_SCALE: {
-                        state_machine_push_state(&es->sm, &es->scale_state);
-                    } break;
-                    default: break;
-                } 
+                pop_current_state(es);
+                state_machine_push_state(&es->sm, &es->modify_states[i]); 
             }
         }
         ImGui::PopID();
@@ -126,7 +139,7 @@ static void entity_property_window(EditorState *es) {
         ImGui::InputFloat("angle", &entity->angle);
     }
     else {
-        ImGui::Text("there is no selected entity");
+        ImGui::Text("there is no entity selected");
     }
 
     ImGui::End();
@@ -139,17 +152,23 @@ void select_state_on_enter(EditorState *es) {
 
 void select_state_on_exit(EditorState *es) {
     printf("select state on exit\n");
+    es->selected_entity = 0;
 
 }
 
 void select_state_on_update(EditorState *es) {
+    if(key_just_down(SDLK_ESCAPE)) {
+        state_machine_pop_state(&es->sm);
+    }
+
     select_entity(es);
     if(es->selected_entity) {
         if(key_just_down(SDLK_DELETE)) {
             entity_manager_remove_entity(&es->em, es->selected_entity);
             es->selected_entity = 0;
         }
-    }
+    } 
+    change_modify_entity_state(es);
 }
 
 void select_state_on_render(EditorState *es) {

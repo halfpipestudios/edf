@@ -1,5 +1,6 @@
 void scale_state_on_enter(EditorState *es) {
     printf("scale state on enter\n");
+    es->selected_axis = AXIS_NONE;
 }
 
 void scale_state_on_exit(EditorState *es) {
@@ -8,8 +9,22 @@ void scale_state_on_exit(EditorState *es) {
 
 void scale_state_on_update(EditorState *es) {
     if(key_just_down(SDLK_ESCAPE)) {
-        state_machine_pop_state(&es->sm);
+        if(es->selected_axis == AXIS_NONE) {
+            state_machine_pop_state(&es->sm);
+        }
+        else {
+            es->selected_axis = AXIS_NONE;
+        }
     }
+
+    if(key_just_down(SDLK_x)) {
+        es->selected_axis = AXIS_X;
+    }
+    if(key_just_down(SDLK_y)) {
+        es->selected_axis = AXIS_Y;
+    }
+
+    change_modify_entity_state(es);
     
     if(!ImGui::IsWindowFocused() || !mouse_button_down(0) || es->mouse_wheel_down) {
         return;
@@ -17,25 +32,17 @@ void scale_state_on_update(EditorState *es) {
 
     Entity *entity = es->selected_entity;
 
-    // TODO: remove this local static variable
-    static V2 og_entity_scale = v2(0, 0);
-    if(mouse_button_just_down(0)) {
-        og_entity_scale = entity->scale;
-    }
-
     V2 mouse_wolrd = get_mouse_world(es);
     V2 mouse_last_world = get_mouse_last_world(es);
     V2 mouse_delta  = v2_sub(mouse_wolrd, mouse_last_world);
-    switch(es->ems.selected_axis) {
+    switch(es->selected_axis) {
         case AXIS_NONE: {
             entity->scale = v2_add(entity->scale, mouse_delta);
         } break;
         case AXIS_X: {
             entity->scale.x += mouse_delta.x;
-            entity->scale.y = og_entity_scale.y;
         } break;
         case AXIS_Y: {
-            entity->scale.x = og_entity_scale.x;
             entity->scale.y += mouse_delta.y;
         } break;
     }

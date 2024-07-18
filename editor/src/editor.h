@@ -1,33 +1,25 @@
 #ifndef EDITOR_H
 #define EDITOR_H
 
-enum EditorMode {
-    EDITOR_MODE_SELECT_ENTITY,
-    EDITOR_MODE_ADD_ENTITY,
-    EDITOR_MODE_ADD_TILE,
+enum EditorStates {
+    EDITOR_STATE_SELECT,
+    EDITOR_STATE_TILEMAP,
 
-    EDITOR_MODE_COUNT,
-    EDITOR_MODE_NONE
+    EDITOR_STATE_COUNT
 };
 
-enum EntityModifyMode {
-    ENTITY_MODIFY_MODE_TRANSLATE,
-    ENTITY_MODIFY_MODE_ROTATE,
-    ENTITY_MODIFY_MODE_SCALE,
+enum ModifyStates {
+    MODIFY_STATE_TRANSLATE,
+    MODIFY_STATE_ROTATE,
+    MODIFY_STATE_SCALE,
 
-    ENTITY_MODIFY_COUNT,
-    ENTITY_MODIFY_MODE_NONE
+    MODIFY_STATE_COUNT
 };
 
 enum Axis {
     AXIS_X,
     AXIS_Y,
     AXIS_NONE
-};
-
-struct EntityModifyState {
-    u8 selected_axis; 
-    //EntityModifyMode entity_modify_mode;
 };
 
 struct EditorState {
@@ -44,27 +36,25 @@ struct EditorState {
     Texture textures[128];
     i32 texture_count;
 
-    //EditorMode editor_mode;
-    SDL_Texture *editor_mode_buttons_textures[EDITOR_MODE_COUNT];
     Entity *selected_entity;
     Texture selected_texture;
+    u8 selected_axis; 
 
-    EntityModifyState ems;
-    SDL_Texture *entity_modify_textrues[ENTITY_MODIFY_COUNT];
+    // States and State Machine
+    State editor_states[EDITOR_STATE_COUNT];
+    State modify_states[MODIFY_STATE_COUNT];
+    StateMachine sm;
 
     // for internal use
+    SDL_Texture *editor_mode_buttons_textures[EDITOR_STATE_COUNT];
+    SDL_Texture *entity_modify_buttons_textrues[MODIFY_STATE_COUNT];
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *back_buffer;
     SDL_Texture *mouse_picking_buffer;
     u32 *mouse_picking_pixels;
 
-    State tilemap_state;
-    State select_state;
-    State translate_state;
-    State rotate_state;
-    State scale_state;
-    StateMachine sm;
+
 };
 
 #endif // EDITOR_H
