@@ -11,20 +11,23 @@ static void draw_all_entities(EditorState *es) {
                   entity->angle,
                   entity->texture.texture);
 
-        // reference for entity orientation
-        if(entity == es->selected_entity) {
-            V2 o = entity->pos;
-            V2 x = v2(cosf(entity->angle), sinf(entity->angle));
-            V2 y = v2(-x.y, x.x);
-            x = v2_scale(x, 1.0f/es->zoom);
-            y = v2_scale(y, 1.0f/es->zoom);
-            V2 a = v2_add(o, x);
-            V2 b = v2_add(o, y);
-            draw_line_world(es, o.x, o.y, a.x, a.y, 0xFFFF00FF);
-            draw_line_world(es, o.x, o.y, b.x, b.y, 0xFFFF00FF);
-        }
-
         entity = entity->next;
+    }
+}
+
+static void draw_selected_entity_gizmo(EditorState *es) {
+    // reference for entity orientation
+    if(es->selected_entity) {
+        Entity *entity = es->selected_entity;
+        V2 o = entity->pos;
+        V2 x = v2(cosf(entity->angle), sinf(entity->angle));
+        V2 y = v2(-x.y, x.x);
+        x = v2_scale(x, 1.0f/es->zoom);
+        y = v2_scale(y, 1.0f/es->zoom);
+        V2 a = v2_add(o, x);
+        V2 b = v2_add(o, y);
+        draw_line_world(es, o.x, o.y, a.x, a.y, 0x0000FFFF);
+        draw_line_world(es, o.x, o.y, b.x, b.y, 0x00FF00FF);
     }
 }
 
@@ -224,6 +227,7 @@ void editor_render(EditorState *es) {
     draw_all_entities(es);
     state_machine_render(&es->sm);
     draw_grid_x_y(es);
+    draw_selected_entity_gizmo(es);
 }
 //===========================================================================
 //===========================================================================
