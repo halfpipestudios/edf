@@ -73,6 +73,8 @@ void tilemap_state_on_update(EditorState *es) {
             assert((uid > 0) && (uid < 0xFF000000));
             entity->uid = uid;
             uid++;
+
+            entity_add_components(entity, ENTITY_RENDER_COMPONENT);
         }
     }
 }

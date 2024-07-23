@@ -15,6 +15,31 @@ static void draw_all_entities(EditorState *es) {
     }
 }
 
+static void draw_all_entities_collision(EditorState *es) {
+
+    Entity *entity = es->em.first;
+    while(entity) {
+        if(entity->components & ENTITY_COLLISION_COMPONENT) {
+            V2 offset = entity->collision.offset;
+            if(entity->collision.type == COLLISION_TYPE_CIRLCE) {
+                Circle *circle = &entity->collision.circle;
+                draw_circle_world(es, v2_add(entity->pos, offset), circle->r);
+            }
+            else if(entity->collision.type == COLLISION_TYPE_AABB) {
+                AABB *aabb = &entity->collision.aabb;
+                draw_aabb_world(es, v2_add(v2_add(aabb->min, entity->pos), offset),
+                                    v2_add(v2_add(aabb->max, entity->pos), offset));
+            }
+            else if(entity->collision.type == COLLISION_TYPE_OBB) {
+                OBB *obb = &entity->collision.obb;
+                draw_obb_world(es, entity->pos, offset, obb->he, entity->angle + obb->r);
+            }
+        }
+        entity = entity->next;
+    }
+
+}
+
 static void draw_selected_entity_gizmo(EditorState *es) {
     // reference for entity orientation
     if(es->selected_entity) {
@@ -227,7 +252,9 @@ void editor_render(EditorState *es) {
     draw_all_entities(es);
     state_machine_render(&es->sm);
     draw_grid_x_y(es);
+    draw_all_entities_collision(es);
     draw_selected_entity_gizmo(es);
+
 }
 //===========================================================================
 //===========================================================================

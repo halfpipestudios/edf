@@ -24,11 +24,13 @@ typedef struct AABB {
 } AABB;
 
 typedef struct Circle {
+    // TODO: remove the center
     V2 c;
     f32 r;
 } Circle;
 
 typedef struct OBB {
+    // TODO: remove the center
     V2 c;
     V2 he;
     f32 r;

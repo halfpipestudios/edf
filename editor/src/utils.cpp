@@ -63,6 +63,67 @@ static void draw_line_world(EditorState *es, f32 x0, f32 y0, f32 x1, f32 y1, u32
     SDL_RenderDrawLine(es->renderer, x0, y0, x1, y1);
 }
 
+static void draw_circle_world(EditorState *es, V2 center, f32 radii) {
+    if(radii <= 0) {
+        return;
+    }
+
+    f32 slices = 20;
+    f32 increment = (2.0f*PI) / slices;
+    
+    f32 last_angle = 0;
+    while(last_angle < 2.0f*PI) { 
+        f32 curr_angle = last_angle + increment;
+        V2 a = v2_add(center, v2_scale(v2(cosf(last_angle), sinf(last_angle)), radii));
+        V2 b = v2_add(center, v2_scale(v2(cosf(curr_angle), sinf(curr_angle)), radii));
+        draw_line_world(es, a.x, a.y, b.x, b.y, 0x00FF00FF);
+        last_angle = curr_angle;
+    }
+}
+
+static void draw_aabb_world(EditorState *es, V2 min, V2 max) {
+    // left
+    draw_line_world(es, min.x, min.y, min.x, max.y, 0x00FF00FF);
+    // right
+    draw_line_world(es, max.x, min.y, max.x, max.y, 0x00FF00FF);
+    // bottom
+    draw_line_world(es, min.x, min.y, max.x, min.y, 0x00FF00FF);
+    // top
+    draw_line_world(es, min.x, max.y, max.x, max.y, 0x00FF00FF);
+} 
+
+static void draw_obb_world(EditorState *es, V2 center, V2 offset, V2 hextend, f32 angle) {
+    f32 len_sq = v2_len_sq(hextend);
+    if(len_sq <= 0) {
+        return;
+    }
+
+    V2 a = v2(-hextend.x, -hextend.y);
+    V2 b = v2( hextend.x, -hextend.y);
+    V2 c = v2( hextend.x,  hextend.y);
+    V2 d = v2(-hextend.x,  hextend.y);
+
+    a = v2_add(a, offset);
+    b = v2_add(b, offset);
+    c = v2_add(c, offset);
+    d = v2_add(d, offset);
+
+    a = v2_rotate(a, angle); 
+    b = v2_rotate(b, angle); 
+    c = v2_rotate(c, angle); 
+    d = v2_rotate(d, angle); 
+
+    a = v2_add(a, center);
+    b = v2_add(b, center);
+    c = v2_add(c, center);
+    d = v2_add(d, center);
+
+    draw_line_world(es, a.x, a.y, b.x, b.y, 0x00FF00FF);
+    draw_line_world(es, b.x, b.y, c.x, c.y, 0x00FF00FF);
+    draw_line_world(es, c.x, c.y, d.x, d.y, 0x00FF00FF);
+    draw_line_world(es, d.x, d.y, a.x, a.y, 0x00FF00FF);
+} 
+
 static f32 transform_grid_axis(f32 axis, f32 s_axis, f32 e_axis, f32 camera_axis, f32 grid_size) {
     f32 r_axis = axis - camera_axis;
     f32 grid_index = r_axis / grid_size;        

@@ -107,36 +107,177 @@ static void entity_property_window(EditorState *es) {
 
     if(es->selected_entity) {
         Entity *entity = es->selected_entity;
-
-        ImGui::Text("Texture:");
-        ImGui::Image(entity->texture.texture, ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(0, 0, 0, 0));
-        if (ImGui::BeginCombo("textures", 0, ImGuiComboFlags_NoPreview)) {
-            for (i32 i = 0; i < es->texture_count; i++) {
-
-                if(i % 2 != 0) {
-                    ImGui::SameLine();
-                }
-
-                bool is_selected = entity->texture.texture == es->textures[i].texture;
-                
-                ImGui::PushID(i);
-                if(ImGui::ImageButton(es->textures[i].texture, ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), 1, ImVec4(0.0f, 0.0f, 0.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f)))
-                {
-                    entity->texture = es->textures[i];
+        if(entity->components != 0) {
+            if(entity->components & ENTITY_RENDER_COMPONENT) {
+                ImGui::Separator();
+                ImGui::Text("Render Component");
+                ImGui::SameLine();
+                ImGui::PushID(0);
+                if(ImGui::Button("remove")) {
+                    entity_remove_components(entity, ENTITY_RENDER_COMPONENT);
                 }
                 ImGui::PopID();
+                ImGui::Separator();
+                ImGui::Text("Texture:");
+                ImGui::Image(entity->texture.texture, ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(0, 0, 0, 0));
+                if (ImGui::BeginCombo("textures", 0, ImGuiComboFlags_NoPreview)) {
+                    for (i32 i = 0; i < es->texture_count; i++) {
 
-                if (is_selected) {
-                    ImGui::SetItemDefaultFocus();
+                        if(i % 2 != 0) {
+                            ImGui::SameLine();
+                        }
+
+                        bool is_selected = entity->texture.texture == es->textures[i].texture;
+                        
+                        ImGui::PushID(i);
+                        if(ImGui::ImageButton(es->textures[i].texture, ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), 1, ImVec4(0.0f, 0.0f, 0.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f)))
+                        {
+                            entity->texture = es->textures[i];
+                        }
+                        ImGui::PopID();
+
+                        if (is_selected) {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui::EndCombo();
                 }
+                ImGui::Text("Transform:");
+                ImGui::InputFloat2("position", (f32 *)&entity->pos);
+                ImGui::InputFloat2("scale", (f32 *)&entity->scale);
+                ImGui::InputFloat("angle", &entity->angle);
             }
+            if(entity->components & ENTITY_INPUT_COMPONENT) {
+                ImGui::Separator();
+                ImGui::Text("Input Component");
+                ImGui::SameLine();
+                ImGui::PushID(1);
+                if(ImGui::Button("remove")) {
+                    entity_remove_components(entity, ENTITY_INPUT_COMPONENT);
+                }
+                ImGui::PopID();
+                ImGui::Separator();
+            }
+            if(entity->components & ENTITY_PHYSICS_COMPONENT) {
+                ImGui::Separator();
+                ImGui::Text("Physics Component");
+                ImGui::SameLine();
+                ImGui::PushID(2);
+                if(ImGui::Button("remove")) {
+                    entity_remove_components(entity, ENTITY_PHYSICS_COMPONENT);
+                }
+                ImGui::PopID();
+                ImGui::Separator();
+            }
+            if(entity->components & ENTITY_COLLISION_COMPONENT) {
+                ImGui::Separator();
+                ImGui::Text("Collision Component");
+                ImGui::SameLine();
+                ImGui::PushID(3);
+                if(ImGui::Button("remove")) {
+                    entity_remove_components(entity, ENTITY_COLLISION_COMPONENT);
+                }
+                ImGui::PopID();
+                ImGui::Separator();
+
+                if(ImGui::BeginCombo(collision_type_strings[entity->collision.type], 0, ImGuiComboFlags_NoPreview)) {
+                    for(i32 i = 0; i < array_len(collision_type_strings); i++) {
+                        if(ImGui::Button(collision_type_strings[i])) {
+                            entity->collision = {};
+                            entity->collision.type = (CollisionType)i;
+                        }
+                    } 
+                    ImGui::EndCombo();
+                }
+                if(entity->collision.type == COLLISION_TYPE_CIRLCE) {
+                    ImGui::InputFloat("radio", &entity->collision.circle.r);
+                }
+                if(entity->collision.type == COLLISION_TYPE_AABB) {
+                    ImGui::InputFloat2("min", (f32 *)&entity->collision.aabb.min);
+                    ImGui::InputFloat2("max", (f32 *)&entity->collision.aabb.max);
+                }
+                if(entity->collision.type == COLLISION_TYPE_OBB) {
+                    ImGui::InputFloat2("helf extens", (f32 *)&entity->collision.obb.he);
+                    ImGui::InputFloat("rotation", &entity->collision.obb.r);
+                }
+                ImGui::InputFloat2("offset", (f32 *)&entity->collision.offset);
+            }
+            if(entity->components & ENTITY_ASTEROID_COMPONENT) {
+                ImGui::Separator();
+                ImGui::Text("Asteroid Component");
+                ImGui::SameLine();
+                ImGui::PushID(4);
+                if(ImGui::Button("remove")) {
+                    entity_remove_components(entity, ENTITY_ASTEROID_COMPONENT);
+                }
+                ImGui::PopID();
+                ImGui::Separator();
+            }
+            if(entity->components & ENTITY_ENEMY0_COMPONENT) {
+                ImGui::Separator();
+                ImGui::Text("Enemy0 Component");
+                ImGui::SameLine();
+                ImGui::PushID(5);
+                if(ImGui::Button("remove")) {
+                    entity_remove_components(entity, ENTITY_ENEMY0_COMPONENT);
+                }
+                ImGui::PopID();
+                ImGui::Separator();
+            }
+            if(entity->components & ENTITY_ENEMY1_COMPONENT) {
+                ImGui::Separator();
+                ImGui::Text("Enemy1 Component");
+                ImGui::SameLine();
+                ImGui::PushID(6);
+                if(ImGui::Button("remove")) {
+                    entity_remove_components(entity, ENTITY_ENEMY1_COMPONENT);
+                }
+                ImGui::PopID();
+                ImGui::Separator();
+            }
+            if(entity->components & ENTITY_ENEMY2_COMPONENT) {
+                ImGui::Separator();
+                ImGui::Text("Enemy2 Component");
+                ImGui::SameLine();
+                ImGui::PushID(7);
+                if(ImGui::Button("remove")) {
+                    entity_remove_components(entity, ENTITY_ENEMY2_COMPONENT);
+                }
+                ImGui::PopID();
+                ImGui::Separator();
+            }
+            if(entity->components & ENTITY_TRIGGER_COMPONENT) {
+                ImGui::Separator();
+                ImGui::Text("Trigger Component");
+                ImGui::SameLine();
+                ImGui::PushID(8);
+                if(ImGui::Button("remove")) {
+                    entity_remove_components(entity, ENTITY_TRIGGER_COMPONENT);
+                }
+                ImGui::PopID();
+                ImGui::Separator();
+            }
+            if(entity->components & ENTITY_ANIMATION_COMPONENT) {
+                ImGui::Separator();
+                ImGui::Text("Animation Component");
+                ImGui::SameLine();
+                ImGui::PushID(9);
+                if(ImGui::Button("remove")) {
+                    entity_remove_components(entity, ENTITY_ANIMATION_COMPONENT);
+                }
+                ImGui::PopID();
+                ImGui::Separator();
+            }
+        }
+        if(ImGui::BeginCombo("Add Component", 0, ImGuiComboFlags_NoPreview)) {
+            for(i32 i = 0; i < array_len(component_strings); i++) {
+                if(ImGui::Button(component_strings[i])) {
+                    printf("add component %s\n", component_strings[i]);
+                    entity_add_components(entity, bit(i));
+                }
+            } 
             ImGui::EndCombo();
         }
-
-        ImGui::Text("Transform:");
-        ImGui::InputFloat2("position", (f32 *)&entity->pos);
-        ImGui::InputFloat2("scale", (f32 *)&entity->scale);
-        ImGui::InputFloat("angle", &entity->angle);
     }
     else {
         ImGui::Text("there is no entity selected");

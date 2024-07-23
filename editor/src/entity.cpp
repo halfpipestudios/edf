@@ -1,7 +1,17 @@
+static void entity_add_components(Entity *entity, u64 components) {
+    entity->components |= components;
+}
+
+static void entity_remove_components(Entity *entity, u64 components) {
+    entity->components &= ~components;
+}
+
+
+
 //===========================================================================
 // EntityManager functions
 //===========================================================================
-EntityManager entity_manager_create(i32 max_entity_count) {
+static EntityManager entity_manager_create(i32 max_entity_count) {
     EntityManager em = {};
     em.max_count = max_entity_count;
     em.entities = (Entity *)malloc(sizeof(Entity) * em.max_count);
@@ -29,13 +39,13 @@ EntityManager entity_manager_create(i32 max_entity_count) {
     return em;
 }
 
-void entity_manager_destroy(EntityManager *em) {
+static void entity_manager_destroy(EntityManager *em) {
     // free the entities array and set everything to zero
     free(em->entities);
     *em = {};
 }
 
-Entity *entity_manager_add_entity(EntityManager *em) {
+static Entity *entity_manager_add_entity(EntityManager *em) {
     if(em->free == 0) {
         return 0;
     }
@@ -54,7 +64,7 @@ Entity *entity_manager_add_entity(EntityManager *em) {
     return entity;
 }
 
-void entity_manager_remove_entity(EntityManager *em, Entity *entity) {
+static void entity_manager_remove_entity(EntityManager *em, Entity *entity) {
     if(entity) {
         if(em->first == entity) {
             em->first = entity->next;
@@ -71,7 +81,7 @@ void entity_manager_remove_entity(EntityManager *em, Entity *entity) {
     }
 }
 
-void entity_manager_clear(EntityManager *em) {
+static void entity_manager_clear(EntityManager *em) {
     em->first = 0;
     em->count = 0;
     em->free = em->entities;

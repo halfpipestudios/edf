@@ -13,6 +13,7 @@
 // Headers
 #include <edf_common.h>
 #include <edf_math.h>
+#include <edf_collision.h>
 #include "common.h"
 #include "entity.h"
 #include "state_machine.h"

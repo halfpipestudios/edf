@@ -80,6 +80,13 @@ static inline V2 v2_scale(V2 v, f32 scale) {
     return result;
 }
 
+static inline V2 v2_rotate(V2 v, f32 angle) {
+    V2 result = { 0 };
+    result.x = (cosf(angle) * v.x) - (sinf(angle) * v.y);
+    result.y = (sinf(angle) * v.x) + (cosf(angle) * v.y);
+    return result;
+}
+
 static inline f32 v2_dot(V2 a, V2 b) {
     return a.x * b.x + a.y * b.y;
 }
