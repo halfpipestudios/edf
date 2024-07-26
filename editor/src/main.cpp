@@ -1,6 +1,9 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <stdio.h>
 #include <filesystem>
 #include <string>
+#include <limits>
 
 #include <imgui.h>
 #include <imgui_impl_sdl2.h>

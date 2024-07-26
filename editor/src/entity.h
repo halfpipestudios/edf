@@ -50,6 +50,7 @@ struct Collision {
 };
 
 struct Texture {
+    u32 index;
     i32 w, h;
     u32 format;
     SDL_Texture *texture;
@@ -75,6 +76,23 @@ struct Entity {
     Entity *prev;
     u32 uid;
 };
+
+struct EntitySerialized {
+    u64 components;
+    V2 pos;
+    V2 scale;
+    f32 angle;
+    V4 tint;
+    char texture[MAX_PATH];
+
+    V2 vel;
+    V2 acc;
+    f32 damping;
+
+    Collision collision;
+    bool collides;
+};
+
 
 struct EntityManager {
     Entity *entities;

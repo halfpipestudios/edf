@@ -34,6 +34,7 @@ struct EditorState {
 
     EntityManager em;
     Texture textures[128];
+    char textures_names[128][MAX_PATH];
     i32 texture_count;
 
     Entity *selected_entity;

@@ -171,10 +171,14 @@ void editor_init(EditorState *es) {
         // subsequent lines
         fs::path outfilename = entry.path();
         std::string outfilename_str = outfilename.string();
-        const char* path = outfilename_str.c_str();
         if (outfilename_str.find(".png") != std::string::npos) {
-
+            const char *path = outfilename_str.c_str();
             es->textures[es->texture_count] = load_texture_and_mask(es, path);
+            es->textures[es->texture_count].index = es->texture_count;
+
+            const char *name = path + (outfilename_str.find('\\') + 1); 
+            memset(es->textures_names[es->texture_count], 0, MAX_PATH);
+            memcpy(es->textures_names[es->texture_count], name, strlen(name));
             es->texture_count++;
 
         }
@@ -245,6 +249,12 @@ void editor_update(EditorState *es) {
     process_panning(es);
     state_machine_update(&es->sm);
     process_zoom(es);
+
+    // TODO: make a state and ui for this 
+    if(key_just_down(SDLK_p)) {
+        entity_manager_serialize(&es->em, "../levels/test.level", es);
+    }
+
 }
 
 void editor_render(EditorState *es) {
