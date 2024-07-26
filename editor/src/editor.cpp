@@ -23,12 +23,11 @@ static void draw_all_entities_collision(EditorState *es) {
             V2 offset = entity->collision.offset;
             if(entity->collision.type == COLLISION_TYPE_CIRLCE) {
                 Circle *circle = &entity->collision.circle;
-                draw_circle_world(es, v2_add(entity->pos, offset), circle->r);
+                draw_circle_world(es, entity->pos, circle->r, offset, entity->angle);
             }
             else if(entity->collision.type == COLLISION_TYPE_AABB) {
                 AABB *aabb = &entity->collision.aabb;
-                draw_aabb_world(es, v2_add(v2_add(aabb->min, entity->pos), offset),
-                                    v2_add(v2_add(aabb->max, entity->pos), offset));
+                draw_aabb_world(es, entity->pos, offset, aabb->min, aabb->max, entity->angle);
             }
             else if(entity->collision.type == COLLISION_TYPE_OBB) {
                 OBB *obb = &entity->collision.obb;

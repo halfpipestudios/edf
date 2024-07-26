@@ -63,7 +63,7 @@ static void draw_line_world(EditorState *es, f32 x0, f32 y0, f32 x1, f32 y1, u32
     SDL_RenderDrawLine(es->renderer, x0, y0, x1, y1);
 }
 
-static void draw_circle_world(EditorState *es, V2 center, f32 radii) {
+static void draw_circle_world(EditorState *es, V2 center, f32 radii, V2 offset, f32 angle) {
     if(radii <= 0) {
         return;
     }
@@ -71,6 +71,9 @@ static void draw_circle_world(EditorState *es, V2 center, f32 radii) {
     f32 slices = 20;
     f32 increment = (2.0f*PI) / slices;
     
+    offset = v2_rotate(offset, angle);
+    center = v2_add(center, offset);
+
     f32 last_angle = 0;
     while(last_angle < 2.0f*PI) { 
         f32 curr_angle = last_angle + increment;
@@ -81,14 +84,14 @@ static void draw_circle_world(EditorState *es, V2 center, f32 radii) {
     }
 }
 
-static void draw_aabb_world(EditorState *es, V2 min, V2 max) {
-    // left
+static void draw_aabb_world(EditorState *es, V2 pos, V2 offset, V2 min, V2 max, f32 angle) {
+    offset = v2_rotate(offset, angle);
+    pos = v2_add(pos, offset);
+    min = v2_add(pos, min);
+    max = v2_add(pos, max);
     draw_line_world(es, min.x, min.y, min.x, max.y, 0x00FF00FF);
-    // right
     draw_line_world(es, max.x, min.y, max.x, max.y, 0x00FF00FF);
-    // bottom
     draw_line_world(es, min.x, min.y, max.x, min.y, 0x00FF00FF);
-    // top
     draw_line_world(es, min.x, max.y, max.x, max.y, 0x00FF00FF);
 } 
 
