@@ -16,12 +16,11 @@ enum ModifyStates {
     MODIFY_STATE_COUNT
 };
 
-#define MODIFY_SCALE_COUNT 3
+#define MODIFY_SCALE_COUNT 2
 
 enum ModifyScaleStates {
-    MODIFY_SCALE_FLIP_NONE = 0x01,
-    MODIFY_SCALE_FLIP_X    = 0x02,
-    MODIFY_SCALE_FLIP_Y    = 0x03
+    MODIFY_SCALE_FLIP_X    = 0x01,
+    MODIFY_SCALE_FLIP_Y    = 0x02
 };
 
 enum Axis {
@@ -48,7 +47,7 @@ struct EditorState {
     Entity *selected_entity;
     Texture selected_texture;
     u8 selected_axis;
-    ModifyScaleStates scale_state;
+    i32 scale_state;
 
     // States and State Machine
     State editor_states[EDITOR_STATE_COUNT];

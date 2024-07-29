@@ -27,7 +27,7 @@ static inline f32 rand_range_f32(f32 min, f32 max) {
 }
 
 static inline f32 lerp(f32 a, f32 b, f32 t) {
-    return a * (1.0f - t) * b * t;
+    return a * (1.0f - t) + b * t;
 }
 
 typedef union V2i {
