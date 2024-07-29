@@ -76,6 +76,22 @@ typedef struct Entity {
     struct Entity *prev;
 } Entity;
 
+typedef struct EntitySerialized {
+    u64 components;
+    V2 pos;
+    V2 scale;
+    f32 angle;
+    V4 tint;
+    char texture[1048];
+
+    V2 vel;
+    V2 acc;
+    f32 damping;
+
+    Collision collision;
+    bool collides;
+} EntitySerialized;
+
 void entity_add_render_component(Entity *entity, V3 pos, V2 scale, Texture texture, V4 tint);
 void entity_add_input_component(Entity *entity);
 void entity_add_physics_component(Entity *entity, V2 vel, V2 acc, f32 damping);

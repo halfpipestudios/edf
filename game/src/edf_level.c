@@ -147,6 +147,76 @@ void add_screen(GameState *gs, Level *level, i32 screen_index, const char *posit
     }
 }
 
+Level *load_level_from_file(GameState *gs, char *path, struct Arena *arena, struct EntityManager *em) {
+    Level *level = (Level *)arena_push(arena, sizeof(*level), 8);
+    level->arena = arena;
+    level->em    = em;
+    level->gs    = gs;
+
+    f32 level_horizontal_size = MAP_COORDS_X * 20;
+    
+    level->dim = r2f_from_wh(-level_horizontal_size*0.5f, -MAP_COORDS_Y*0.5f, level_horizontal_size, MAP_COORDS_Y);
+    level->camera_vel = v3(2.0f, 0, 0);
+    level->camera_pos.x = 0;
+
+    u32 ship_rand_texture = rand_range(0, 1);
+    V3 hero_position = v3(0, 2, 0);
+    gs->hero = entity_manager_add_entity(gs->em);
+    entity_add_input_component(gs->hero);
+    entity_add_render_component(gs->hero, hero_position, v2(0.5, 0.5), gs->ship_texture[ship_rand_texture], v4(1, 1, 1, 1));
+    entity_add_physics_component(gs->hero, v2(0, 0), v2(0, 0), 0.4f);
+    Collision hero_collision = {0};
+    hero_collision.type = COLLISION_TYPE_CIRLCE;
+    hero_collision.circle.c = gs->hero->pos.xy;
+    hero_collision.circle.r = gs->hero->scale.x*0.4f;
+    entity_add_collision_component(gs->hero, hero_collision, true);
+    entity_add_animation_component(gs->hero, gs->explotion_anim);
+
+    File level_file = os_file_read(&gs->game_arena, path);
+    i32 *entity_count = (i32 *)level_file.data;
+    EntitySerialized *entities = (EntitySerialized *)((u8 *)level_file.data + sizeof(i32));
+
+    for(i32 i = 0; i < *entity_count; i++) {
+        EntitySerialized *e = entities + i;
+        Entity *entity = entity_manager_add_entity(level->em);
+        if(e->components & ENTITY_RENDER_COMPONENT) {
+            Texture texture = am_get_texture(gs->am, e->texture);
+            V3 pos = v3(e->pos.x, e->pos.y, 0);
+            entity_add_render_component(entity, pos, e->scale, texture, v4(1, 1, 1, 1));
+        }
+        if(e->components & ENTITY_INPUT_COMPONENT) {
+
+        }
+        if(e->components & ENTITY_PHYSICS_COMPONENT) {
+
+        }
+        if(e->components & ENTITY_COLLISION_COMPONENT) {
+
+        }
+        if(e->components & ENTITY_ASTEROID_COMPONENT) {
+
+        }
+        if(e->components & ENTITY_ENEMY0_COMPONENT) {
+
+        }
+        if(e->components & ENTITY_ENEMY1_COMPONENT) {
+
+        }
+        if(e->components & ENTITY_ENEMY2_COMPONENT) {
+
+        }
+        if(e->components & ENTITY_TRIGGER_COMPONENT) {
+
+        }
+        if(e->components & ENTITY_ANIMATION_COMPONENT) {
+
+        }
+    }
+
+    return level;
+
+}
+
 Level *load_level(GameState *gs, struct Arena *arena, struct EntityManager *em) {
     Level *level = (Level *)arena_push(arena, sizeof(*level), 8);
     level->arena = arena;
@@ -479,14 +549,12 @@ Level *load_level(GameState *gs, struct Arena *arena, struct EntityManager *em) 
 }
 
 void level_update(Level *level, f32 dt) {
-    level->camera_pos = v3_add(level->camera_pos, v3_scale(level->camera_vel, dt));
+    //level->camera_pos = v3_add(level->camera_pos, v3_scale(level->camera_vel, dt));
     if(level->camera_pos.x >= level->dim.max.x - MAP_COORDS_X*0.5f) {
         level->camera_pos.x = level->dim.max.x - MAP_COORDS_X*0.5f;
         level->camera_vel = v3(0, 0, 0);
     }
     
-
-
     f32 radii = level->gs->hero->collision.circle.r*2.0f;
     AABB camera_bound = {};
     camera_bound.min = v2(level->camera_pos.x - MAP_COORDS_X*0.5f + radii, level->camera_pos.y - MAP_COORDS_Y*0.5f + radii);
@@ -502,10 +570,6 @@ void level_update(Level *level, f32 dt) {
         particle_system_stop(level->gs->ps);
         level->camera_vel = v3(0, 0, 0);
     }
-        
-    
-
-    
 }
 
 void level_render(Level *level, Gpu gpu) {

@@ -163,10 +163,10 @@ void editor_init(EditorState *es) {
     // Get All file in a directory test
     namespace fs = std::filesystem;
     // path to the directory
-    std::string path = "../../game/assets";
+    std::string header = "../../game/assets";
     // looping until all the items in the dir are exhausted
     es->texture_count = 0;
-    for(const auto& entry : fs::directory_iterator(path)) {
+    for(const auto& entry : fs::directory_iterator(header)) {
         // Converting the path to const char * in the
         // subsequent lines
         fs::path outfilename = entry.path();
@@ -176,9 +176,10 @@ void editor_init(EditorState *es) {
             es->textures[es->texture_count] = load_texture_and_mask(es, path);
             es->textures[es->texture_count].index = es->texture_count;
 
-            const char *name = path + (outfilename_str.find('\\') + 1); 
+            const char *name = path + header.length() + 1; 
             memset(es->textures_names[es->texture_count], 0, MAX_PATH);
             memcpy(es->textures_names[es->texture_count], name, strlen(name));
+            printf("name: %s\n", name);
             es->texture_count++;
 
         }

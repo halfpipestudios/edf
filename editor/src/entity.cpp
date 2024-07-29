@@ -21,6 +21,7 @@ static void entity_write_to_buffer(EditorState *es, Entity *entity, EntitySerial
 
     char *texture_name = es->textures_names[entity->texture.index];
     memcpy(e->texture, texture_name, strlen(texture_name));
+
     // physics component
     e->vel = entity->vel;
     e->acc = entity->acc;
@@ -132,6 +133,8 @@ static void entity_manager_clear(EntityManager *em) {
 static void entity_manager_serialize(EntityManager *em, const char *path, EditorState *es) {
     size_t buffer_size = sizeof(EntitySerialized) * em->count + sizeof(i32);
     u8 *buffer = (u8 *)malloc(buffer_size);
+    memset(buffer, 0, buffer_size);
+
     
     i32 *entity_count = (i32 *)buffer;
     EntitySerialized *entity_buffer = (EntitySerialized *)(buffer + sizeof(i32));

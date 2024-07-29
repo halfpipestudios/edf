@@ -9,11 +9,11 @@ static void draw_quad(EditorState *es, f32 x, f32 y, f32 w, f32 h, f32 angle, SD
 
     y *= -1.0f;
     SDL_Rect dst;
-    dst.w = ((w * es->zoom) * METERS_TO_PIXEL) + 1;
+    dst.w = ((-w * es->zoom) * METERS_TO_PIXEL) + 1;
     dst.h = ((h * es->zoom) * METERS_TO_PIXEL) + 1;
     dst.x = ((x * es->zoom) * METERS_TO_PIXEL) + (BACK_BUFFER_WIDTH * 0.5f) - (dst.w*0.5f) - cx;
     dst.y = ((y * es->zoom) * METERS_TO_PIXEL) + (BACK_BUFFER_HEIGHT * 0.5f) - (dst.h*0.5f) - cy;
-    SDL_RenderCopyEx(es->renderer, texture, 0, &dst, -((angle/PI) * 180.0f), 0, SDL_FLIP_NONE);
+    SDL_RenderCopyEx(es->renderer, texture, 0, &dst, -((angle/PI) * 180.0f), 0, SDL_FLIP_HORIZONTAL);
 }
 
 static void draw_line(EditorState *es, f32 x0, f32 y0, f32 x1, f32 y1, u32 color) {

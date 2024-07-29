@@ -24,6 +24,7 @@ typedef struct Level {
 
 struct GameState;
 
+Level *load_level_from_file(struct GameState *gs, char *path, struct Arena *arena, struct EntityManager *em);
 Level *load_level(struct GameState *gs, struct Arena *arena, struct EntityManager *em);
 void level_update(Level *level, f32 dt);
 void level_render(Level *level, Gpu gpu);

@@ -147,7 +147,8 @@ void game_init(Memory *memory) {
                                         gs->explotion_textures, array_len(gs->explotion_textures),
                                         0.1f, false, false);
 
-    gs->level = load_level(gs, &gs->game_arena, gs->em);
+    //gs->level = load_level(gs, &gs->game_arena, gs->em);
+    gs->level = load_level_from_file(gs, "levels/test.level", &gs->game_arena, gs->em);
 
     stars_init(gs);
 
