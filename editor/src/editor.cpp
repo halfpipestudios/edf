@@ -158,6 +158,9 @@ void editor_init(EditorState *es) {
     es->entity_modify_buttons_textrues[2] = IMG_LoadTexture(es->renderer, "../assets/scale_button.png");
     es->selected_axis = AXIS_NONE;
 
+    es->entity_modify_scale_buttons_textrues[0] = IMG_LoadTexture(es->renderer, "../assets/flip_none.png");
+    es->entity_modify_scale_buttons_textrues[1] = IMG_LoadTexture(es->renderer, "../assets/flip_x.png");
+    es->entity_modify_scale_buttons_textrues[2] = IMG_LoadTexture(es->renderer, "../assets/flip_y.png");
 
     // Load all the exture in the game asset folder
     // Get All file in a directory test
@@ -222,7 +225,6 @@ void editor_init(EditorState *es) {
                           scale_state_on_ui);
 
     es->sm = state_machine_create();
-
 }
 
 void editor_shutdown(EditorState *es) {

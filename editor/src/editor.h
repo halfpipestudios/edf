@@ -16,6 +16,14 @@ enum ModifyStates {
     MODIFY_STATE_COUNT
 };
 
+#define MODIFY_SCALE_COUNT 3
+
+enum ModifyScaleStates {
+    MODIFY_SCALE_FLIP_NONE = 0x01,
+    MODIFY_SCALE_FLIP_X    = 0x02,
+    MODIFY_SCALE_FLIP_Y    = 0x03
+};
+
 enum Axis {
     AXIS_X,
     AXIS_Y,
@@ -39,7 +47,8 @@ struct EditorState {
 
     Entity *selected_entity;
     Texture selected_texture;
-    u8 selected_axis; 
+    u8 selected_axis;
+    ModifyScaleStates scale_state;
 
     // States and State Machine
     State editor_states[EDITOR_STATE_COUNT];
@@ -49,6 +58,7 @@ struct EditorState {
     // for internal use
     SDL_Texture *editor_mode_buttons_textures[EDITOR_STATE_COUNT];
     SDL_Texture *entity_modify_buttons_textrues[MODIFY_STATE_COUNT];
+    SDL_Texture *entity_modify_scale_buttons_textrues[MODIFY_SCALE_COUNT];
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *back_buffer;

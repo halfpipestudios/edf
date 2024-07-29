@@ -1,6 +1,29 @@
+static void entity_modify_scale_window(EditorState *es) {
+    ImGuiWindowClass window_class;
+    window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_AutoHideTabBar;
+    ImGui::SetNextWindowClass(&window_class);
+    ImGui::Begin("Entity Modify Scale", 0,  ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+    for(i32 i = 0; i < MODIFY_SCALE_COUNT; i++) {
+        ImVec4 tint = ImVec4(1, 1, 1, 1);
+        if(es->scale_state == (ModifyScaleStates)i) {
+            tint = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+        }
+        ImGui::PushID(i);
+        if(ImGui::ImageButton("", es->entity_modify_scale_buttons_textrues[i], ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), tint)) {
+            if(es->selected_entity) {
+ 
+            }
+        }
+        ImGui::PopID();
+        ImGui::SameLine();
+    }
+    ImGui::End();
+}
+
 void scale_state_on_enter(EditorState *es) {
     printf("scale state on enter\n");
     es->selected_axis = AXIS_NONE;
+    es->scale_state = MODIFY_SCALE_FLIP_NONE;
 }
 
 void scale_state_on_exit(EditorState *es) {
@@ -56,4 +79,5 @@ void scale_state_on_ui(EditorState *es) {
     // TODO: use anothe state machin for this states
     entity_modify_window(es);
     entity_property_window(es);
+    entity_modify_scale_window(es);
 }
