@@ -1,21 +1,4 @@
-static void entity_modify_scale_window(EditorState *es) {
-    ImGuiWindowClass window_class;
-    window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_AutoHideTabBar;
-    ImGui::SetNextWindowClass(&window_class);
-    ImGui::Begin("Entity Modify Scale", 0,  ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
-    for(i32 i = 0; i < MODIFY_SCALE_COUNT; i++) {
-        ImVec4 tint = ImVec4(1, 1, 1, 1);
-        if(es->scale_state & bit(i)) {
-            tint = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
-        }
-        ImGui::PushID(i);
-        if(ImGui::ImageButton("", es->entity_modify_scale_buttons_textrues[i], ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), tint)) {
-            es->scale_state ^= bit(i);
-        }
-        ImGui::PopID();
-    }
-    ImGui::End();
-}
+
 
 void scale_state_on_enter(EditorState *es) {
     printf("scale state on enter\n");
@@ -48,10 +31,7 @@ void scale_state_on_update(EditorState *es) {
 
     Entity *entity = es->selected_entity;
 
-    f32 t = (f32)((es->scale_state & MODIFY_SCALE_FLIP_X) != 0);
-    entity->scale.x = fabsf(entity->scale.x) * lerp(1.0f, -1.0f, t);
-    t = (f32)((es->scale_state & MODIFY_SCALE_FLIP_Y) != 0);
-    entity->scale.y = fabsf(entity->scale.y) * lerp(1.0f, -1.0f, t);
+    set_entity_scale_base_on_editor_scale_state(es, entity);
 
     if(!ImGui::IsWindowFocused() || !mouse_button_down(0) || es->mouse_wheel_down) {
         return;
