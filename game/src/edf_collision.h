@@ -24,13 +24,11 @@ typedef struct AABB {
 } AABB;
 
 typedef struct Circle {
-    // TODO: remove the center
     V2 c;
     f32 r;
 } Circle;
 
 typedef struct OBB {
-    // TODO: remove the center
     V2 c;
     V2 he;
     f32 r;
@@ -52,6 +50,5 @@ i32 test_aabb_aabb(AABB a, AABB b);
 i32 test_aabb_obb(AABB a, OBB b);
 i32 test_obb_obb(OBB a, OBB b);
 i32 test_entity_entity(struct Entity *entity, struct Entity *other);
-
 
 #endif /* EDF_COLLISION_H */

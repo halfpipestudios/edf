@@ -185,13 +185,14 @@ Level *load_level_from_file(GameState *gs, char *path, struct Arena *arena, stru
             entity_add_render_component(entity, pos, e->scale, texture, v4(1, 1, 1, 1));
         }
         if(e->components & ENTITY_INPUT_COMPONENT) {
-
+            entity_add_input_component(entity);
+            gs->hero = entity;
         }
         if(e->components & ENTITY_PHYSICS_COMPONENT) {
-
+            entity_add_physics_component(entity, e->vel, e->acc, e->damping);
         }
         if(e->components & ENTITY_COLLISION_COMPONENT) {
-
+            entity_add_collision_component(entity, e->collision, e->collides);
         }
         if(e->components & ENTITY_ASTEROID_COMPONENT) {
 
@@ -559,7 +560,8 @@ void level_update(Level *level, f32 dt) {
     AABB camera_bound = {};
     camera_bound.min = v2(level->camera_pos.x - MAP_COORDS_X*0.5f + radii, level->camera_pos.y - MAP_COORDS_Y*0.5f + radii);
     camera_bound.max = v2(level->camera_pos.x + MAP_COORDS_X*0.5f - radii, level->camera_pos.y + MAP_COORDS_Y*0.5f- radii);
-    if(test_circle_aabb(level->gs->hero->collision.circle, camera_bound) == false) {
+    Collision collision = entity_get_world_collision(level->gs->hero);
+    if(test_circle_aabb(collision.circle, camera_bound) == false) {
         
         if(level->gs->hero->animation->playing == false) {
             level->gs->hero->save_tex = level->gs->hero->tex;

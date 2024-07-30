@@ -175,43 +175,90 @@ i32 test_obb_obb(OBB a, OBB b) {
     return test_aabb_obb(local_a, local_b);    
 }
 
+Collision entity_get_world_collision_circle(Entity *entity) {
+    Collision collision;
+    collision.type = COLLISION_TYPE_CIRLCE;
+    V2 offset = v2_rotate(entity->collision.offset, entity->angle);
+    collision.circle.c = v2_add(entity->pos.xy, offset);
+    collision.circle.r = entity->collision.circle.r;
+    return collision;
+}
+
+Collision entity_get_world_collision_aabb(Entity *entity) {
+    Collision collision;
+    collision.type = COLLISION_TYPE_AABB;
+    V2 offset = v2_rotate(entity->collision.offset, entity->angle);
+    V2 pos = v2_add(entity->pos.xy, offset);
+    collision.aabb.min = v2_add(pos, entity->collision.aabb.min);
+    collision.aabb.max = v2_add(pos, entity->collision.aabb.max);
+    return collision;
+}
+
+Collision entity_get_world_collision_obb(Entity *entity) {
+    Collision collision;
+    collision.type = COLLISION_TYPE_OBB;
+    V2 offset = v2_rotate(entity->collision.offset, entity->angle);
+    collision.obb.c = v2_add(entity->pos.xy, offset);
+    collision.obb.r = entity->angle;
+    collision.obb.he = entity->collision.obb.he;
+    return collision;
+}
+
+Collision entity_get_world_collision(Entity *entity) {
+    assert(entity->components & ENTITY_COLLISION_COMPONENT);
+    switch(entity->collision.type) {
+        case COLLISION_TYPE_CIRLCE: {
+            return entity_get_world_collision_circle(entity);
+        } break;
+        case COLLISION_TYPE_AABB: {
+            return entity_get_world_collision_aabb(entity);
+        } break;
+        case COLLISION_TYPE_OBB: {
+            return entity_get_world_collision_obb(entity);
+        } break;
+    }
+}
 
 i32 test_entity_entity(struct Entity *entity, struct Entity *other) {
-    if(entity->collision.type == COLLISION_TYPE_CIRLCE &&
-       other->collision.type == COLLISION_TYPE_CIRLCE) {
-        return test_cirlce_circle(entity->collision.circle, other->collision.circle);
+
+    Collision e = entity_get_world_collision(entity);
+    Collision o = entity_get_world_collision(other);
+
+    if(e.type == COLLISION_TYPE_CIRLCE &&
+       o.type == COLLISION_TYPE_CIRLCE) {
+        return test_cirlce_circle(e.circle, o.circle);
     }
-    else if(entity->collision.type == COLLISION_TYPE_AABB &&
-       other->collision.type == COLLISION_TYPE_AABB) {
-        return test_aabb_aabb(entity->collision.aabb, other->collision.aabb);
+    else if(e.type == COLLISION_TYPE_AABB &&
+       o.type == COLLISION_TYPE_AABB) {
+        return test_aabb_aabb(e.aabb, o.aabb);
     }
-    else if(entity->collision.type == COLLISION_TYPE_OBB &&
-       other->collision.type == COLLISION_TYPE_OBB) {
-        return test_obb_obb(entity->collision.obb, other->collision.obb);
+    else if(e.type == COLLISION_TYPE_OBB &&
+       o.type == COLLISION_TYPE_OBB) {
+        return test_obb_obb(e.obb, o.obb);
     }
-    else if(entity->collision.type == COLLISION_TYPE_CIRLCE &&
-       other->collision.type == COLLISION_TYPE_AABB) {
-        return test_circle_aabb(entity->collision.circle, other->collision.aabb);
+    else if(e.type == COLLISION_TYPE_CIRLCE &&
+       o.type == COLLISION_TYPE_AABB) {
+        return test_circle_aabb(e.circle, o.aabb);
     }
-    else if(entity->collision.type == COLLISION_TYPE_AABB &&
-       other->collision.type == COLLISION_TYPE_CIRLCE) {
-        return test_circle_aabb(other->collision.circle, entity->collision.aabb);
+    else if(e.type == COLLISION_TYPE_AABB &&
+       o.type == COLLISION_TYPE_CIRLCE) {
+        return test_circle_aabb(o.circle, e.aabb);
     }
-    else if(entity->collision.type == COLLISION_TYPE_CIRLCE &&
-       other->collision.type == COLLISION_TYPE_OBB) {
-        return test_circle_obb(entity->collision.circle, other->collision.obb);
+    else if(e.type == COLLISION_TYPE_CIRLCE &&
+       o.type == COLLISION_TYPE_OBB) {
+        return test_circle_obb(e.circle, o.obb);
     }
-    else if(entity->collision.type == COLLISION_TYPE_OBB &&
-       other->collision.type == COLLISION_TYPE_CIRLCE) {
-        return test_circle_obb(other->collision.circle, entity->collision.obb);
+    else if(e.type == COLLISION_TYPE_OBB &&
+       o.type == COLLISION_TYPE_CIRLCE) {
+        return test_circle_obb(o.circle, e.obb);
     }
-    else if(entity->collision.type == COLLISION_TYPE_AABB &&
-       other->collision.type == COLLISION_TYPE_OBB) {
-        return test_aabb_obb(entity->collision.aabb, other->collision.obb);
+    else if(e.type == COLLISION_TYPE_AABB &&
+       o.type == COLLISION_TYPE_OBB) {
+        return test_aabb_obb(e.aabb, o.obb);
     }
-    else if(entity->collision.type == COLLISION_TYPE_OBB &&
-       other->collision.type == COLLISION_TYPE_AABB) {
-        return test_aabb_obb(other->collision.aabb, entity->collision.obb);
+    else if(e.type == COLLISION_TYPE_OBB &&
+       o.type == COLLISION_TYPE_AABB) {
+        return test_aabb_obb(o.aabb, e.obb);
     }
     else {
         assert(!"ERROR: collision pair not handle!!!");

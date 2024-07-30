@@ -122,5 +122,6 @@ void entity_manager_remove_entity(EntityManager *em, Entity *entity);
 void entity_manager_clear(EntityManager *em);
 void entity_manager_forall(struct GameState *gs, EntityManager *em, SystemUpdateFunc *system_update, u64 components, f32 dt);
 
+Collision entity_get_world_collision(Entity *entity);
 
 #endif /* EDF_ENTITY_H */

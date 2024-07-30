@@ -17,15 +17,16 @@ SYSTEM_UPDATE(render_system) {
                                  entity->angle, entity->tex, entity->tint);
 
     if(gs->debug_show && (entity->components & ENTITY_COLLISION_COMPONENT) != 0) {
-        if(entity->collision.type == COLLISION_TYPE_CIRLCE) {
-        Texture texture = am_get_texture(gs->am, "move_outer.png");
-            gpu_draw_quad_texture_tinted(gs->gpu, 
-                                 entity->collision.circle.c.x, entity->collision.circle.c.y,
-                                 entity->collision.circle.r * 2.0f, entity->collision.circle.r * 2.0f,
+        Collision collision = entity_get_world_collision(entity);
+        if(collision.type == COLLISION_TYPE_CIRLCE) {
+            Circle circle = collision.circle;
+            Texture texture = am_get_texture(gs->am, "move_outer.png");
+            gpu_draw_quad_texture_tinted(gs->gpu,  circle.c.x, circle.c.y,
+                                 circle.r * 2.0f, circle.r * 2.0f,
                                  0, texture, v4(0, 1, 0, 0.4f));
         }
         else if(entity->collision.type == COLLISION_TYPE_AABB) {
-            AABB aabb = entity->collision.aabb;
+            AABB aabb = collision.aabb;;
             V2 size = v2_sub(aabb.max, aabb.min);
             V2 pos = v2_add(aabb.min, v2_scale(size, 0.5f));
             gpu_draw_quad_color(gs->gpu, pos.x, pos.y, size.x, size.y, 0, v4(0, 1, 0, 0.4f));

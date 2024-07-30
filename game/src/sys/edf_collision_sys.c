@@ -15,6 +15,9 @@
 
 SYSTEM_UPDATE(collision_system) {
 
+    // this is not necesary
+    // becouse the colliders are define in local space not world
+    /*
     if(entity->collision.type == COLLISION_TYPE_CIRLCE) {
         entity->collision.circle.c = v2_add(entity->pos.xy, entity->collision.offset);
     }
@@ -25,6 +28,7 @@ SYSTEM_UPDATE(collision_system) {
         entity->collision.obb.c = entity->pos.xy;
         entity->collision.obb.r = entity->angle;
     }
+    */
 
     if(!entity->collides) {
         return;
